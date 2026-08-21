@@ -8,6 +8,7 @@ from adaptive_harness.recovery import (
     RuleBasedTaskRecoveryExecutor,
     RuleBasedTaskRecoveryPolicy,
 )
+from adaptive_harness.recovery_practice import RecoveryPracticeGate
 from adaptive_harness.runtime import AgentDriver, RunResult
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder, TaskContract
 from adaptive_harness.task_state import (
@@ -28,6 +29,7 @@ __all__ = [
     "Profile",
     "RuleBasedTaskRecoveryPolicy",
     "RuleBasedTaskRecoveryExecutor",
+    "RecoveryPracticeGate",
     "RuleBasedContractChecker",
     "RuleBasedTaskContractBuilder",
     "RuleBasedProgressDetector",

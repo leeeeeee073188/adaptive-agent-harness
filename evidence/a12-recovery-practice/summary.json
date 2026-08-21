@@ -1,0 +1,17 @@
+{
+  "actions": [],
+  "eligible_actions": [],
+  "ledger_files_found": 1,
+  "ledger_files_replayed": 1,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "practice_enabled": false,
+  "real_outcome_count": 0,
+  "scope": "Real recovery outcome Practice gate",
+  "status": "insufficient_real_outcomes",
+  "thresholds": {
+    "min_effective_rate": 0.6,
+    "min_isolated_samples": 5,
+    "min_wilson_lower": 0.3
+  }
+}

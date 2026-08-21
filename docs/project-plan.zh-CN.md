@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 57 个零模型架构测试。
+- 61 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2201,7 +2201,20 @@ RecoveryAction Executor 完成后，继续加入以下执行前后Progress/Evide
 - RealReplica candidate runner默认组合OutcomeEvaluator，pinned probe当前29条Ledger events；
 - 证据：`evidence/a11-recovery-outcomes/summary.json`。
 
-下一步对历史/合成RecoveryOutcome建立按action的success/failure统计与最低样本门禁；在没有真实outcome样本前不做在线策略学习，也不继续付费扩跑。
+Recovery Outcome durable attribution完成后，继续建立以下离线统计与最低样本门禁；真实样本不足时不做在线策略学习。
+
+## P12：Confidence-gated Offline Recovery Practice（已完成，零 Token）
+
+- 新增 RecoveryOutcomeAggregator 与 RecoveryPracticeGate；
+- 多action batch保留total/confounded统计，但不能给单个action做因果credit；
+- 只有isolated outcome参与action晋升；
+- 默认门禁：isolated samples ≥ 5、effective rate ≥ 60%、Wilson 95% lower bound ≥ 0.30；
+- 5/5 isolated success可通过；3/3因样本不足拒绝；3/5虽然名义60%但Wilson下界不足拒绝；10个多action成功batch仍全部拒绝晋升；
+- 扫描RealReplica真实run：发现1个Adaptive Ledger、0个RecoveryOutcome，因此eligible actions为空、`practice_enabled=false`；
+- 不在线修改策略权重，不把合成样本冒充真实效果；
+- 证据：`evidence/a12-recovery-practice/summary.json`。
+
+下一步需要通过最小、明确目标的Recovery canary产生真实isolated outcome；但Token variance门禁未解决前继续优先零Token/本地mock验证，不扩跑MiniBench或107任务。
 
 # 36. 关键风险
 

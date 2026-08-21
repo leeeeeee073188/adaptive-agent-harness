@@ -173,5 +173,12 @@ turn evaluates the unmatched `recovery/executed` event against
 effective; a no-progress turn records an ineffective outcome linked to the
 exact execution sequence.
 
+Offline Practice is confidence-gated and disabled by default. Outcome batches
+with multiple simultaneous actions are retained as confounded evidence but do
+not count toward causal action promotion. An action needs at least five
+isolated outcomes, at least 60% effectiveness, and a Wilson 95% lower bound of
+at least 0.30. The current real-run scan finds one adaptive Ledger and zero
+RecoveryOutcome samples, so no action is eligible and Practice remains off.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

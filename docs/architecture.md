@@ -110,3 +110,8 @@ Recovery outcome attribution is delayed one turn. An executed action remains
 pending until a later progress/completion fact exists, then a durable outcome
 links back to its execution sequence. This prevents action execution, message
 volume, or tool activity from being misreported as recovery effectiveness.
+
+Recovery Practice is offline and confidence-gated. Multi-action outcomes are
+confounded and cannot promote individual actions. Promotion requires five
+isolated samples, 60% observed effectiveness, and a Wilson 95% lower bound of
+0.30. With zero real outcomes the correct runtime state is Practice disabled.
