@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 61 个零模型架构测试。
+- 65 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2214,7 +2214,28 @@ Recovery Outcome durable attribution完成后，继续建立以下离线统计�
 - 不在线修改策略权重，不把合成样本冒充真实效果；
 - 证据：`evidence/a12-recovery-practice/summary.json`。
 
-下一步需要通过最小、明确目标的Recovery canary产生真实isolated outcome；但Token variance门禁未解决前继续优先零Token/本地mock验证，不扩跑MiniBench或107任务。
+## P13：Mid-turn Browser Fallback Guard Candidate（离线完成，未部署）
+
+历史Browser失败大多在一个DeerFlow Turn内部耗尽Token，post-turn Recovery介入过晚。新增framework-neutral `BrowserFallbackGuard`候选：
+
+- 仅在tool=`bash`且command明确包含9222/CDP/Runtime.evaluate/websocket/querySelector/Chrome DevTools时计为browser bypass；
+- 普通文件处理、MCP/API curl、非Browser任务bash不受影响；
+- 默认前三次只观察，第四次起才候选阻断并要求切换first-class browser tools；
+- `enabled=false`时只观测不阻断，支持干净消融。
+
+Dev20 20任务历史回放：
+
+| 指标 | 结果 |
+|---|---:|
+| Browser failure signal coverage | 6/7 (85.7%) |
+| No-progress browser coverage | 3/4 (75%) |
+| 可避免的超额bypass calls | 66 |
+| Non-browser would-block calls | 0 |
+| Successful browser controls | 0 |
+
+由于Dev20没有成功Browser样本，无法估计Browser路径误拦截率，故 `deployment_ready=false`、`candidate_enabled=false`。项目没有因失败覆盖率高就直接上线Guard。证据：`evidence/a13-browser-fallback-guard/summary.json`。
+
+下一步先寻找已有成功Browser运行作为只读对照或构造公开mock成功轨迹；误拦截门禁满足前不接入live middleware，也不继续付费扩跑。
 
 # 36. 关键风险
 

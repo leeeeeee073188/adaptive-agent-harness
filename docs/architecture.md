@@ -115,3 +115,8 @@ Recovery Practice is offline and confidence-gated. Multi-action outcomes are
 confounded and cannot promote individual actions. Promotion requires five
 isolated samples, 60% observed effectiveness, and a Wilson 95% lower bound of
 0.30. With zero real outcomes the correct runtime state is Practice disabled.
+
+Mid-turn guards follow the same evidence discipline. A browser shell/CDP
+fallback candidate has strong failure coverage but no successful-browser
+controls, so it remains an offline, disabled Profile candidate. Failure-only
+coverage cannot justify production interception.

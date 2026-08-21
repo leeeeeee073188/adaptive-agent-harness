@@ -1,0 +1,260 @@
+{
+  "browser_failure_count": 7,
+  "browser_failure_signal_coverage": 0.8571428571428571,
+  "candidate_enabled": false,
+  "deployment_ready": false,
+  "max_browser_bypass_calls": 3,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "no_progress_browser_count": 4,
+  "no_progress_signal_coverage": 0.75,
+  "nonbrowser_would_block_calls": 0,
+  "rows": [
+    {
+      "browser_bypass_calls": 0,
+      "category": "file",
+      "guard_activated": false,
+      "passed": true,
+      "primary_failure": null,
+      "secondary_failures": [],
+      "task_id": "file-google-trends-csv-flatten",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 8,
+      "category": "browser",
+      "guard_activated": true,
+      "passed": false,
+      "primary_failure": "BROWSER_GROUNDING",
+      "secondary_failures": [
+        "NO_PROGRESS",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "browser-alibaba-led-bulb-simple-publish",
+      "would_block_calls": 5
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "cli",
+      "guard_activated": false,
+      "passed": false,
+      "primary_failure": "CONSTRAINT_MISS",
+      "secondary_failures": [
+        "TASK_UNDERSTANDING",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "cli-google-trends-data-quality-audit",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "cli",
+      "guard_activated": false,
+      "passed": false,
+      "primary_failure": "CONSTRAINT_MISS",
+      "secondary_failures": [
+        "TASK_UNDERSTANDING",
+        "STATE_INCONSISTENCY"
+      ],
+      "task_id": "cli-google-trends-counterfactual-rebalance",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "file",
+      "guard_activated": false,
+      "passed": true,
+      "primary_failure": null,
+      "secondary_failures": [],
+      "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 8,
+      "category": "browser",
+      "guard_activated": true,
+      "passed": false,
+      "primary_failure": "WRONG_TOOL",
+      "secondary_failures": [
+        "BROWSER_GROUNDING",
+        "PLAN_INCOMPLETE",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui",
+      "would_block_calls": 5
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "api",
+      "guard_activated": false,
+      "passed": false,
+      "primary_failure": "CONSTRAINT_MISS",
+      "secondary_failures": [
+        "TASK_UNDERSTANDING",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "api-travel-asia-supplier-tour-handoff",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 29,
+      "category": "browser",
+      "guard_activated": true,
+      "passed": false,
+      "primary_failure": "PLAN_INCOMPLETE",
+      "secondary_failures": [
+        "BROWSER_GROUNDING",
+        "TOOL_ARGUMENT",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "browser-freightos-booking",
+      "would_block_calls": 26
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "cli",
+      "guard_activated": false,
+      "passed": true,
+      "primary_failure": null,
+      "secondary_failures": [],
+      "task_id": "cli-commerce-camping-stove-listing-config",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "cli",
+      "guard_activated": false,
+      "passed": false,
+      "primary_failure": "ARTIFACT_ERROR",
+      "secondary_failures": [
+        "CONSTRAINT_MISS",
+        "LOOP"
+      ],
+      "task_id": "cli-commerce-skincare-order-reconciliation",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "api",
+      "guard_activated": false,
+      "passed": true,
+      "primary_failure": null,
+      "secondary_failures": [],
+      "task_id": "api-gmail-vendor-brief-mcp",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "api",
+      "guard_activated": false,
+      "passed": true,
+      "primary_failure": null,
+      "secondary_failures": [],
+      "task_id": "api-google-docs-price-list-update-mcp",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "cli",
+      "guard_activated": false,
+      "passed": false,
+      "primary_failure": "CONSTRAINT_MISS",
+      "secondary_failures": [
+        "ARTIFACT_ERROR",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "cli-alibaba-pneumatic-valve-publish",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 12,
+      "category": "browser",
+      "guard_activated": true,
+      "passed": false,
+      "primary_failure": "BROWSER_GROUNDING",
+      "secondary_failures": [
+        "NO_PROGRESS",
+        "LOOP",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "browser-alibaba-custom-yoga-mat-publish",
+      "would_block_calls": 9
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "browser",
+      "guard_activated": false,
+      "passed": false,
+      "primary_failure": "BROWSER_GROUNDING",
+      "secondary_failures": [
+        "NO_PROGRESS",
+        "PLAN_INCOMPLETE",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "browser-alibaba-yushengxm-shop-diagnosis",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "file",
+      "guard_activated": false,
+      "passed": true,
+      "primary_failure": null,
+      "secondary_failures": [],
+      "task_id": "file-commerce-ops-returns-dispute-evidence-pack",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "cli",
+      "guard_activated": false,
+      "passed": true,
+      "primary_failure": null,
+      "secondary_failures": [],
+      "task_id": "cli-commerce-smartwatch-promo-campaign",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "category": "cli",
+      "guard_activated": false,
+      "passed": true,
+      "primary_failure": null,
+      "secondary_failures": [],
+      "task_id": "cli-dws-feed-qa-weekly-report",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 11,
+      "category": "browser",
+      "guard_activated": true,
+      "passed": false,
+      "primary_failure": "BROWSER_GROUNDING",
+      "secondary_failures": [
+        "NO_PROGRESS",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "browser-alibaba-bluetooth-earbuds-mixed-publish",
+      "would_block_calls": 8
+    },
+    {
+      "browser_bypass_calls": 16,
+      "category": "browser",
+      "guard_activated": true,
+      "passed": false,
+      "primary_failure": "PLAN_INCOMPLETE",
+      "secondary_failures": [
+        "WRONG_TOOL",
+        "BROWSER_GROUNDING",
+        "PREMATURE_FINISH"
+      ],
+      "task_id": "browser-gmail-returns-escalation",
+      "would_block_calls": 13
+    }
+  ],
+  "scope": "Dev20 browser shell/CDP fallback guard replay",
+  "status": "insufficient_successful_browser_controls",
+  "successful_browser_control_count": 0,
+  "task_count": 20,
+  "total_would_block_calls": 66
+}

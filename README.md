@@ -180,5 +180,13 @@ isolated outcomes, at least 60% effectiveness, and a Wilson 95% lower bound of
 at least 0.30. The current real-run scan finds one adaptive Ledger and zero
 RecoveryOutcome samples, so no action is eligible and Practice remains off.
 
+A mid-turn browser fallback guard candidate was also replayed but deliberately
+not deployed. It detects explicit bash/CDP bypass (port 9222,
+`Runtime.evaluate`, websocket, or `querySelector`) while allowing ordinary
+file/API shell work. It covered 6/7 historical browser failures and would have
+blocked 66 excess fallback calls with zero non-browser blocks, but Dev20 has no
+successful browser control. Without a false-positive estimate the deployment
+gate remains closed.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).
