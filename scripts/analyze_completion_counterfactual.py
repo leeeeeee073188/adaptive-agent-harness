@@ -15,9 +15,10 @@ from adaptive_harness.integrations.deerflow_policy import (
     DeerFlowPolicyBridge,
     FileArtifactObservationProvider,
     OutputFileCountObservationProvider,
-    WorkbenchCalendarObservationProvider,
 )
 from adaptive_harness.integrations.realreplica import RealReplicaMiniBenchAdapter
+from adaptive_harness.integrations.realreplica_contract import realreplica_contract_builder
+from adaptive_harness.integrations.realreplica_observations import WorkbenchCalendarObservationProvider
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.task_contract import CriterionKind, TaskContract
 from adaptive_harness.task_state import Evidence, EvidenceKind, EvidenceSource
@@ -89,6 +90,7 @@ def analyze(root: Path) -> dict[str, Any]:
             HistoricalListingObservationProvider(manifest),
         )
         bridge = DeerFlowPolicyBridge(
+            contract_builder=realreplica_contract_builder(),
             observation_providers=providers,
             unsupported_criteria="observe_only",
         )

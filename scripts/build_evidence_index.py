@@ -30,6 +30,7 @@ REQUIRED = tuple(
         (13, "browser-fallback-guard"),
         (14, "exact-count-provider"),
         (15, "workbench-calendar-provider"),
+        (16, "architecture-evolution"),
     )
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
@@ -80,8 +81,15 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     recovery = doc("a8-failure-recovery/summary.json") if not missing else {}
     practice = doc("a12-recovery-practice/summary.json") if not missing else {}
     guard = doc("a13-browser-fallback-guard/summary.json") if not missing else {}
+    architecture = doc("a16-architecture-evolution/summary.json") if not missing else {}
     claims = {
-        "zero_model_unit_tests": 70,
+        "zero_model_unit_tests": architecture.get("test_count"),
+        "core_business_vocabulary_findings": architecture.get(
+            "core_business_vocabulary_findings"
+        ),
+        "evolution_online_mutation_enabled": architecture.get(
+            "online_profile_mutation_enabled"
+        ),
         "historical_replay_exact": f"{replay.get('passed_count', 0)}/{replay.get('run_count', 0)}",
         "minibench_task_count": (preflight.get("dataset") or {}).get("counts", {}).get("total"),
         "contract_coverage": (preflight.get("contract_coverage") or {}).get("covered_tasks"),
@@ -116,6 +124,8 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "practice_fail_closed": claims["recovery_practice_enabled"] is False,
         "unvalidated_guard_disabled": claims["browser_guard_deployed"] is False,
         "paid_expansion_stopped": claims["paid_expansion_continued"] is False,
+        "core_business_semantics_decoupled": claims["core_business_vocabulary_findings"] == 0,
+        "evolution_is_offline_governed": claims["evolution_online_mutation_enabled"] is False,
     }
     return {
         "schema_version": 1,

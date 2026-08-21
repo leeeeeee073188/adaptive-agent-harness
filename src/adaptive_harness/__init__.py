@@ -1,6 +1,13 @@
 """Adaptive Agent Harness public API."""
 
 from adaptive_harness.config import Bundle, PluginSpec, Profile
+from adaptive_harness.evolution import (
+    EvolutionCandidate,
+    EvolutionGate,
+    EvolutionGateConfig,
+    EvolutionManager,
+    ShadowEvaluation,
+)
 from adaptive_harness.kernel import Kernel, Plugin, ServiceKey
 from adaptive_harness.progress import RuleBasedProgressDetector
 from adaptive_harness.recovery import (
@@ -23,6 +30,10 @@ __all__ = [
     "AgentDriver",
     "Bundle",
     "EvidenceCompletionGate",
+    "EvolutionCandidate",
+    "EvolutionGate",
+    "EvolutionGateConfig",
+    "EvolutionManager",
     "Kernel",
     "Plugin",
     "PluginSpec",
@@ -36,6 +47,7 @@ __all__ = [
     "RuleBasedRecoveryOutcomeEvaluator",
     "RunResult",
     "ServiceKey",
+    "ShadowEvaluation",
     "TaskContract",
     "TaskState",
     "TaskStateProjector",

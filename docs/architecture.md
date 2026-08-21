@@ -13,6 +13,10 @@
    online runtime state.
 6. **Learning is offline and admissibility-gated.** Experience never stores a
    benchmark task id, selector, verifier wording, or expected answer.
+7. **Core is environment-agnostic.** Task ontologies and external protocols
+   enter through integration extractors/providers, never through Core rules.
+8. **Profiles are immutable at runtime.** Evolution creates a new version in
+   Shadow; only an evidence-gated control-plane decision can promote it.
 
 ## Planes
 
@@ -28,6 +32,10 @@ flowchart TD
   R --> POL[Policy Plane\nProgress / Recovery / Completion]
   L --> E[Evaluation Plane\nRollout / Judge / Analysis]
   E --> PR[Practice Plane\nCompare / Distill / Admit / Retrieve]
+  PR --> EV[Evolution Plane\nCandidate / Shadow / Gate]
+  EV -.Promote next immutable version.-> C
+  EV -.Reject or Rollback.-> L
+  X[External Integrations\nDeerFlow / RealReplica / future runtimes] --> S
 ```
 
 ## Reference mapping
@@ -54,6 +62,48 @@ flowchart TD
    embedded-client code path, and the RealReplica candidate runner now invokes
    that path behind an explicit switch while preserving baseline behavior.
    Experience remains disabled until the leakage/admissibility gate passes.
+6. Core/benchmark boundaries are enforced in tests. Generic Contract parsing
+   exposes `CriterionExtractor`; RealReplica owns its state vocabulary and
+   Gmail/Docs/Workbench protocols. The Evolution Plane now versions Profiles,
+   consumes paired Shadow evidence, and records Promote/Reject/Rollback in the
+   append-only Ledger (implemented).
+
+## Core and integration boundary
+
+`RuleBasedTaskContractBuilder` understands only portable concepts: public
+artifacts, explicit global counts and a sanitized public schema. An integration
+may inject `CriterionExtractor` instances, but Core still assigns identifiers,
+validates parameters/dependencies and rejects evaluation-only fields. This
+prevents a benchmark-specific prompt phrase from becoming a permanent Harness
+primitive.
+
+The generic DeerFlow bridge similarly owns provider composition and lifecycle,
+not Gmail, Google Docs or Workbench semantics. Those providers live beside the
+RealReplica adapter. A source-boundary regression test rejects reintroduction
+of these subjects or protocols into `task_contract.py` or
+`deerflow_policy.py`.
+
+## Governed Evolution Plane
+
+Evolution is a control-plane workflow, not an online model action:
+
+```text
+active immutable Profile
+  -> evidence-backed candidate (parent fingerprint + hypothesis)
+  -> paired Shadow evaluation
+  -> integrity + leakage + sample + quality-CI + token-cost + regression gate
+  -> Promote | Keep Shadow | Reject
+  -> optional deterministic Rollback to a known non-rejected version
+```
+
+Candidate creation, Shadow evaluation, promotion, rejection and rollback are
+append-only events. `EvolutionProjector` reconstructs the active version and
+all statuses from JSONL. The online driver has no method that edits a Profile;
+therefore a task trajectory cannot self-promote. Default gates require at least
+five matched pairs, a non-negative quality lower bound, no regression, at most
+10% token increase, and successful integrity/leakage checks. Missing quality or
+cost estimates keep the candidate in Shadow rather than interpreting absence
+of evidence as success.
 
 ## Evaluation stop rule
 

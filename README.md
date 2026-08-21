@@ -1,212 +1,86 @@
 # Adaptive Agent Harness
 
-Architecture-first harness for real-world, long-horizon business tasks.
+面向长链路真实任务的架构优先 Agent Harness。目标不是针对某个 Bench 追加规则，而是把模型执行增强为一套可组合、可观测、可恢复、可离线演进的系统；Benchmark 只负责从外部验证通用能力是否提升。
 
-The project is intentionally **not** another monolithic agent loop. It combines:
+## 设计来源与取舍
 
-- DeepSeek Harness ideas: plugin-composed services, reversible effects,
-  scoped capability seams, append-only session events, and explicit Turn/Step
-  lifecycle;
-- Tencent Youtu-Agent ideas: config-driven Agent/Environment/Toolkit/Context
-  composition, trajectory recording, rollout/judgement separation, and an
-  offline experience-practice plane;
-- DeerFlow as the first runtime adapter rather than the architectural core;
-- RealReplicaBench as an external evaluation adapter rather than runtime logic.
+- **DeepSeek Harness**：采用 Plugin/ServiceKey、作用域服务、可逆 effect、事件溯源和 Turn/Step 分层；不绑定 Cordis/TypeScript 实现。
+- **Tencent Youtu-Agent**：采用 Agent/Environment/Toolkit/Context 分离，以及 rollout/judgement/practice 分层；不让 ground truth 或 task id 进入在线学习。
+- **DeerFlow**：作为首个 Runtime Adapter，复用模型、Sandbox、Browser 与 MCP 能力，但不拥有核心状态和策略。
+- **RealReplicaBench**：作为外部 integration/evaluation adapter，业务 ontology 与 mock 协议不得进入 Core。
 
-Implemented architecture core (A0–A3):
+## 总体架构
 
 ```text
-Profile / Bundle
-    -> Plugin Kernel + Scoped Service Registry
-        -> Environment / Toolkit / Context / Model / Tool seams
-            -> Turn-Step Agent Driver
-                -> Append-only SessionLedger
-                    -> deterministic message/state projections
+Composition Plane
+  Profile / Bundle / Overlay / immutable fingerprint
+        │
+        ▼
+Plugin Kernel ── Scoped Service Registry ── reversible lifecycle
+        │
+        ├── Capability Plane: Model / Environment / Toolkit / Context / Tools
+        ├── Runtime Plane: Inbox / Turn / Step / RuntimeAdapter
+        ├── State Plane: append-only SessionLedger → disposable projections
+        └── Policy Plane: Contract / Evidence / Progress / Recovery / Completion
 
-Evaluation plane (offline): RolloutRecord -> JudgeResult -> admissible ExperienceCandidate
+Offline Evolution Plane
+  Outcomes / Rollouts
+        → admissibility & leakage checks
+        → immutable Profile candidate
+        → paired Shadow evaluation
+        → integrity / sample / quality / cost / regression gates
+        → Promote | Keep Shadow | Reject
+        → append-only decision history and deterministic Rollback
 
-DeerFlow RuntimeAdapter:
-    DeerFlowClient.stream -> canonical event reconciliation -> SessionLedger
-    request/header snapshot + Environment build/cleanup + partial-run recovery
-
-TaskContract / TaskState:
-    public prompt/schema -> typed criteria -> durable task facts
-    Ledger -> disposable TaskState projection -> bounded model working set
-
-Tool Reliability / Completion Gate:
-    pre -> execute -> post -> classify -> bounded recovery -> durable result
-    proposed finish -> contract projection -> runtime evidence -> accept/reject
+External adapters
+  DeerFlow Runtime       RealReplica contract/provider/evaluation
 ```
 
-The DeerFlow bridge reconciles incremental `messages-tuple` events with
-cumulative `values` snapshots, deduplicates tool calls/results, treats the
-`end` usage record as authoritative, and preserves interrupted runs as a
-replayable ledger. DeerFlow remains a runtime provider; it does not own task
-state or evaluation policy.
+## 核心不变量
 
-Task contracts are derived conservatively from the public task prompt/schema.
-Artifact, exact-count, observation, and dependency criteria are checked only
-against runtime evidence. Evaluation-only fields such as verifier, rubric,
-ground truth, and expected answers are rejected at the contract boundary.
-Projection context is bounded, while the ledger retains complete evidence.
+1. **Model-visible means Ledger-backed**：模型上下文只能由可回放事实投影产生。
+2. **Capability is a service**：消费者依赖稳定 `ServiceKey`，而不是具体 provider。
+3. **Core does not know the benchmark ontology**：邮件、日历、文档、Workbench 等规则由 integration 注入。
+4. **Completion requires evidence**：工具返回的自然语言“完成”不能作为证明。
+5. **Recovery execution is not recovery success**：只有后续语义进展或完成证据才能记为有效。
+6. **Evolution is offline and governed**：运行中的生产 Profile 不会自主改写；候选必须先 Shadow、通过门禁并可回滚。
+7. **Evaluation stays external**：verifier、rubric、ground truth、expected answer 不进入在线 Runtime。
 
-Tool reliability is deterministic and opt-in: only transient failures are
-retried within a profile budget. The completion gate is also an optional
-service, enabling clean baseline/candidate ablations. Tool prose is never
-treated as proof; only explicit structured evidence can satisfy a criterion.
+## 模块边界
 
-Run the zero-model verification suite:
+| 模块 | 职责 |
+|---|---|
+| `kernel.py` / `events.py` | Plugin 生命周期、作用域服务、waterfall/serial/parallel 事件 |
+| `ledger.py` / `task_state.py` | append-only 事实和可删除、可重建投影 |
+| `task_contract.py` | 通用 artifact/count/schema 解析与 `CriterionExtractor` 扩展点 |
+| `tool_runtime.py` / `tool_reliability.py` | 工具生命周期、瞬态错误分类和有界重试 |
+| `progress.py` / `recovery.py` | 语义进展、结构化恢复决策、执行与结果归因 |
+| `evolution.py` | Profile 版本、Shadow 评估、晋升/拒绝/回滚治理 |
+| `integrations/deerflow*.py` | DeerFlow stream/event/runtime 桥接 |
+| `integrations/realreplica*.py` | Bench 专属 Contract 语义、Observation Provider 与评测适配 |
+
+## 自进化不是在线自改 Prompt
+
+`EvolutionManager` 管理不可变 Profile 版本，并把每次候选、评估、晋升、拒绝与回滚写入 Ledger。默认门禁要求：
+
+- paired matched samples ≥ 5；
+- 质量提升置信下界 ≥ 0；
+- token 增幅 ≤ 10%；
+- 回归数 = 0；
+- integrity 与 leakage 检查均通过。
+
+样本或成本估计不足时只保持 Shadow；泄漏、完整性、质量、成本或回归失败时直接 Reject。该模块不挂接在线 Runtime 的写路径，因此模型无法在一次任务中修改生产 Profile。
+
+## 验证
 
 ```bash
 uvx ruff check src tests scripts
-PYTHONPATH=src python -m unittest discover -s tests -v
-python -m compileall -q src tests scripts
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+PYTHONPATH=src python3 -m compileall -q src tests scripts
 ```
 
-Replay a historical RealReplicaBench run at zero model cost:
+当前 76 项零模型测试覆盖 Core/integration 边界、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Progress/Recovery，以及 Evolution 的 Shadow/Promote/Reject/Rollback 与 JSONL replay。
 
-```bash
-PYTHONPATH=src python scripts/replay_deerflow_m0.py /path/to/task-run
-```
+RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能力与难度，未运行完整 107 任务；仅有一个 fresh paired cell，尚不能声称总体通过率提升。历史证据、成本停止规则和可声明边界见 [`evidence/index.json`](evidence/index.json)。
 
-The checked-in `evidence/a1-replay/summary.json` records four exact historical
-replays across file, browser, API/MCP, and browser-vision tasks. All response,
-tool-count, and token-usage checks pass with zero new model calls.
-`evidence/a2-projection/summary.json` records the zero-model A2 contract/state
-checks and confirms all four A1 historical replay hashes remain unchanged.
-`evidence/a3-reliability/summary.json` records bounded-retry, failure-ledger,
-premature-completion, structured-evidence, and ablation checks.
-
-Run the frozen MiniBench16 offline preflight before any paid evaluation:
-
-```bash
-PYTHONPATH=src python scripts/preflight_minibench16.py /path/to/RealReplicaBench
-```
-
-The preflight validates the exact 16-task order/hash, Development-only split,
-type/difficulty/capability balance, public-prompt contract coverage, historical
-baseline availability, and a 32-cell controlled baseline/candidate manifest.
-It reports `paid_run_ready=false` until both contract coverage and the live
-DeerFlow policy bridge are complete; historical results are never reused as a
-formal paired baseline.
-
-The public-client policy bridge now supports bounded same-thread continuation:
-each DeerFlow turn is translated into durable facts, explicit tool artifacts
-and filesystem inspections become evidence, and an unsupported finish claim
-is returned to the same thread as ledger-backed feedback. MiniBench public
-contract coverage is 16/16. Container wiring is intentionally still a closed
-gate, so this implementation alone does not authorize paid runs.
-
-A reproducible `--network none` probe now copies the Harness into the pinned
-DeerFlow image and exercises the real `DeerFlowClient.stream` path with a
-deterministic in-process agent. It proves package import, same-thread bridge
-execution, Ledger persistence, and cleanup with zero provider calls. Formal
-readiness requires the RealReplica candidate runner to invoke this exact path;
-the runner now does so behind `deerflow.adaptive_policy_enabled`, archives
-`adaptive-ledger.jsonl`, and disables its legacy external kill poller. The
-evidence-bound preflight is ready for a paired MiniBench canary, but never
-starts paid work automatically.
-
-The first fresh paired canary (`file-google-trends-csv-flatten`) produced equal
-1.0 scores and semantically identical output. The candidate also produced a
-999-event canonical Ledger with artifact hash evidence. Its observed token
-usage was 251,784 versus 152,041 for baseline (+65.6%), exceeding the 25%
-single-run limit, so the remaining Block 1 tasks were not started. However,
-prompt/config/model/image fingerprints were identical, the candidate completed
-in one turn, and counterfactual event replay was exact; attributable Harness
-model-token overhead is therefore zero for this cell. Four comparable vanilla
-runs have a 22.4% token coefficient of variation, so the observed delta remains
-an unresolved provider/trajectory-variance signal rather than a proven Harness
-regression.
-
-Completion enforcement is provider-capability-aware. Artifact and public
-loopback-state criteria remain mandatory; criteria without a live provider are
-recorded as observe-only instead of falsely blocking successful tasks. A
-zero-model replay over all MiniBench16 historical terminal states blocked 5/10
-failed tasks associated with missing completion evidence and 0/6 successful
-tasks. The other five failures were accepted as constraint/content errors,
-explicitly outside this completion gate's scope.
-
-Read-only Gmail and Google Docs MCP providers close the remaining task-level
-coverage gaps without verifier credentials. Gmail verifies the public label
-and calendar event through `gmail.listLabels` / `calendar.listEvents`; Docs
-hashes the named document before and after the run through `search_docs` and
-`docs.documents.get`. Provider-enforced task coverage is now 16/16 across all
-four MiniBench blocks. The Gmail draft criterion remains explicitly
-observe-only because the public mock exposes no draft-read tool.
-
-Task-level recovery is also separated from transient tool retries. A bounded
-policy maps browser grounding, constraint, planning, wrong-tool, and artifact
-failures to at most three structural actions (`refresh_state`, `switch_tool`,
-`validate_contract`, `replan`, or partial delivery). On 12 human-reviewed
-Dev20 failures it achieved 12/12 category-to-action coverage, 5/5 coverage of
-the target constraint/artifact slice, detected trajectory evidence for all
-four no-progress labels, and recommended zero blind retries. This validates
-the mapping, not that replayed recovery would necessarily make tasks pass.
-
-Recovery decisions are now durable runtime facts. A rejected completion writes
-`recovery/decided`, projects consumed action budgets into the next request, and
-adds the bounded actions to same-thread feedback. A three-turn synthetic run
-with permanently missing evidence stopped after turn two because its
-`validate_contract` / `write_partial` budget was exhausted; JSONL replay
-reconstructed the same decisions. The RealReplica candidate runner composes
-this service by default.
-
-The recovery executor now turns decisions into durable control effects and
-directives: refresh invalidates stale state, switch selects a first-class tool
-strategy, validation carries the exact missing criteria, replanning narrows to
-remaining work, and partial delivery is requested before risky continuation.
-These effects update TaskState; they do not claim the external action already
-succeeded.
-
-Turn-boundary progress is semantic rather than activity-based. Evidence is
-keyed by kind/subject and compared by value; repeated negative observations,
-extra tool calls, and recovery/progress control flags do not count. A transition
-from missing to present evidence does count. `progress/checked` is committed
-before the next recovery decision, so a no-progress recovery consumes its
-budget and stops instead of looping.
-
-Recovery execution is not automatically credited as success. The following
-turn evaluates the unmatched `recovery/executed` event against
-`progress/checked` and CompletionResult, then writes
-`recovery/outcome-evaluated`. Only semantic progress or enforced completion is
-effective; a no-progress turn records an ineffective outcome linked to the
-exact execution sequence.
-
-Offline Practice is confidence-gated and disabled by default. Outcome batches
-with multiple simultaneous actions are retained as confounded evidence but do
-not count toward causal action promotion. An action needs at least five
-isolated outcomes, at least 60% effectiveness, and a Wilson 95% lower bound of
-at least 0.30. The current real-run scan finds one adaptive Ledger and zero
-RecoveryOutcome samples, so no action is eligible and Practice remains off.
-
-A mid-turn browser fallback guard candidate was also replayed but deliberately
-not deployed. It detects explicit bash/CDP bypass (port 9222,
-`Runtime.evaluate`, websocket, or `querySelector`) while allowing ordinary
-file/API shell work. It covered 6/7 historical browser failures and would have
-blocked 66 excess fallback calls with zero non-browser blocks, but Dev20 has no
-successful browser control. Without a false-positive estimate the deployment
-gate remains closed.
-
-Exact-count parsing is conservative. “Exactly one entry per RFQ” and “exactly
-one of” are not misread as global count-one requirements. The one unambiguous
-MiniBench criterion—exactly three visible output files—is enforced by a
-filesystem count provider that excludes hidden Harness artifacts.
-
-The browser Mail/Calendar task now has a read-only provider over the public
-`outputs/mock_state/workbench_final.json` materialization. It verifies the
-prompt's contains-any title rule (`Solar Pump` or `RFQ`) against
-`created_events` without calling the task-forbidden backend API. Only the Gmail
-draft criterion remains observe-only across MiniBench16.
-
-A workspace-wide scan confirms there are still zero formally successful
-DeerFlow browser controls. Five deterministic public-mock success traces cover
-first-class browser use, safe file/API shell work, and up to three bounded CDP
-debug calls with zero candidate blocks. They validate integration compatibility
-but remain a lower evidence tier and do not unlock deployment.
-
-Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
-and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).
-
-Resume/interview case study: [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md).
-Machine-verifiable claim index: [`evidence/index.json`](evidence/index.json).
+详细架构见 [`docs/architecture.md`](docs/architecture.md)，重构决策见 [`docs/architecture-refactor-plan.zh-CN.md`](docs/architecture-refactor-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

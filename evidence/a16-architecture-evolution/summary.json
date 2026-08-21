@@ -1,0 +1,18 @@
+{
+  "all_passed": true,
+  "checks": {
+    "bench_contract_rules_live_in_integration": true,
+    "bench_observation_protocols_live_in_integration": true,
+    "core_boundary_test_passed": true,
+    "insufficient_samples_keep_shadow": true,
+    "integrity_leakage_quality_cost_regression_gates_fail_closed": true,
+    "profile_promotion_and_rollback_replayable": true,
+    "realreplica_runner_injects_integration_profile": true
+  },
+  "core_business_vocabulary_findings": 0,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "online_profile_mutation_enabled": false,
+  "scope": "Core/integration decoupling and governed offline Evolution Plane",
+  "test_count": 76
+}

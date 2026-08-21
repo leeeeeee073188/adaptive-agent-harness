@@ -12,11 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from adaptive_harness.task_contract import (
-    ContractBuilder,
-    CriterionKind,
-    RuleBasedTaskContractBuilder,
-)
+from adaptive_harness.integrations.realreplica_contract import realreplica_contract_builder
+from adaptive_harness.task_contract import ContractBuilder, CriterionKind
 
 MINIBENCH_TASK_COUNT = 16
 
@@ -288,7 +285,7 @@ class RealReplicaMiniBenchAdapter:
         dataset: MiniBenchDataset,
         builder: ContractBuilder | None = None,
     ) -> ContractCoverageReport:
-        builder = builder or RuleBasedTaskContractBuilder()
+        builder = builder or realreplica_contract_builder()
         rows = []
         for task in dataset.tasks:
             contract = builder.build(task.task_id, task.prompt)
@@ -347,7 +344,7 @@ class RealReplicaMiniBenchAdapter:
         dataset: MiniBenchDataset,
         builder: ContractBuilder | None = None,
     ) -> ProviderCoverageReport:
-        builder = builder or RuleBasedTaskContractBuilder()
+        builder = builder or realreplica_contract_builder()
         rows = []
         for task in dataset.tasks:
             contract = builder.build(task.task_id, task.prompt)

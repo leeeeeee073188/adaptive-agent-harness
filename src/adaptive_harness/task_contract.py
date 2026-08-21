@@ -96,6 +96,27 @@ class ContractBuilder(Protocol):
     ) -> TaskContract: ...
 
 
+@dataclass(frozen=True)
+class CriterionDraft:
+    """Provider-neutral criterion proposed by an integration extractor.
+
+    The core owns identifiers and validation so extractors cannot smuggle an
+    evaluator-specific contract around the public-schema boundary.
+    """
+
+    identity: str
+    description: str
+    kind: CriterionKind
+    parameters: Mapping[str, Any]
+    depends_on: tuple[str, ...] = ()
+    required: bool = True
+    source: CriterionSource = CriterionSource.TASK_PROMPT
+
+
+class CriterionExtractor(Protocol):
+    def extract(self, task_prompt: str) -> Sequence[CriterionDraft]: ...
+
+
 class RuleBasedTaskContractBuilder:
     """Conservative parser; ambiguity stays unverified rather than invented."""
 
@@ -121,38 +142,6 @@ class RuleBasedTaskContractBuilder:
         "nine": 9,
         "ten": 10,
     }
-    _STATE_RULES = (
-        (
-            "listing.submitted",
-            True,
-            "Listing submission is observed",
-            (r"发上线|publish|submit", r"发品系统|listing|product|商品"),
-        ),
-        (
-            "mail.label_created",
-            True,
-            "Required mail label is observed",
-            (r"创建(?:顶层)?标签|create (?:a )?(?:top-level )?label",),
-        ),
-        (
-            "mail.draft_saved",
-            True,
-            "Required unsent draft is observed",
-            (r"未发送草稿|unsent draft|save (?:an? )?draft",),
-        ),
-        (
-            "calendar.event_created",
-            True,
-            "Required calendar event is observed",
-            (r"日历事件|calendar event", r"再建|创建|create|schedule"),
-        ),
-        (
-            "document.updated",
-            True,
-            "Target document update is observed",
-            (r"document|文档", r"apply it|update|更新|修改"),
-        ),
-    )
     _FORBIDDEN_SCHEMA_KEYS = {
         "expected_answer",
         "ground_truth",
@@ -161,6 +150,9 @@ class RuleBasedTaskContractBuilder:
         "verifier",
         "judge",
     }
+
+    def __init__(self, *, extractors: Sequence[CriterionExtractor] = ()) -> None:
+        self.extractors = tuple(extractors)
 
     def build(
         self,
@@ -248,20 +240,19 @@ class RuleBasedTaskContractBuilder:
                 )
             )
 
-        for subject, expected, description, pattern_group in self._STATE_RULES:
-            if not all(re.search(pattern, task_prompt, re.IGNORECASE) for pattern in pattern_group):
-                continue
-            parameters = {"subject": subject, "expected": expected}
-            parameters.update(self._state_target_parameters(subject, task_prompt))
-            criteria.append(
-                Criterion(
-                    id=_unique_id("observation", subject, used_ids),
-                    description=description,
-                    kind=CriterionKind.OBSERVATION_EQUALS,
-                    source=CriterionSource.TASK_PROMPT,
-                    parameters=parameters,
+        for extractor in self.extractors:
+            for draft in extractor.extract(task_prompt):
+                criteria.append(
+                    Criterion(
+                        id=_unique_id(draft.kind.value, draft.identity, used_ids),
+                        description=draft.description,
+                        kind=draft.kind,
+                        source=draft.source,
+                        parameters=dict(draft.parameters),
+                        depends_on=draft.depends_on,
+                        required=draft.required,
+                    )
                 )
-            )
 
         criteria.extend(self._schema_criteria(schema, used_ids))
         criteria = self._apply_dependencies(criteria, schema.get("dependencies"))
@@ -307,29 +298,6 @@ class RuleBasedTaskContractBuilder:
                 if declared_count is not None and len(files) >= declared_count:
                     break
         return tuple(files)
-
-    def _state_target_parameters(self, subject: str, task_prompt: str) -> dict[str, Any]:
-        patterns = {
-            "mail.label_created": r"(?:顶层标签|label)\s*`([^`]+)`|`([^`]+)`\s*(?:标签|label)",
-            "calendar.event_created": r"`([^`]+)`\s*(?:日历事件|calendar event)",
-            "document.updated": r"(?:titled|标题为)\s*\**[\"“]([^\"”*]+)[\"”]\**",
-        }
-        pattern = patterns.get(subject)
-        if pattern is None:
-            return {}
-        match = re.search(pattern, task_prompt, re.IGNORECASE)
-        if match is None:
-            if subject == "calendar.event_created":
-                contains = re.search(
-                    r"标题里?要?带\s*`([^`]+)`\s*或\s*`([^`]+)`",
-                    task_prompt,
-                    re.IGNORECASE,
-                )
-                if contains:
-                    return {"target_any": list(contains.groups())}
-            return {}
-        target = next((group for group in match.groups() if group), "").strip()
-        return {"target": target} if target else {}
 
     def _schema_criteria(
         self,

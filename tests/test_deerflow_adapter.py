@@ -16,11 +16,14 @@ from adaptive_harness.integrations.deerflow import (
 from adaptive_harness.integrations.deerflow_policy import (
     DeerFlowPolicyBridge,
     FileArtifactObservationProvider,
-    GmailMcpObservationProvider,
-    GoogleDocsMcpChangeObservationProvider,
     HttpJsonMatchObservationProvider,
     OutputFileCountObservationProvider,
     StructuredDeerFlowObservationProvider,
+)
+from adaptive_harness.integrations.realreplica_contract import realreplica_contract_builder
+from adaptive_harness.integrations.realreplica_observations import (
+    GmailMcpObservationProvider,
+    GoogleDocsMcpChangeObservationProvider,
     WorkbenchCalendarObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
@@ -135,7 +138,7 @@ class DeerFlowAdapterTests(unittest.TestCase):
                 return {"events": [{"title": "VBR-52 Harbor Stitch"}]}
             raise AssertionError(name)
 
-        contract = RuleBasedTaskContractBuilder().build(
+        contract = realreplica_contract_builder().build(
             "gmail",
             "创建顶层标签 `VBR-52`，再建一个 `VBR-52 Harbor Stitch` 日历事件。",
         )
@@ -172,7 +175,7 @@ class DeerFlowAdapterTests(unittest.TestCase):
                 return {"documentId": "doc-1", "body": "before" if reads == 1 else "after"}
             raise AssertionError(name)
 
-        contract = RuleBasedTaskContractBuilder().build(
+        contract = realreplica_contract_builder().build(
             "docs",
             'The document is titled **"AccessoryHub Wholesale Price List — Q3 2026"**; update it.',
         )
@@ -230,7 +233,7 @@ class DeerFlowAdapterTests(unittest.TestCase):
                     }
                 )
             )
-            contract = RuleBasedTaskContractBuilder().build(
+            contract = realreplica_contract_builder().build(
                 "workbench",
                 "不要删除已有的日历事件；在日历里创建会议事件；"
                 "标题里要带 `Solar Pump` 或 `RFQ`。",
@@ -409,6 +412,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
             ]
         )
         bridge = DeerFlowPolicyBridge(
+            contract_builder=realreplica_contract_builder(),
             observation_providers=(StructuredDeerFlowObservationProvider(),),
             recovery_policy=RuleBasedTaskRecoveryPolicy(),
             recovery_executor=RuleBasedTaskRecoveryExecutor(),
@@ -515,7 +519,10 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         result = await DeerFlowRuntimeAdapter(
             client,
             _FakeEnvironment(),
-            policy_bridge=DeerFlowPolicyBridge(observation_providers=(provider,)),
+            policy_bridge=DeerFlowPolicyBridge(
+                contract_builder=realreplica_contract_builder(),
+                observation_providers=(provider,),
+            ),
         ).run(
             DeerFlowRunRequest("帮我把商品发上线，发品系统打开后提交。", "thread-http"),
             run_id="run-http",
@@ -534,6 +541,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
             ]]
         )
         bridge = DeerFlowPolicyBridge(
+            contract_builder=realreplica_contract_builder(),
             observation_providers=(StructuredDeerFlowObservationProvider(),),
             unsupported_criteria="observe_only",
         )

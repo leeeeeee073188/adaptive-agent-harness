@@ -2257,17 +2257,45 @@ Dev20 20任务历史回放：
 - MiniBench剩余observe-only criterion从2降为1，仅`mail.draft_saved`；
 - 证据：`evidence/a15-workbench-calendar-provider/summary.json`。
 
-下一步评估Gmail draft是否能通过新增公共read-only MCP tool解决；若需要修改Benchmark mock协议，必须保持Baseline/Candidate同时可用且不能暴露private expected state。
+该Provider作为RealReplica integration保留，不再把新的Bench任务语义加入Core。
 
 ## P16：Resume-safe Evidence Index / Case Study（已完成）
 
-- `scripts/build_evidence_index.py` 强制检查A1–A13机器证据存在性、SHA-256与secret marker；
+- `scripts/build_evidence_index.py` 强制检查A1–A16机器证据存在性、SHA-256与secret marker；
 - `evidence/index.json` 将每个简历指标映射到证据，并验证MiniBench不是107任务、Provider task coverage=16、Completion成功误拦截=0、Practice关闭、Guard未部署、付费扩跑已停止；
 - 明确claim boundary：尚无MiniBench整体成功率提升，只有一个paired cell；
 - 新增 `docs/resume-case-study.zh-CN.md`，包含架构、创新、真实指标、主动拒绝方案、简历Bullet、90秒面试讲述和不可声明事项；
-- 当前机器校验 `verified=true`、secret findings为空、零模型测试66项。
+- 当前机器校验 `verified=true`、secret findings为空、零模型测试76项。
 
 下一步仍是补充成功Browser对照或最小确定性Recovery outcome；证据不足时继续保持Guard与Practice关闭，不为了简历数字扩跑完整Benchmark。
+
+## P17：Architecture-first Decoupling + Governed Evolution（已完成，零 Token）
+
+本阶段纠正“根据Bench失败继续修改Core”的方向，明确依赖关系：
+
+```text
+通用Harness架构 → Integration/Profile装配 → 外部Bench验证
+```
+
+而不是：
+
+```text
+Bench任务特例 → Core条件分支 → 表面覆盖率
+```
+
+完成内容：
+
+- Core `TaskContractBuilder`只保留artifact、明确global count与public schema，新增通用`CriterionExtractor`注入点；
+- listing/mail/calendar/document prompt ontology迁到`integrations/realreplica_contract.py`；
+- Gmail/Docs/Workbench协议实现迁到`integrations/realreplica_observations.py`，DeerFlow bridge只保留通用Provider协议与组合；
+- RealReplica runner显式组装RealReplica Contract/Profile，Bench适配行为不丢失；
+- 新增源码边界测试，阻止RealReplica subject、mock文件名和MCP tool名重新进入Core；
+- 新增通用Evolution Plane：不可变Profile candidate、parent fingerprint、假设与provenance、paired Shadow评估、Promote/Keep Shadow/Reject、append-only Rollback；
+- 默认门禁同时检查integrity、leakage、matched samples、质量置信下界、Token增幅与回归数；缺少质量/成本估计时保持Shadow，绝不按“无证据=成功”晋升；
+- 在线Runtime没有Profile写接口，自进化默认不能在单次任务内修改生产配置；
+- 当前零模型测试76项，Evolution晋升/拒绝/回滚可从JSONL确定性重建；证据：`evidence/a16-architecture-evolution/summary.json`。
+
+后续优先构建与Bench无关的通用能力候选（Context策略、Tool routing、Recovery policy、Memory retrieval），每项都必须以独立Profile和消融验证；RealReplica仅作为其中一个外部评测适配器。
 
 # 36. 关键风险
 
@@ -2463,4 +2491,4 @@ https://github.com/Accio-org/RealReplicaBench
 
 # 39. 一句话总结
 
-> **本项目不是重新造一个 Agent 框架，而是以真实业务任务成功率为目标，通过可观测、可替换、可评估的 Harness 工程，系统性解决长链路 Agent 的状态跟踪、工具失败、上下文退化、过早结束和经验复用问题，并使用 RealReplicaBench 对每项改进做可复现的因果验证。**
+> **本项目从Agent Harness架构出发，通过可组合模块、事件溯源、证据驱动控制和离线受控自进化，系统性增强模型的长链路执行能力；RealReplicaBench只是验证这些通用能力的外部评测器，而不是Core设计来源。**

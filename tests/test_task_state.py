@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from adaptive_harness.capabilities import ToolResult
+from adaptive_harness.integrations.realreplica_contract import realreplica_contract_builder
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.recovery import (
     RecoveryOutcome,
@@ -297,7 +298,7 @@ class TaskContractStateTests(unittest.TestCase):
         )
 
     def test_public_state_transition_language_generates_provider_neutral_criteria(self) -> None:
-        builder = RuleBasedTaskContractBuilder()
+        builder = realreplica_contract_builder()
         listing = builder.build("listing", "帮我把商品发上线，发品系统打开后提交。")
         workspace = builder.build(
             "workspace",
