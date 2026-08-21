@@ -188,6 +188,12 @@ blocked 66 excess fallback calls with zero non-browser blocks, but Dev20 has no
 successful browser control. Without a false-positive estimate the deployment
 gate remains closed.
 
+A workspace-wide scan confirms there are still zero formally successful
+DeerFlow browser controls. Five deterministic public-mock success traces cover
+first-class browser use, safe file/API shell work, and up to three bounded CDP
+debug calls with zero candidate blocks. They validate integration compatibility
+but remain a lower evidence tier and do not unlock deployment.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).
 

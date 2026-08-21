@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import unittest
+from pathlib import Path
 
 from adaptive_harness.guardrails import BrowserFallbackGuard, GuardVerdict
 
@@ -48,6 +50,21 @@ class BrowserFallbackGuardTests(unittest.TestCase):
 
         self.assertEqual(decision.verdict, GuardVerdict.ALLOW)
         self.assertEqual(decision.observed_bypass_count, 1)
+
+    def test_deterministic_success_controls_have_zero_candidate_blocks(self) -> None:
+        path = Path(__file__).parent / "fixtures/browser_guard_success_controls.json"
+        controls = json.loads(path.read_text())["controls"]
+
+        for control in controls:
+            guard = BrowserFallbackGuard(enabled=True, max_browser_bypass_calls=3)
+            decisions = [
+                guard.inspect(call["name"], call.get("args") or {})
+                for call in control["tool_calls"]
+            ]
+            self.assertTrue(
+                all(decision.verdict is GuardVerdict.ALLOW for decision in decisions),
+                control["id"],
+            )
 
 
 if __name__ == "__main__":

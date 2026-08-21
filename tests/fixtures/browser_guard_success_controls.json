@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "tier": "deterministic_integration",
+  "controls": [
+    {
+      "id": "first_class_form_submit",
+      "tool_calls": [
+        {"name": "browser_navigate", "args": {"url": "http://127.0.0.1:3000"}},
+        {"name": "browser_snapshot", "args": {}},
+        {"name": "browser_type", "args": {"ref": 4, "text": "value"}},
+        {"name": "browser_click", "args": {"ref": 9}}
+      ]
+    },
+    {
+      "id": "safe_workspace_preparation",
+      "tool_calls": [
+        {"name": "bash", "args": {"command": "python3 validate_inputs.py"}},
+        {"name": "browser_navigate", "args": {"url": "http://127.0.0.1:3000"}},
+        {"name": "browser_click", "args": {"ref": 3}}
+      ]
+    },
+    {
+      "id": "public_mcp_plus_browser",
+      "tool_calls": [
+        {"name": "bash", "args": {"command": "curl -X POST http://127.0.0.1:3071/mcp -d @request.json"}},
+        {"name": "browser_snapshot", "args": {}},
+        {"name": "browser_click", "args": {"ref": 7}}
+      ]
+    },
+    {
+      "id": "bounded_debug_then_first_class",
+      "tool_calls": [
+        {"name": "bash", "args": {"command": "curl http://127.0.0.1:9222/json"}},
+        {"name": "bash", "args": {"command": "curl http://127.0.0.1:9222/json"}},
+        {"name": "bash", "args": {"command": "curl http://127.0.0.1:9222/json"}},
+        {"name": "browser_navigate", "args": {"url": "http://127.0.0.1:3000"}},
+        {"name": "browser_click", "args": {"ref": 2}}
+      ]
+    },
+    {
+      "id": "artifact_capture_after_submit",
+      "tool_calls": [
+        {"name": "browser_click", "args": {"ref": 12}},
+        {"name": "browser_screenshot", "args": {"path": "/task/outputs/submitted.png"}},
+        {"name": "bash", "args": {"command": "sha256sum /task/outputs/submitted.png"}}
+      ]
+    }
+  ]
+}

@@ -3,6 +3,40 @@
   "browser_failure_signal_coverage": 0.8571428571428571,
   "candidate_enabled": false,
   "deployment_ready": false,
+  "deterministic_integration_control_count": 5,
+  "deterministic_integration_controls": [
+    {
+      "browser_bypass_calls": 0,
+      "id": "first_class_form_submit",
+      "tier": "deterministic_integration",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "id": "safe_workspace_preparation",
+      "tier": "deterministic_integration",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "id": "public_mcp_plus_browser",
+      "tier": "deterministic_integration",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 3,
+      "id": "bounded_debug_then_first_class",
+      "tier": "deterministic_integration",
+      "would_block_calls": 0
+    },
+    {
+      "browser_bypass_calls": 0,
+      "id": "artifact_capture_after_submit",
+      "tier": "deterministic_integration",
+      "would_block_calls": 0
+    }
+  ],
+  "deterministic_integration_false_blocks": 0,
   "max_browser_bypass_calls": 3,
   "model_calls": 0,
   "new_model_tokens": 0,
@@ -255,6 +289,7 @@
   "scope": "Dev20 browser shell/CDP fallback guard replay",
   "status": "insufficient_successful_browser_controls",
   "successful_browser_control_count": 0,
+  "successful_browser_false_blocks": 0,
   "task_count": 20,
   "total_would_block_calls": 66
 }

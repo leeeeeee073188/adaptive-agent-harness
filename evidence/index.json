@@ -66,9 +66,9 @@
       "sha256": "35ac2abae91e09485431776e8b49c7ea9a6cb5d5fa88f391a6d93acd3b1c767b"
     },
     {
-      "bytes": 7128,
+      "bytes": 8110,
       "path": "a13-browser-fallback-guard/summary.json",
-      "sha256": "56ad2cee055b34c87f4c2886ababab639e0eff514cff4e92a2a029341aff73b9"
+      "sha256": "bb078ee4ec0eea9c0d91805969e86f55cbc618714e9b466326c115a53426deff"
     }
   ],
   "claim_boundary": "No measured MiniBench success-rate uplift; only one paired cell was run and expansion stopped.",
@@ -90,9 +90,9 @@
     "provider_enforced_task_coverage": 16,
     "recovery_category_mapping": "12/12",
     "recovery_practice_enabled": false,
-    "zero_model_unit_tests": 66
+    "zero_model_unit_tests": 67
   },
-  "git_head": "c9e615dda9bd5aad467d808b25868b683d3ab0fd",
+  "git_head": "1c46625f791a1c02f45f3a603a34c2b2681d107d",
   "invariants": {
     "all_evidence_present": true,
     "minibench_not_full_107": true,

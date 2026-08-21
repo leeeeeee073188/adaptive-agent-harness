@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 66 个零模型架构测试。
+- 67 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2233,7 +2233,7 @@ Dev20 20任务历史回放：
 | Non-browser would-block calls | 0 |
 | Successful browser controls | 0 |
 
-由于Dev20没有成功Browser样本，无法估计Browser路径误拦截率，故 `deployment_ready=false`、`candidate_enabled=false`。项目没有因失败覆盖率高就直接上线Guard。证据：`evidence/a13-browser-fallback-guard/summary.json`。
+扩大扫描到workspace全部现有正式DeerFlow runs后，成功Browser controls仍为0。补充5条`deterministic_integration`公开mock成功trace（first-class browser、safe bash、MCP curl、最多3次CDP debug、artifact capture），候选误拦截为0；但它们不能替代真实成功运行，故 `deployment_ready=false`、`candidate_enabled=false`。项目没有因失败覆盖率高或合成正例通过就直接上线Guard。证据：`evidence/a13-browser-fallback-guard/summary.json`。
 
 下一步先寻找已有成功Browser运行作为只读对照或构造公开mock成功轨迹；误拦截门禁满足前不接入live middleware，也不继续付费扩跑。
 
