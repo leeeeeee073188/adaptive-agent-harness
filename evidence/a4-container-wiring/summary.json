@@ -1,0 +1,34 @@
+{
+  "adaptive_source_sha256": "4a2c9d31975b383745a07a4ef4fdfcd4332d57e18e3f2d61b6a9e4fba023fa2c",
+  "candidate_profile_fingerprint": "742166de4101134c8988eaf3766640eaaa3001caf76acb17660e84cce87392ba",
+  "checks": {
+    "adaptive_package_imported": true,
+    "container_network_disabled": true,
+    "deerflow_source_pinned": true,
+    "embedded_client_stream_exercised": true,
+    "environment_cleaned": true,
+    "ledger_copied_from_container": true,
+    "ledger_persisted": true,
+    "policy_bridge_enabled": true,
+    "same_thread_usage_recorded": true,
+    "single_runtime_end": true,
+    "structured_evidence_recorded": true
+  },
+  "dataset_fingerprint": "a0ae9c4affaa3a51d6d6062c64793fbf1c5b3c1c53d974032ddfc96d98576869",
+  "deerflow_source_sha": "0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
+  "ledger_event_count": 21,
+  "ledger_sha256": "c148c1146d6b188362d3dd5a839c85e1b53efbb0bf4e4b4e44c67458e380861a",
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "passed": true,
+  "probe_script_sha256": "288ae9d0839057e09360c46258f02888a26951cd6a0827d80fc7a05470361487",
+  "realreplica_candidate_runner_wired": false,
+  "runtime_image": "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
+  "runtime_image_id": "sha256:d2eed0f7ee25bf4561cd380996362a065617a77d554c21c5bf4c93fd837adde1",
+  "scope": "pinned DeerFlow container wiring probe",
+  "usage": {
+    "input_tokens": 4,
+    "output_tokens": 4,
+    "total_tokens": 8
+  }
+}

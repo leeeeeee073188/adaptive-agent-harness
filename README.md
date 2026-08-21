@@ -97,5 +97,12 @@ is returned to the same thread as ledger-backed feedback. MiniBench public
 contract coverage is 16/16. Container wiring is intentionally still a closed
 gate, so this implementation alone does not authorize paid runs.
 
+A reproducible `--network none` probe now copies the Harness into the pinned
+DeerFlow image and exercises the real `DeerFlowClient.stream` path with a
+deterministic in-process agent. It proves package import, same-thread bridge
+execution, Ledger persistence, and cleanup with zero provider calls. Formal
+readiness remains false until the RealReplica candidate runner invokes this
+path; a standalone probe cannot substitute for runner integration.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

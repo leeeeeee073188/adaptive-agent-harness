@@ -111,6 +111,7 @@ class EvaluationAdapterTests(unittest.TestCase):
             "dataset_fingerprint": "dataset-fp",
             "candidate_profile_fingerprint": "candidate-fp",
             "model_calls": 0,
+            "realreplica_candidate_runner_wired": True,
             "checks": {
                 "adaptive_package_imported": True,
                 "embedded_client_stream_exercised": True,

@@ -17,22 +17,13 @@ from adaptive_harness.integrations.realreplica import (
 DEFAULT_IMAGE = "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d"
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("realreplica_root", type=Path)
-    parser.add_argument("--output", type=Path)
-    parser.add_argument("--policy-bridge-evidence", type=Path)
-    args = parser.parse_args()
-
-    adapter = RealReplicaMiniBenchAdapter()
-    dataset = adapter.load(args.realreplica_root)
-    coverage = adapter.contract_coverage(dataset)
+def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
     baseline = VariantSpec(
         "vanilla_deerflow",
         stable_profile_fingerprint({"runtime": "deerflow", "policies": []}),
         "deepseek-v4-flash",
         DEFAULT_IMAGE,
-        dataset.seed,
+        seed,
     )
     candidate = VariantSpec(
         "adaptive_harness_a3",
@@ -47,14 +38,24 @@ def main() -> int:
         baseline.runtime_image,
         baseline.seed,
     )
+    return baseline, candidate
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("realreplica_root", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--policy-bridge-evidence", type=Path)
+    args = parser.parse_args()
+
+    adapter = RealReplicaMiniBenchAdapter()
+    dataset = adapter.load(args.realreplica_root)
+    coverage = adapter.contract_coverage(dataset)
+    baseline, candidate = _variant_specs(dataset.seed)
     manifest = adapter.paired_manifest(dataset, baseline, candidate)
     history = adapter.historical_baselines(args.realreplica_root, dataset, baseline)
     history_rows = list(history.values())
-    criterion_kinds = Counter(
-        kind
-        for row in coverage.rows
-        for kind in row.criterion_kinds
-    )
+    criterion_kinds = Counter(kind for row in coverage.rows for kind in row.criterion_kinds)
     history_config_hashes = sorted(
         {row.run_config_sha256 for row in history_rows if row.run_config_sha256}
     )
@@ -165,7 +166,9 @@ def _bridge_evidence_valid(
         and value.get("dataset_fingerprint") == dataset_fingerprint
         and value.get("candidate_profile_fingerprint") == candidate_profile_fingerprint
         and value.get("model_calls") == 0
-        and required_checks <= {key for key, passed in (value.get("checks") or {}).items() if passed is True}
+        and value.get("realreplica_candidate_runner_wired") is True
+        and required_checks
+        <= {key for key, passed in (value.get("checks") or {}).items() if passed is True}
     )
 
 

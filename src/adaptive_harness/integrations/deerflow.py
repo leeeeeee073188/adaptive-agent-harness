@@ -266,6 +266,7 @@ class DeerFlowEventAdapter:
         self._complete_responses: dict[str, str] = {}
         self._response_order: list[str] = []
         dedup_state = dedup_state or DeerFlowDedupState()
+        self._prior_message_ids = set(dedup_state.messages)
         self._seen_messages = dedup_state.messages
         self._seen_tool_calls = dedup_state.tool_calls
         self._seen_tool_results = dedup_state.tool_results
@@ -345,6 +346,8 @@ class DeerFlowEventAdapter:
         kind = data.get("type")
         if kind == "ai":
             message_id = str(data.get("id") or f"event-{index}")
+            if message_id in self._prior_message_ids:
+                return
             content = _content(data.get("content"))
             self._remember_response_id(message_id)
             if content:

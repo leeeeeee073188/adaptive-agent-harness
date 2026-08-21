@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0–A3 已实现；A4 MiniBench16 离线 Adapter、16/16 Contract coverage 与 public-client policy bridge 已实现，付费运行仅剩 pinned DeerFlow container wiring/verification 门禁
+> 状态：A0–A3 已实现；A4 离线 Adapter、16/16 Contract coverage、public-client bridge 与 pinned-container 零模型 probe 已完成；付费运行仅剩 RealReplica candidate runner 实际接线路径
 
 ---
 
@@ -1776,6 +1776,8 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - 全量 41 个零模型测试通过，A1 四个历史 replay hash 保持不变；
 - preflight 新增模型调用及 Token 为 0，证据位于 `evidence/a4-minibench-preflight/summary.json`。
 - bridge 证据位于 `evidence/a4-live-bridge/summary.json`。
+- pinned-container probe 使用 `--network none` 临时容器，将当前 Harness 源码复制进固定镜像，执行真实 `DeerFlowClient.stream` 两轮、21 条 Ledger facts、同 thread completion continuation，模型调用为 0；镜像 ID 为 `sha256:d2eed0f7...`，证据位于 `evidence/a4-container-wiring/summary.json`；
+- probe 只证明容器兼容性，不证明 RealReplica candidate command 已调用新路径。因此 evidence 明确记录 `realreplica_candidate_runner_wired=false`，preflight 不接受该 evidence 解锁付费运行。
 
 ## A5：Practice（V2）
 
@@ -2061,7 +2063,7 @@ live_policy_bridge_ready      FAIL
 paid_run_ready                FALSE
 ```
 
-下一步仍不是付费跑 Block 1，而是把已通过零模型测试的 public-client bridge 打包并接入 pinned DeerFlow/RealReplica runner，在不读取 verifier 的前提下验证 container 内 artifact/state observation。通过后生成绑定 runtime image、Dataset fingerprint、Candidate Profile fingerprint 的零模型 wiring evidence，并通过 `--policy-bridge-evidence` 交给同一 preflight；不允许手工布尔开关绕过门禁。
+下一步仍不是付费跑 Block 1。容器内 bridge import/stream 已验证，接下来要让 RealReplica candidate runner 复制该包、启用 PolicyBridge、保存 canonical Ledger，并避免旧 early-terminate poller 在 bridge 完成检查前杀掉进程。完成后生成带 `realreplica_candidate_runner_wired=true` 且绑定 runtime image、Dataset fingerprint、Candidate Profile fingerprint 的 evidence，再通过 `--policy-bridge-evidence` 交给 preflight；不允许手工布尔开关绕过门禁。
 
 # 36. 关键风险
 
