@@ -218,6 +218,30 @@ class TaskContractStateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "must be a list"):
             evidence_from_tool_result(result)
 
+    def test_output_directory_declaration_extracts_quoted_files_and_word_count(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "task-output-list",
+            "Write exactly three files to `outputs/`: `one.json`, `two.md`, and `three.csv`. ",
+        )
+
+        artifact_paths = {
+            item.parameters["path"]
+            for item in contract.criteria
+            if item.kind is CriterionKind.ARTIFACT_EXISTS
+        }
+        count = next(item for item in contract.criteria if item.kind is CriterionKind.EXACT_COUNT)
+        self.assertEqual(artifact_paths, {"outputs/one.json", "outputs/two.md", "outputs/three.csv"})
+        self.assertEqual(count.parameters, {"subject": "files", "expected": 3})
+
+        direct = RuleBasedTaskContractBuilder().build(
+            "task-direct-output",
+            "Read `input.json` and write `outputs/result.json`; keep `notes.md` as reference.",
+        )
+        self.assertEqual(
+            [item.parameters["path"] for item in direct.criteria],
+            ["outputs/result.json"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

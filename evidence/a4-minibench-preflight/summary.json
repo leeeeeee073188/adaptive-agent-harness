@@ -1,0 +1,438 @@
+{
+  "contract_coverage": {
+    "coverage_rate": 0.6875,
+    "covered_tasks": 11,
+    "criterion_count": 31,
+    "criterion_kinds": {
+      "artifact_exists": 28,
+      "exact_count": 3
+    },
+    "rows": [
+      {
+        "block": 1,
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "artifact_exists"
+        ],
+        "task_id": "file-google-trends-csv-flatten"
+      },
+      {
+        "block": 1,
+        "criterion_count": 0,
+        "criterion_kinds": [],
+        "task_id": "browser-alibaba-led-bulb-simple-publish"
+      },
+      {
+        "block": 1,
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "artifact_exists"
+        ],
+        "task_id": "cli-google-trends-data-quality-audit"
+      },
+      {
+        "block": 1,
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "artifact_exists"
+        ],
+        "task_id": "cli-google-trends-counterfactual-rebalance"
+      },
+      {
+        "block": 2,
+        "criterion_count": 3,
+        "criterion_kinds": [
+          "artifact_exists",
+          "exact_count",
+          "exact_count"
+        ],
+        "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract"
+      },
+      {
+        "block": 2,
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "artifact_exists"
+        ],
+        "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui"
+      },
+      {
+        "block": 2,
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "artifact_exists"
+        ],
+        "task_id": "api-travel-asia-supplier-tour-handoff"
+      },
+      {
+        "block": 2,
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "artifact_exists"
+        ],
+        "task_id": "browser-freightos-booking"
+      },
+      {
+        "block": 3,
+        "criterion_count": 5,
+        "criterion_kinds": [
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists"
+        ],
+        "task_id": "cli-commerce-camping-stove-listing-config"
+      },
+      {
+        "block": 3,
+        "criterion_count": 4,
+        "criterion_kinds": [
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists"
+        ],
+        "task_id": "cli-commerce-skincare-order-reconciliation"
+      },
+      {
+        "block": 3,
+        "criterion_count": 0,
+        "criterion_kinds": [],
+        "task_id": "api-gmail-vendor-brief-mcp"
+      },
+      {
+        "block": 3,
+        "criterion_count": 0,
+        "criterion_kinds": [],
+        "task_id": "api-google-docs-price-list-update-mcp"
+      },
+      {
+        "block": 4,
+        "criterion_count": 0,
+        "criterion_kinds": [],
+        "task_id": "cli-alibaba-pneumatic-valve-publish"
+      },
+      {
+        "block": 4,
+        "criterion_count": 0,
+        "criterion_kinds": [],
+        "task_id": "browser-alibaba-custom-yoga-mat-publish"
+      },
+      {
+        "block": 4,
+        "criterion_count": 9,
+        "criterion_kinds": [
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists"
+        ],
+        "task_id": "browser-alibaba-yushengxm-shop-diagnosis"
+      },
+      {
+        "block": 4,
+        "criterion_count": 4,
+        "criterion_kinds": [
+          "artifact_exists",
+          "artifact_exists",
+          "artifact_exists",
+          "exact_count"
+        ],
+        "task_id": "file-commerce-ops-returns-dispute-evidence-pack"
+      }
+    ],
+    "total_tasks": 16,
+    "uncovered_task_ids": [
+      "browser-alibaba-led-bulb-simple-publish",
+      "api-gmail-vendor-brief-mcp",
+      "api-google-docs-price-list-update-mcp",
+      "cli-alibaba-pneumatic-valve-publish",
+      "browser-alibaba-custom-yoga-mat-publish"
+    ]
+  },
+  "dataset": {
+    "blocks": {
+      "1": {
+        "purpose": "lowest-cost easy/medium protocol and regression signal",
+        "task_count": 4
+      },
+      "2": {
+        "purpose": "medium cross-surface plus browser state transition",
+        "task_count": 4
+      },
+      "3": {
+        "purpose": "hard text, CLI state, and MCP/API workflows",
+        "task_count": 4
+      },
+      "4": {
+        "purpose": "vision-heavy and unknown-difficulty boundary tasks",
+        "task_count": 4
+      }
+    },
+    "counts": {
+      "capability": {
+        "browser-text": 3,
+        "text-only": 8,
+        "vision": 5
+      },
+      "category": {
+        "api": 3,
+        "browser": 5,
+        "cli": 5,
+        "file": 3
+      },
+      "difficulty_band": {
+        "easy": 3,
+        "hard": 8,
+        "medium": 4,
+        "unknown": 1
+      },
+      "smoke_reused": 5,
+      "total": 16
+    },
+    "fingerprint": "a0ae9c4affaa3a51d6d6062c64793fbf1c5b3c1c53d974032ddfc96d98576869",
+    "id": "adaptive_deerflow_minibench16_v1",
+    "seed": 20260818
+  },
+  "gates": {
+    "contract_coverage_complete": false,
+    "frozen_dataset_valid": true,
+    "historical_baseline_all_tasks": true,
+    "live_policy_bridge_ready": false,
+    "paired_controls_valid": true
+  },
+  "historical_baseline": {
+    "covered_tasks": 16,
+    "failed_tasks": 10,
+    "known_total_tokens": 6937344,
+    "missing_token_usage_tasks": 1,
+    "paired_reuse_allowed": false,
+    "passed_tasks": 6,
+    "reason": "Historical runs cover preflight only; fresh baseline/candidate pairs are required.",
+    "run_config_fingerprint_count": 6
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "next_action": "Close contract coverage and live DeerFlow policy-bridge gaps before spending tokens.",
+  "offline_preflight_passed": true,
+  "paid_run_ready": false,
+  "paired_manifest": {
+    "baseline": {
+      "model": "deepseek-v4-flash",
+      "name": "vanilla_deerflow",
+      "profile_fingerprint": "2d95053fcb674676eb67c8d0344d0985caa8d7ea94c188176f79531e7e218fbc",
+      "runtime_image": "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
+      "seed": 20260818
+    },
+    "candidate": {
+      "model": "deepseek-v4-flash",
+      "name": "adaptive_harness_a3",
+      "profile_fingerprint": "742166de4101134c8988eaf3766640eaaa3001caf76acb17660e84cce87392ba",
+      "runtime_image": "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
+      "seed": 20260818
+    },
+    "cells": [
+      {
+        "block": 1,
+        "pair_key": "2c5cd1d09b687666",
+        "task_id": "file-google-trends-csv-flatten",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 1,
+        "pair_key": "2c5cd1d09b687666",
+        "task_id": "file-google-trends-csv-flatten",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 1,
+        "pair_key": "a585a0cb9c6780d9",
+        "task_id": "browser-alibaba-led-bulb-simple-publish",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 1,
+        "pair_key": "a585a0cb9c6780d9",
+        "task_id": "browser-alibaba-led-bulb-simple-publish",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 1,
+        "pair_key": "9b25c0e64f224b38",
+        "task_id": "cli-google-trends-data-quality-audit",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 1,
+        "pair_key": "9b25c0e64f224b38",
+        "task_id": "cli-google-trends-data-quality-audit",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 1,
+        "pair_key": "fd1e9f98a79b5c52",
+        "task_id": "cli-google-trends-counterfactual-rebalance",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 1,
+        "pair_key": "fd1e9f98a79b5c52",
+        "task_id": "cli-google-trends-counterfactual-rebalance",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 2,
+        "pair_key": "80b5f7a1833bb1dd",
+        "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 2,
+        "pair_key": "80b5f7a1833bb1dd",
+        "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 2,
+        "pair_key": "4721155b6c19e024",
+        "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 2,
+        "pair_key": "4721155b6c19e024",
+        "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 2,
+        "pair_key": "0cfc1ef7406d414e",
+        "task_id": "api-travel-asia-supplier-tour-handoff",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 2,
+        "pair_key": "0cfc1ef7406d414e",
+        "task_id": "api-travel-asia-supplier-tour-handoff",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 2,
+        "pair_key": "7712a24906e76991",
+        "task_id": "browser-freightos-booking",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 2,
+        "pair_key": "7712a24906e76991",
+        "task_id": "browser-freightos-booking",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 3,
+        "pair_key": "b340a17c37fe3f41",
+        "task_id": "cli-commerce-camping-stove-listing-config",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 3,
+        "pair_key": "b340a17c37fe3f41",
+        "task_id": "cli-commerce-camping-stove-listing-config",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 3,
+        "pair_key": "92df5566f4ed3402",
+        "task_id": "cli-commerce-skincare-order-reconciliation",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 3,
+        "pair_key": "92df5566f4ed3402",
+        "task_id": "cli-commerce-skincare-order-reconciliation",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 3,
+        "pair_key": "91d28af04ffa9116",
+        "task_id": "api-gmail-vendor-brief-mcp",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 3,
+        "pair_key": "91d28af04ffa9116",
+        "task_id": "api-gmail-vendor-brief-mcp",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 3,
+        "pair_key": "eee9fc50934b3e81",
+        "task_id": "api-google-docs-price-list-update-mcp",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 3,
+        "pair_key": "eee9fc50934b3e81",
+        "task_id": "api-google-docs-price-list-update-mcp",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 4,
+        "pair_key": "4e6f1810c38b7368",
+        "task_id": "cli-alibaba-pneumatic-valve-publish",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 4,
+        "pair_key": "4e6f1810c38b7368",
+        "task_id": "cli-alibaba-pneumatic-valve-publish",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 4,
+        "pair_key": "5f327026dd6fd61f",
+        "task_id": "browser-alibaba-custom-yoga-mat-publish",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 4,
+        "pair_key": "5f327026dd6fd61f",
+        "task_id": "browser-alibaba-custom-yoga-mat-publish",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 4,
+        "pair_key": "237f2c41e36c46d1",
+        "task_id": "browser-alibaba-yushengxm-shop-diagnosis",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 4,
+        "pair_key": "237f2c41e36c46d1",
+        "task_id": "browser-alibaba-yushengxm-shop-diagnosis",
+        "variant": "adaptive_harness_a3"
+      },
+      {
+        "block": 4,
+        "pair_key": "7a29bb69c5d7100b",
+        "task_id": "file-commerce-ops-returns-dispute-evidence-pack",
+        "variant": "vanilla_deerflow"
+      },
+      {
+        "block": 4,
+        "pair_key": "7a29bb69c5d7100b",
+        "task_id": "file-commerce-ops-returns-dispute-evidence-pack",
+        "variant": "adaptive_harness_a3"
+      }
+    ],
+    "dataset_fingerprint": "a0ae9c4affaa3a51d6d6062c64793fbf1c5b3c1c53d974032ddfc96d98576869",
+    "fingerprint": "8fcb079ee49e16580933e94edfbf603200ef8cf160a995f47f49eb9adaef87ad"
+  },
+  "scope": "A4 MiniBench16 zero-model preflight"
+}

@@ -48,5 +48,7 @@ flowchart TD
    runtime request context is derived from a bounded projection (implemented).
 4. Tool reliability and evidence completion policies attach through
    independently switchable config/service seams (implemented).
-5. Evaluation compares MiniBench rollouts offline; Experience remains disabled until the
-   leakage/admissibility gate passes.
+5. Evaluation pins MiniBench16 by task-order hash and emits controlled paired
+   manifests. Offline preflight is implemented; paid execution stays blocked
+   until contract coverage and the live DeerFlow policy bridge pass. Experience
+   remains disabled until the leakage/admissibility gate passes.

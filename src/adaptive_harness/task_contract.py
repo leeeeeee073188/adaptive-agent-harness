@@ -104,6 +104,23 @@ class RuleBasedTaskContractBuilder:
         r"\bexactly\s+(?P<count>\d+)\s+(?P<subject>[A-Za-z][A-Za-z0-9_-]*(?:\s+[A-Za-z][A-Za-z0-9_-]*){0,2})",
         re.IGNORECASE,
     )
+    _EXACT_COUNT_WORD = re.compile(
+        r"\bexactly\s+(?P<count>one|two|three|four|five|six|seven|eight|nine|ten)\s+(?P<subject>[A-Za-z][A-Za-z0-9_-]*)",
+        re.IGNORECASE,
+    )
+    _CODE_FILE = re.compile(r"`(?P<path>[A-Za-z0-9_.\-/]+\.[A-Za-z0-9]{1,10})`")
+    _NUMBER_WORDS = {
+        "one": 1,
+        "two": 2,
+        "three": 3,
+        "four": 4,
+        "five": 5,
+        "six": 6,
+        "seven": 7,
+        "eight": 8,
+        "nine": 9,
+        "ten": 10,
+    }
     _FORBIDDEN_SCHEMA_KEYS = {
         "expected_answer",
         "ground_truth",
@@ -140,9 +157,47 @@ class RuleBasedTaskContractBuilder:
                 )
             )
 
+        for path in self._output_directory_files(task_prompt):
+            if any(
+                item.kind is CriterionKind.ARTIFACT_EXISTS and item.parameters["path"] == path
+                for item in criteria
+            ):
+                continue
+            criteria.append(
+                Criterion(
+                    id=_unique_id("artifact", path, used_ids),
+                    description=f"Required artifact exists: {path}",
+                    kind=CriterionKind.ARTIFACT_EXISTS,
+                    source=CriterionSource.TASK_PROMPT,
+                    parameters={"path": path},
+                )
+            )
+
         for match in self._EXACT_COUNT.finditer(task_prompt):
             subject = " ".join(match.group("subject").lower().split())
+            if subject.split()[0] in {"a", "an", "of", "the"}:
+                continue
             expected = int(match.group("count"))
+            criteria.append(
+                Criterion(
+                    id=_unique_id("count", subject, used_ids),
+                    description=f"Exactly {expected} {subject}",
+                    kind=CriterionKind.EXACT_COUNT,
+                    source=CriterionSource.TASK_PROMPT,
+                    parameters={"subject": subject, "expected": expected},
+                )
+            )
+
+        for match in self._EXACT_COUNT_WORD.finditer(task_prompt):
+            subject = match.group("subject").lower()
+            expected = self._NUMBER_WORDS[match.group("count").lower()]
+            if any(
+                item.kind is CriterionKind.EXACT_COUNT
+                and item.parameters.get("subject") == subject
+                and item.parameters.get("expected") == expected
+                for item in criteria
+            ):
+                continue
             criteria.append(
                 Criterion(
                     id=_unique_id("count", subject, used_ids),
@@ -159,6 +214,32 @@ class RuleBasedTaskContractBuilder:
         self._validate_graph(criteria)
         schema_hash = _canonical_hash(schema) if public_schema is not None else None
         return TaskContract(task_id, task_prompt, tuple(criteria), schema_hash)
+
+    def _output_directory_files(self, task_prompt: str) -> tuple[str, ...]:
+        """Extract code-quoted files only near an explicit outputs/ declaration."""
+
+        files: list[str] = []
+        directory_pattern = r"`?outputs/`?(?=\s|下|内|中|[:：])"
+        for match in re.finditer(directory_pattern, task_prompt, re.IGNORECASE):
+            tail = task_prompt[match.start() : match.start() + 3500]
+            heading = re.search(r"\n#{1,3}\s", tail[1:])
+            segment = tail[: heading.start() + 1] if heading else tail
+            nearby = task_prompt[max(0, match.start() - 100) : match.end() + 100]
+            count_match = self._EXACT_COUNT.search(nearby) or self._EXACT_COUNT_WORD.search(nearby)
+            declared_count = None
+            if count_match:
+                raw_count = count_match.group("count").lower()
+                declared_count = int(raw_count) if raw_count.isdigit() else self._NUMBER_WORDS[raw_count]
+            for code_match in self._CODE_FILE.finditer(segment):
+                raw = code_match.group("path").replace("\\", "/")
+                if raw.startswith(("workspace/", "http://", "https://", "/")):
+                    continue
+                path = _normalize_path(raw if raw.startswith("outputs/") else f"outputs/{raw}")
+                if path not in files:
+                    files.append(path)
+                if declared_count is not None and len(files) >= declared_count:
+                    break
+        return tuple(files)
 
     def _schema_criteria(
         self,

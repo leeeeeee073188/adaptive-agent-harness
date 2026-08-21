@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0–A3 已实现，下一阶段为 A4 MiniBench Evaluation Adapter
+> 状态：A0–A3 已实现；A4 MiniBench16 离线 Evaluation Adapter / preflight 已完成，付费运行仍被 contract coverage 与 live policy bridge 门禁阻止
 
 ---
 
@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 29 个零模型架构测试。
+- 36 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -1752,13 +1752,26 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - 全量 29 个零模型测试和 4 个 A1 历史 replay hash 兼容检查通过，新增模型调用及 Token 为 0；
 - 证据位于 `evidence/a3-reliability/summary.json`。
 
-## A4：Evaluation Adapter
+## A4：Evaluation Adapter（离线 preflight 已完成，live paired run 未放行）
 
 - RealReplicaBench Dataset/Rollout/Judgement/Stats；
 - Baseline/Candidate paired runner；
 - Failure Dataset 与 cost report。
 - 最终付费测试只使用已冻结的 `RealReplicaBench/splits/minibench16.*`，不运行完整 107 任务；
 - 先做 MiniBench16 contract coverage 与历史轨迹 offline preflight，再按 block 分批运行，任何 gate 失败立即停止后续 block。
+
+当前实现与证据：
+
+- `RealReplicaMiniBenchAdapter` 严格校验 collection/selection/blocks 三者任务顺序一致、16 个唯一任务、task-id SHA-256、seed、Dev-only 与 Heldout 不相交；
+- 从公开 `task.md` 和非评测 task metadata 构造 Dataset identity，不向在线 Contract/Context 传入 rubric、verifier 或 ground truth；
+- Dataset 覆盖：CLI 5 / Browser 5 / File 3 / API 3；easy 3 / medium 4 / hard 8 / unknown 1；text-only 8 / browser-text 3 / vision 5；
+- 生成 32-cell baseline/candidate paired manifest，强制 model、runtime image、seed、task/block 相同，同时要求 Profile fingerprint 不同；
+- paired statistics 只统计同时存在 baseline 与 candidate 的 sample，禁止 unmatched rollout 稀释或抬高结果；
+- 历史 baseline 16/16 都有 integrity/formal-eligible 记录，但来自 6 种 run-config fingerprint，因此只用于失败定位，明确禁止复用为正式 paired baseline；
+- public prompt contract coverage 当前 11/16、31 个 criterion（28 artifact + 3 exact-count）；未覆盖 5 个 stateful/browser/API 任务；
+- `live_policy_bridge_ready=false`，因此 `paid_run_ready=false`。在这两个门禁关闭前不运行任何付费 MiniBench block；
+- 全量 36 个零模型测试通过，A1 四个历史 replay hash 保持不变；
+- preflight 新增模型调用及 Token 为 0，证据位于 `evidence/a4-minibench-preflight/summary.json`。
 
 ## A5：Practice（V2）
 
@@ -2025,13 +2038,26 @@ CompletionChecked
 
 未通过前不做付费 Candidate。
 
-## P3：MiniBench16 Evaluation Adapter（下一步）
+## P3：MiniBench16 Evaluation Adapter（离线部分已完成）
 
 - authoritative subset：`RealReplicaBench/splits/minibench16.collection.json`、`minibench16.selection.json`、`minibench16.blocks.json`；
 - 不重新从 107 任务中采样，不运行 full benchmark；
 - 先离线统计 task type、difficulty、criterion coverage、历史 failure 与 stable-pass；
 - 再生成 baseline/candidate paired manifest，确保 model、seed、runtime image、task block 一致；
 - 付费运行按既有 block 顺序逐块放行，先验证 A3 能否捕获目标 premature-completion / artifact / transient-tool failure，未通过即停止。
+
+当前门禁结果：
+
+```text
+frozen_dataset_valid          PASS
+historical_baseline_all_tasks PASS (16/16，仅作风险定位)
+paired_controls_valid         PASS (32 cells)
+contract_coverage_complete    FAIL (11/16)
+live_policy_bridge_ready      FAIL
+paid_run_ready                FALSE
+```
+
+下一步不是付费跑 Block 1，而是补齐 5 个 stateful 任务的公开 observation criterion/provider，并把 A2/A3 durable facts 接入 DeerFlow live stream；完成后重新运行同一 preflight。
 
 # 36. 关键风险
 

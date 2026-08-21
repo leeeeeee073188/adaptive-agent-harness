@@ -77,5 +77,18 @@ checks and confirms all four A1 historical replay hashes remain unchanged.
 `evidence/a3-reliability/summary.json` records bounded-retry, failure-ledger,
 premature-completion, structured-evidence, and ablation checks.
 
+Run the frozen MiniBench16 offline preflight before any paid evaluation:
+
+```bash
+PYTHONPATH=src python scripts/preflight_minibench16.py /path/to/RealReplicaBench
+```
+
+The preflight validates the exact 16-task order/hash, Development-only split,
+type/difficulty/capability balance, public-prompt contract coverage, historical
+baseline availability, and a 32-cell controlled baseline/candidate manifest.
+It reports `paid_run_ready=false` until both contract coverage and the live
+DeerFlow policy bridge are complete; historical results are never reused as a
+formal paired baseline.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).
