@@ -88,3 +88,8 @@ task-level failures never enter that retry loop: a separate replaceable service
 chooses at most three state refresh, tool switch, contract validation, replan,
 or partial-delivery actions. This mirrors the DeepSeek Harness capability seam
 and Youtu-Agent policy/environment separation while preventing retry storms.
+
+Every recovery decision is appended before continuation and later budgets are
+derived from the Ledger projection. No mutable retry counter is authoritative.
+When all proposed actions are exhausted, the bridge terminates before its
+maximum turn count rather than issuing another model call.

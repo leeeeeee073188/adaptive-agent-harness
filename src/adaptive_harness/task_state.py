@@ -9,6 +9,7 @@ from typing import Any, Protocol
 
 from adaptive_harness.capabilities import ToolResult
 from adaptive_harness.ledger import SessionEvent, SessionLedger
+from adaptive_harness.recovery import TaskFailureCategory, TaskRecoveryAction, TaskRecoveryDecision
 from adaptive_harness.task_contract import Criterion, CriterionKind, TaskContract
 
 TASK_CONTRACT_CREATED = "task/contract-created"
@@ -16,6 +17,7 @@ STATE_UPDATED = "state/updated"
 EVIDENCE_ADDED = "evidence/added"
 FAILURE_CLASSIFIED = "failure/classified"
 COMPLETION_CHECKED = "completion/checked"
+RECOVERY_DECIDED = "recovery/decided"
 
 
 class EvidenceKind(StrEnum):
@@ -149,12 +151,41 @@ class ContractCompletionResult:
 
 
 @dataclass(frozen=True)
+class RecoveryRecord:
+    primary: TaskFailureCategory
+    secondary: tuple[TaskFailureCategory, ...]
+    decision: TaskRecoveryDecision
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "primary": self.primary.value,
+            "secondary": [item.value for item in self.secondary],
+            "actions": [action.value for action in self.decision.actions],
+            "should_continue": self.decision.should_continue,
+            "rationale": self.decision.rationale,
+        }
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> RecoveryRecord:
+        return cls(
+            TaskFailureCategory(payload["primary"]),
+            tuple(TaskFailureCategory(item) for item in payload.get("secondary") or ()),
+            TaskRecoveryDecision(
+                tuple(TaskRecoveryAction(item) for item in payload.get("actions") or ()),
+                bool(payload["should_continue"]),
+                str(payload.get("rationale") or ""),
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class TaskState:
     contract: TaskContract | None = None
     values: Mapping[str, Any] = field(default_factory=dict)
     evidence: tuple[Evidence, ...] = ()
     failures: tuple[Failure, ...] = ()
     completion_checks: tuple[ContractCompletionResult, ...] = ()
+    recoveries: tuple[RecoveryRecord, ...] = ()
 
     @property
     def latest_completion(self) -> ContractCompletionResult | None:
@@ -188,6 +219,7 @@ class TaskState:
                 for item in failure_window
             ],
             "latest_completion": self.latest_completion.to_payload() if self.latest_completion else None,
+            "recent_recoveries": [item.to_payload() for item in self.recoveries[-5:]],
         }
 
 
@@ -202,6 +234,7 @@ class TaskStateProjector:
         failures: list[Failure] = []
         failure_ids: set[str] = set()
         completion_checks: list[ContractCompletionResult] = []
+        recoveries: list[RecoveryRecord] = []
 
         for event in events:
             if event.type == TASK_CONTRACT_CREATED:
@@ -227,8 +260,17 @@ class TaskStateProjector:
                 failures.append(item)
             elif event.type == COMPLETION_CHECKED and "assessments" in event.payload:
                 completion_checks.append(ContractCompletionResult.from_payload(event.payload))
+            elif event.type == RECOVERY_DECIDED:
+                recoveries.append(RecoveryRecord.from_payload(event.payload))
 
-        return TaskState(contract, values, tuple(evidence), tuple(failures), tuple(completion_checks))
+        return TaskState(
+            contract,
+            values,
+            tuple(evidence),
+            tuple(failures),
+            tuple(completion_checks),
+            tuple(recoveries),
+        )
 
 
 class RuleBasedContractChecker:
@@ -408,6 +450,9 @@ class TaskEventWriter:
         result = (checker or RuleBasedContractChecker()).check(state)
         self.ledger.append(COMPLETION_CHECKED, result.to_payload())
         return result
+
+    def record_recovery(self, record: RecoveryRecord) -> SessionEvent:
+        return self.ledger.append(RECOVERY_DECIDED, record.to_payload())
 
 
 def evidence_from_tool_result(result: ToolResult) -> tuple[Evidence, ...]:

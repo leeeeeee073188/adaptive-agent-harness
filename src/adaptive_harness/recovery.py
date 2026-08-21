@@ -113,6 +113,13 @@ class RuleBasedTaskRecoveryPolicy:
             )
             if TaskFailureCategory.LOOP in categories:
                 proposed.append(TaskRecoveryAction.STOP_REPEATED_ACTION)
+        elif context.primary in {
+            TaskFailureCategory.STALE_STATE,
+            TaskFailureCategory.STATE_INCONSISTENCY,
+        }:
+            proposed.extend((TaskRecoveryAction.REFRESH_STATE, TaskRecoveryAction.REPLAN))
+        elif context.primary is TaskFailureCategory.PREMATURE_FINISH:
+            proposed.append(TaskRecoveryAction.VALIDATE_CONTRACT)
         else:
             proposed.append(TaskRecoveryAction.STOP)
 

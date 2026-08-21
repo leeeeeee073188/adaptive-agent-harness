@@ -6,6 +6,11 @@ from pathlib import Path
 
 from adaptive_harness.capabilities import ToolResult
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.recovery import (
+    TaskFailureCategory,
+    TaskRecoveryAction,
+    TaskRecoveryDecision,
+)
 from adaptive_harness.task_contract import (
     CriterionKind,
     CriterionSource,
@@ -18,6 +23,7 @@ from adaptive_harness.task_state import (
     EvidenceKind,
     EvidenceSource,
     Failure,
+    RecoveryRecord,
     TaskEventWriter,
     TaskStateProjector,
     evidence_from_tool_result,
@@ -144,6 +150,20 @@ class TaskContractStateTests(unittest.TestCase):
                     {"recovered": True},
                 )
             )
+            writer.record_recovery(
+                RecoveryRecord(
+                    TaskFailureCategory.ARTIFACT_ERROR,
+                    (TaskFailureCategory.PREMATURE_FINISH,),
+                    TaskRecoveryDecision(
+                        (
+                            TaskRecoveryAction.VALIDATE_CONTRACT,
+                            TaskRecoveryAction.WRITE_PARTIAL,
+                        ),
+                        True,
+                        "bounded recovery",
+                    ),
+                )
+            )
             writer.check_completion()
             before = TaskStateProjector().project(ledger.events)
 
@@ -154,6 +174,13 @@ class TaskContractStateTests(unittest.TestCase):
         self.assertEqual(after, before)
         self.assertEqual(after.values["attempts"], 1)
         self.assertEqual(after.failures[0].error_type, "TRANSIENT_IO")
+        self.assertEqual(
+            after.recoveries[0].decision.actions,
+            (
+                TaskRecoveryAction.VALIDATE_CONTRACT,
+                TaskRecoveryAction.WRITE_PARTIAL,
+            ),
+        )
         self.assertTrue(after.latest_completion and after.latest_completion.passed)
 
     def test_model_context_is_bounded_but_ledger_keeps_full_evidence(self) -> None:

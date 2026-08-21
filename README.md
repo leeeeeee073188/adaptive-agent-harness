@@ -144,5 +144,13 @@ the target constraint/artifact slice, detected trajectory evidence for all
 four no-progress labels, and recommended zero blind retries. This validates
 the mapping, not that replayed recovery would necessarily make tasks pass.
 
+Recovery decisions are now durable runtime facts. A rejected completion writes
+`recovery/decided`, projects consumed action budgets into the next request, and
+adds the bounded actions to same-thread feedback. A three-turn synthetic run
+with permanently missing evidence stopped after turn two because its
+`validate_contract` / `write_partial` budget was exhausted; JSONL replay
+reconstructed the same decisions. The RealReplica candidate runner composes
+this service by default.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

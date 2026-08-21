@@ -215,7 +215,7 @@ class DeerFlowRuntimeAdapter:
                 raise
             summaries.append(summary)
             self.policy_bridge.observe_turn(ledger, contract, summary, turn=turn)
-            completion, feedback = self.policy_bridge.check_completion(ledger)
+            completion, feedback, recovery = self.policy_bridge.check_completion(ledger)
             ledger.append(
                 "turn/end",
                 {"reason": "completed" if completion.passed else "completion_rejected"},
@@ -230,6 +230,8 @@ class DeerFlowRuntimeAdapter:
                 return DeerFlowRunResult(run_id, ledger, combined, True, turn)
             if feedback is not None:
                 message = feedback
+            if recovery is not None and not recovery.should_continue:
+                break
 
         combined = _combine_summaries(summaries)
         ledger.append(
@@ -245,7 +247,7 @@ class DeerFlowRuntimeAdapter:
             ledger,
             combined,
             False,
-            self.policy_bridge.max_completion_turns,
+            turn,
         )
 
 

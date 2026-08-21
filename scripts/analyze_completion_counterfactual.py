@@ -96,7 +96,7 @@ def analyze(root: Path) -> dict[str, Any]:
             public_schema=None,
         )
         bridge.observe_turn(ledger, contract, empty_summary, turn=1)
-        completion, _ = bridge.check_completion(ledger)
+        completion, _, _ = bridge.check_completion(ledger)
         would_block = not completion.passed
         actual_passed = historical.passed
         outcome = (

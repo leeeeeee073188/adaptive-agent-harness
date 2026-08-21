@@ -21,7 +21,9 @@ from adaptive_harness.integrations.deerflow_policy import (
     StructuredDeerFlowObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.recovery import RuleBasedTaskRecoveryPolicy, TaskRecoveryAction
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder
+from adaptive_harness.task_state import TaskStateProjector
 
 
 class DeerFlowAdapterTests(unittest.TestCase):
@@ -510,6 +512,51 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.completed)
         self.assertEqual(len(policy.payload["enforced_criterion_ids"]), 1)
         self.assertEqual(len(policy.payload["observe_only_criterion_ids"]), 1)
+
+    async def test_recovery_decisions_are_ledger_backed_and_stop_when_exhausted(self) -> None:
+        turns = [
+            [
+                _RawEvent(
+                    "messages-tuple",
+                    {"type": "ai", "id": f"a{index}", "content": "done"},
+                ),
+                _RawEvent("end", {"usage": {"total_tokens": 5}}),
+            ]
+            for index in (1, 2, 3)
+        ]
+        client = _TurnClient(turns)
+        bridge = DeerFlowPolicyBridge(
+            observation_providers=(FileArtifactObservationProvider(Path("/tmp")),),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            max_completion_turns=3,
+        )
+        result = await DeerFlowRuntimeAdapter(
+            client,
+            _FakeEnvironment(),
+            policy_bridge=bridge,
+        ).run(
+            DeerFlowRunRequest("Write outputs/never-created.csv.", "thread-recovery"),
+            run_id="run-recovery",
+        )
+
+        state = TaskStateProjector().project(result.ledger.events)
+        headers = [event for event in result.ledger.events if event.type == "request/header"]
+        self.assertFalse(result.completed)
+        self.assertEqual(result.turns, 2)
+        self.assertEqual(len(client.calls), 2)
+        self.assertEqual(len(state.recoveries), 2)
+        self.assertEqual(
+            state.recoveries[0].decision.actions,
+            (
+                TaskRecoveryAction.VALIDATE_CONTRACT,
+                TaskRecoveryAction.WRITE_PARTIAL,
+            ),
+        )
+        self.assertEqual(
+            state.recoveries[1].decision.actions,
+            (TaskRecoveryAction.STOP,),
+        )
+        self.assertIn("recent_recoveries", str(headers[1].payload["context"]["task"]))
 
 
 if __name__ == "__main__":

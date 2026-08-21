@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 51 个零模型架构测试。
+- 52 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2153,7 +2153,19 @@ MiniBench16 当前 provider-enforced task coverage：16/16，四个 block 均至
 
 该结果只证明推荐映射与预算安全，不声称 recovery 一定使任务转为通过。证据：`evidence/a8-failure-recovery/summary.json`。
 
-下一步将 RecoveryDecision 接入 durable Ledger 与下一 Turn context，并先用合成/历史 replay 验证 action 消耗和停止语义；Token variance 置信度解决前仍不继续付费扩跑。
+上述离线 Recovery 映射通过后，继续完成了以下 durable runtime 接入；Token variance 置信度解决前仍不继续付费扩跑。
+
+## P8：Durable Recovery / Budget Projection（已完成，零 Token）
+
+- 新增 `recovery/decided` durable event，记录 primary/secondary failure、actions、should_continue、rationale；
+- `TaskStateProjector` 可从 JSONL 重建 RecoveryRecord，下一 Turn `request/header.task.recent_recoveries` 可见；
+- Recovery budget 完全从 Ledger 中已执行 action 计数推导，不维护第二份 mutable counter；
+- CompletionAssessment 自动映射 ARTIFACT_ERROR / CONSTRAINT_MISS / STATE_INCONSISTENCY / PREMATURE_FINISH；
+- 同一缺失 artifact：Turn 1 生成 validate_contract + write_partial，Turn 2 因预算耗尽生成 STOP，并在 max_turns=3 前提前终止；
+- RealReplica candidate runner 默认组合 `RuleBasedTaskRecoveryPolicy`；pinned generated-runner probe 产生22条 Ledger events并通过；
+- 证据：`evidence/a9-durable-recovery/summary.json`。
+
+下一步是为 RecoveryAction 定义实际 executor（refresh/switch/validate/replan）与执行结果 event；在只有“建议”没有“动作执行”前，不宣称 Recovery 能提升成功率，也不继续付费扩跑。
 
 # 36. 关键风险
 

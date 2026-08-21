@@ -13,6 +13,13 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.recovery import (
+    TaskFailureCategory,
+    TaskFailureContext,
+    TaskRecoveryAction,
+    TaskRecoveryDecision,
+    TaskRecoveryPolicy,
+)
 from adaptive_harness.task_contract import (
     ContractBuilder,
     CriterionKind,
@@ -26,6 +33,7 @@ from adaptive_harness.task_state import (
     EvidenceKind,
     EvidenceSource,
     Failure,
+    RecoveryRecord,
     TaskCompletionGate,
     TaskEventWriter,
     TaskStateProjector,
@@ -336,6 +344,7 @@ class DeerFlowPolicyBridge:
         observation_providers: Sequence[DeerFlowObservationProvider] = (),
         max_completion_turns: int = 2,
         unsupported_criteria: str = "reject",
+        recovery_policy: TaskRecoveryPolicy | None = None,
     ) -> None:
         if max_completion_turns < 1:
             raise ValueError("max_completion_turns must be at least one")
@@ -346,6 +355,7 @@ class DeerFlowPolicyBridge:
         self.observation_providers = tuple(observation_providers)
         self.max_completion_turns = max_completion_turns
         self.unsupported_criteria = unsupported_criteria
+        self.recovery_policy = recovery_policy
 
     def start(
         self,
@@ -426,7 +436,10 @@ class DeerFlowPolicyBridge:
                     )
                 )
 
-    def check_completion(self, ledger: SessionLedger) -> tuple[ContractCompletionResult, str | None]:
+    def check_completion(
+        self,
+        ledger: SessionLedger,
+    ) -> tuple[ContractCompletionResult, str | None, TaskRecoveryDecision | None]:
         state = TaskStateProjector().project(ledger.events)
         if (
             self.unsupported_criteria == "observe_only"
@@ -443,12 +456,54 @@ class DeerFlowPolicyBridge:
             result = self.completion_gate.verify(state)
         feedback = None if result.passed else self.completion_gate.feedback(result)
         ledger.append("completion/checked", {**result.to_payload(), "feedback": feedback})
-        return result, feedback
+        recovery = None
+        if not result.passed and self.recovery_policy is not None:
+            context = self._failure_context(state, result)
+            recovery = self.recovery_policy.decide(context)
+            TaskEventWriter(ledger).record_recovery(
+                RecoveryRecord(context.primary, context.secondary, recovery)
+            )
+            actions = ", ".join(action.value for action in recovery.actions)
+            feedback = f"{feedback}\nRecovery actions: {actions}."
+        return result, feedback, recovery
 
     def _criterion_supported(self, criterion: Any) -> bool:
         return any(
             bool(getattr(provider, "supports", lambda _criterion: False)(criterion))
             for provider in self.observation_providers
+        )
+
+    def _failure_context(
+        self,
+        state: Any,
+        result: ContractCompletionResult,
+    ) -> TaskFailureContext:
+        by_id = {
+            criterion.id: criterion
+            for criterion in (state.contract.criteria if state.contract is not None else ())
+        }
+        failed_kinds = {
+            by_id[assessment.criterion_id].kind
+            for assessment in result.assessments
+            if assessment.status.value != "satisfied" and assessment.criterion_id in by_id
+        }
+        primary = (
+            TaskFailureCategory.ARTIFACT_ERROR
+            if CriterionKind.ARTIFACT_EXISTS in failed_kinds
+            else TaskFailureCategory.CONSTRAINT_MISS
+            if CriterionKind.EXACT_COUNT in failed_kinds
+            else TaskFailureCategory.STATE_INCONSISTENCY
+            if CriterionKind.OBSERVATION_EQUALS in failed_kinds
+            else TaskFailureCategory.PREMATURE_FINISH
+        )
+        attempts: dict[TaskRecoveryAction, int] = {}
+        for record in state.recoveries:
+            for action in record.decision.actions:
+                attempts[action] = attempts.get(action, 0) + 1
+        return TaskFailureContext(
+            primary,
+            (TaskFailureCategory.PREMATURE_FINISH,),
+            attempts=attempts,
         )
 
 
