@@ -24,6 +24,9 @@ class CanaryAnalysisTests(unittest.TestCase):
         self.assertTrue(report["pair_valid"])
         self.assertTrue(report["gates"]["semantic_outputs_equal"])
         self.assertFalse(report["gates"]["token_cost_within_limit"])
+        self.assertTrue(report["gates"]["architecture_token_overhead_within_limit"])
+        self.assertEqual(report["cost"]["attributable_architecture_token_delta"], 0)
+        self.assertEqual(report["cost"]["attribution"], "provider_or_trajectory_variance")
         self.assertFalse(report["continue_block"])
 
     def test_valid_low_cost_pair_can_continue(self) -> None:
@@ -53,7 +56,15 @@ def _pair_fixture(root: Path, *, baseline_tokens: int, candidate_tokens: int) ->
         (output / "result.csv").write_bytes(
             b"a,b\r\n1,2\r\n" if variant == "baseline" else b"a,b\n1,2\n"
         )
-        (task / "integrity.json").write_text(json.dumps({"passed": True}))
+        (task / "integrity.json").write_text(
+            json.dumps(
+                {
+                    "passed": True,
+                    "prompt_sha256": "prompt-hash",
+                    "config_sha256": "config-hash",
+                }
+            )
+        )
         task_dirs[variant] = task
 
     ledger = [
@@ -62,6 +73,20 @@ def _pair_fixture(root: Path, *, baseline_tokens: int, candidate_tokens: int) ->
     ]
     (task_dirs["candidate"] / "agent/adaptive-ledger.jsonl").write_text(
         "".join(json.dumps(row) + "\n" for row in ledger)
+    )
+    _write_json(
+        task_dirs["candidate"] / "agent/deerflow-events.json",
+        {"events": [{"type": "end", "data": {"usage": {"total_tokens": candidate_tokens}}}]},
+    )
+    _write_json(
+        task_dirs["candidate"] / "agent/deerflow-trajectory.json",
+        {
+            "response_text": "",
+            "tool_calls": [],
+            "tool_results": [],
+            "usage": {"total_tokens": candidate_tokens},
+            "adaptive": {"turns": 1},
+        },
     )
     for variant, tokens in (("baseline", baseline_tokens), ("candidate", candidate_tokens)):
         run = root / variant

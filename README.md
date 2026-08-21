@@ -109,10 +109,15 @@ starts paid work automatically.
 
 The first fresh paired canary (`file-google-trends-csv-flatten`) produced equal
 1.0 scores and semantically identical output. The candidate also produced a
-999-event canonical Ledger with artifact hash evidence. Its token usage was
-251,784 versus 152,041 for baseline (+65.6%), exceeding the 25% continuation
-limit, so the remaining Block 1 tasks were not started. This is treated as a
-cost regression signal—not hidden behind the passing score.
+999-event canonical Ledger with artifact hash evidence. Its observed token
+usage was 251,784 versus 152,041 for baseline (+65.6%), exceeding the 25%
+single-run limit, so the remaining Block 1 tasks were not started. However,
+prompt/config/model/image fingerprints were identical, the candidate completed
+in one turn, and counterfactual event replay was exact; attributable Harness
+model-token overhead is therefore zero for this cell. Four comparable vanilla
+runs have a 22.4% token coefficient of variation, so the observed delta remains
+an unresolved provider/trajectory-variance signal rather than a proven Harness
+regression.
 
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

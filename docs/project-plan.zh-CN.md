@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0–A4 已实现并完成首个 fresh paired canary；质量与语义一致性通过，但 Candidate Token +65.6% 超过 +25% 停止线，Block 1 剩余任务已暂停
+> 状态：A0–A4 已实现并完成首个 fresh paired canary；质量/语义/证据通过，单次观测 Token +65.6% 触发暂停，但 counterfactual 证明该 cell 可归因 Harness Token 增量为 0，当前阻塞项是 provider variance 置信度
 
 ---
 
@@ -2084,11 +2084,14 @@ paid_run_ready                TRUE
 - 两侧 integrity 均通过；
 - 输出文件路径一致，归一化 CRLF/LF 后 SHA-256 完全相同；
 - Candidate `evidence/added` 包含 exists/size/SHA-256，`completion/checked.passed=true`；
-- Candidate 成功率没有回退，但 Token 增幅超过 25% 门禁，因此 `continue_block=false`；
-- 该任务首轮模型输入并未被 PolicyBridge 修改，因此单次差值可能包含 provider 随机性，不能直接归因于 Harness。本项目选择停止扩跑，而不是用单次通过掩盖成本不确定性；
+- Candidate 成功率没有回退，但单次观测 Token 增幅超过 25% 门禁，因此 `continue_block=false`；
+- 两侧 prompt SHA、config SHA、model、runtime image 完全一致，model-visible surface fingerprint 同为 `51cd68f4...`；Candidate 仅 1 turn，PolicyBridge 没有发起额外模型工作；
+- 对 Candidate 1,003 个原始 DeerFlow events 做 counterfactual replay，response/tool calls/tool results/usage 四项完全一致，因此该 cell 的可归因 Harness model-token delta = 0；
+- 4 次同条件 vanilla 历史运行 Token 为 146,871 / 152,041 / 159,066 / 228,793，均值 171,692.75、样本标准差 38,393.51、CV 22.36%，表明 provider/trajectory variance 显著；
+- 因此 +65.6% 是真实发生的运行成本差，但不是已证明的 Harness 回归。当前 `attribution_confident=false`，仍选择停止扩跑，避免在统计不确定时继续付费；
 - 证据位于 `evidence/a5-minibench-canary/summary.json`。
 
-下一步：先建立重复小样本/历史分布的 Token variance 基线，或在相同已录制模型响应上做 counterfactual replay，区分 provider variance 与 Harness 真实增量；成本结论清楚前不运行 Block 1 其余三个任务，更不运行完整 107 任务。
+下一步：对已有失败任务优先做零 Token counterfactual“若启用 Completion Gate 是否会继续”的命中分析，并设计最小重复样本统计规则；在 attribution confidence 足够前不运行 Block 1 其余三个任务，更不运行完整 107 任务。
 
 # 36. 关键风险
 
