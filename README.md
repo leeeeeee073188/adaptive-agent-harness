@@ -166,5 +166,12 @@ from missing to present evidence does count. `progress/checked` is committed
 before the next recovery decision, so a no-progress recovery consumes its
 budget and stops instead of looping.
 
+Recovery execution is not automatically credited as success. The following
+turn evaluates the unmatched `recovery/executed` event against
+`progress/checked` and CompletionResult, then writes
+`recovery/outcome-evaluated`. Only semantic progress or enforced completion is
+effective; a no-progress turn records an ineffective outcome linked to the
+exact execution sequence.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

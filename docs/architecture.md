@@ -105,3 +105,8 @@ Progress snapshots hash task Evidence and non-control state only. Repeating the
 same missing artifact with a new event id is no progress; changing it to an
 existing artifact is progress. Tool-call volume and `recovery.*` flags are
 excluded. The durable `progress/checked` result feeds the next RecoveryContext.
+
+Recovery outcome attribution is delayed one turn. An executed action remains
+pending until a later progress/completion fact exists, then a durable outcome
+links back to its execution sequence. This prevents action execution, message
+volume, or tool activity from being misreported as recovery effectiveness.

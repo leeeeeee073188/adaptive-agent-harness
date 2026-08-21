@@ -23,6 +23,7 @@ from adaptive_harness.integrations.deerflow_policy import (
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.progress import RuleBasedProgressDetector
 from adaptive_harness.recovery import (
+    RuleBasedRecoveryOutcomeEvaluator,
     RuleBasedTaskRecoveryExecutor,
     RuleBasedTaskRecoveryPolicy,
     TaskRecoveryAction,
@@ -347,6 +348,10 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         )
         bridge = DeerFlowPolicyBridge(
             observation_providers=(StructuredDeerFlowObservationProvider(),),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+            progress_detector=RuleBasedProgressDetector(),
+            recovery_outcome_evaluator=RuleBasedRecoveryOutcomeEvaluator(),
             max_completion_turns=2,
         )
         adapter = DeerFlowRuntimeAdapter(client, _FakeEnvironment(), policy_bridge=bridge)
@@ -374,6 +379,9 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event_types.count("tool/result"), 1)
         self.assertFalse(checks[0].payload["passed"])
         self.assertTrue(checks[1].payload["passed"])
+        outcomes = TaskStateProjector().project(result.ledger.events).recovery_outcomes
+        self.assertEqual(len(outcomes), 1)
+        self.assertTrue(outcomes[0].effective)
 
     async def test_policy_bridge_fails_closed_when_turn_budget_expires(self) -> None:
         client = _TurnClient(
@@ -535,6 +543,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
             recovery_policy=RuleBasedTaskRecoveryPolicy(),
             recovery_executor=RuleBasedTaskRecoveryExecutor(),
             progress_detector=RuleBasedProgressDetector(),
+            recovery_outcome_evaluator=RuleBasedRecoveryOutcomeEvaluator(),
             max_completion_turns=3,
         )
         result = await DeerFlowRuntimeAdapter(
@@ -554,6 +563,8 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(client.calls), 2)
         self.assertEqual(len(state.recoveries), 2)
         self.assertEqual(len(state.recovery_executions), 2)
+        self.assertEqual(len(state.recovery_outcomes), 1)
+        self.assertFalse(state.recovery_outcomes[0].effective)
         self.assertEqual(
             [event.payload["status"] for event in progress],
             ["progressed", "no_progress"],

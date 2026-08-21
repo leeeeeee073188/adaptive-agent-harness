@@ -3,7 +3,11 @@
 from adaptive_harness.capabilities import CompletionPolicy, ContextManager, Environment, ModelAdapter
 from adaptive_harness.kernel import ServiceKey
 from adaptive_harness.progress import ProgressDetector
-from adaptive_harness.recovery import TaskRecoveryExecutor, TaskRecoveryPolicy
+from adaptive_harness.recovery import (
+    RecoveryOutcomeEvaluator,
+    TaskRecoveryExecutor,
+    TaskRecoveryPolicy,
+)
 from adaptive_harness.task_contract import ContractBuilder
 from adaptive_harness.task_state import TaskCompletionGate
 from adaptive_harness.tool_runtime import ToolRuntime
@@ -18,3 +22,6 @@ TASK_COMPLETION_GATE = ServiceKey[TaskCompletionGate]("task_completion_gate")
 TASK_RECOVERY_POLICY = ServiceKey[TaskRecoveryPolicy]("task_recovery_policy")
 TASK_RECOVERY_EXECUTOR = ServiceKey[TaskRecoveryExecutor]("task_recovery_executor")
 PROGRESS_DETECTOR = ServiceKey[ProgressDetector]("progress_detector")
+RECOVERY_OUTCOME_EVALUATOR = ServiceKey[RecoveryOutcomeEvaluator](
+    "recovery_outcome_evaluator"
+)

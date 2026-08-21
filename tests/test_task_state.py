@@ -7,6 +7,7 @@ from pathlib import Path
 from adaptive_harness.capabilities import ToolResult
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.recovery import (
+    RecoveryOutcome,
     RuleBasedTaskRecoveryExecutor,
     TaskFailureCategory,
     TaskRecoveryAction,
@@ -165,12 +166,22 @@ class TaskContractStateTests(unittest.TestCase):
                     ),
                 )
             writer.record_recovery(recovery)
-            writer.record_recovery_execution(
+            execution_event = writer.record_recovery_execution(
                 RecoveryExecutionRecord(
                     RuleBasedTaskRecoveryExecutor().execute(
                         recovery.decision,
                         missing=("artifact",),
                     )
+                )
+            )
+            writer.record_recovery_outcome(
+                RecoveryOutcome(
+                    execution_event.seq,
+                    recovery.decision.actions,
+                    "progressed",
+                    False,
+                    True,
+                    "progress followed recovery",
                 )
             )
             writer.check_completion()
@@ -191,6 +202,8 @@ class TaskContractStateTests(unittest.TestCase):
             ),
         )
         self.assertEqual(len(after.recovery_executions), 1)
+        self.assertEqual(len(after.recovery_outcomes), 1)
+        self.assertTrue(after.recovery_outcomes[0].effective)
         self.assertEqual(
             after.values["recovery.missing_requirements"],
             ["artifact"],

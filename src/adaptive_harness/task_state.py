@@ -12,6 +12,7 @@ from adaptive_harness.ledger import SessionEvent, SessionLedger
 from adaptive_harness.recovery import (
     RecoveryActionEffect,
     RecoveryExecution,
+    RecoveryOutcome,
     TaskFailureCategory,
     TaskRecoveryAction,
     TaskRecoveryDecision,
@@ -25,6 +26,7 @@ FAILURE_CLASSIFIED = "failure/classified"
 COMPLETION_CHECKED = "completion/checked"
 RECOVERY_DECIDED = "recovery/decided"
 RECOVERY_EXECUTED = "recovery/executed"
+RECOVERY_OUTCOME_EVALUATED = "recovery/outcome-evaluated"
 
 
 class EvidenceKind(StrEnum):
@@ -219,6 +221,7 @@ class TaskState:
     completion_checks: tuple[ContractCompletionResult, ...] = ()
     recoveries: tuple[RecoveryRecord, ...] = ()
     recovery_executions: tuple[RecoveryExecutionRecord, ...] = ()
+    recovery_outcomes: tuple[RecoveryOutcome, ...] = ()
 
     @property
     def latest_completion(self) -> ContractCompletionResult | None:
@@ -256,6 +259,9 @@ class TaskState:
             "recent_recovery_executions": [
                 item.to_payload() for item in self.recovery_executions[-5:]
             ],
+            "recent_recovery_outcomes": [
+                item.to_payload() for item in self.recovery_outcomes[-5:]
+            ],
         }
 
 
@@ -272,6 +278,7 @@ class TaskStateProjector:
         completion_checks: list[ContractCompletionResult] = []
         recoveries: list[RecoveryRecord] = []
         recovery_executions: list[RecoveryExecutionRecord] = []
+        recovery_outcomes: list[RecoveryOutcome] = []
 
         for event in events:
             if event.type == TASK_CONTRACT_CREATED:
@@ -301,6 +308,20 @@ class TaskStateProjector:
                 recoveries.append(RecoveryRecord.from_payload(event.payload))
             elif event.type == RECOVERY_EXECUTED:
                 recovery_executions.append(RecoveryExecutionRecord.from_payload(event.payload))
+            elif event.type == RECOVERY_OUTCOME_EVALUATED:
+                recovery_outcomes.append(
+                    RecoveryOutcome(
+                        int(event.payload["execution_seq"]),
+                        tuple(
+                            TaskRecoveryAction(item)
+                            for item in event.payload.get("actions") or ()
+                        ),
+                        str(event.payload["progress_status"]),
+                        bool(event.payload["completion_passed"]),
+                        bool(event.payload["effective"]),
+                        str(event.payload.get("reason") or ""),
+                    )
+                )
 
         return TaskState(
             contract,
@@ -310,6 +331,7 @@ class TaskStateProjector:
             tuple(completion_checks),
             tuple(recoveries),
             tuple(recovery_executions),
+            tuple(recovery_outcomes),
         )
 
 
@@ -505,6 +527,9 @@ class TaskEventWriter:
                 reason="recovery actions applied",
             )
         return event
+
+    def record_recovery_outcome(self, outcome: RecoveryOutcome) -> SessionEvent:
+        return self.ledger.append(RECOVERY_OUTCOME_EVALUATED, outcome.to_payload())
 
 
 def evidence_from_tool_result(result: ToolResult) -> tuple[Evidence, ...]:

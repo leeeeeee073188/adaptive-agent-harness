@@ -103,6 +103,26 @@ class RecoveryExecution:
         return tuple(effect.directive for effect in self.effects if effect.directive)
 
 
+@dataclass(frozen=True)
+class RecoveryOutcome:
+    execution_seq: int
+    actions: tuple[TaskRecoveryAction, ...]
+    progress_status: str
+    completion_passed: bool
+    effective: bool
+    reason: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "execution_seq": self.execution_seq,
+            "actions": [action.value for action in self.actions],
+            "progress_status": self.progress_status,
+            "completion_passed": self.completion_passed,
+            "effective": self.effective,
+            "reason": self.reason,
+        }
+
+
 class TaskRecoveryPolicy(Protocol):
     def decide(self, context: TaskFailureContext) -> TaskRecoveryDecision: ...
 
@@ -114,6 +134,17 @@ class TaskRecoveryExecutor(Protocol):
         *,
         missing: Sequence[str] = (),
     ) -> RecoveryExecution: ...
+
+
+class RecoveryOutcomeEvaluator(Protocol):
+    def evaluate(
+        self,
+        *,
+        execution_seq: int,
+        execution: RecoveryExecution,
+        progress_status: str,
+        completion_passed: bool,
+    ) -> RecoveryOutcome: ...
 
 
 class RuleBasedTaskRecoveryPolicy:
@@ -235,6 +266,33 @@ class RuleBasedTaskRecoveryExecutor:
         }
         delta, directive = mapping[action]
         return RecoveryActionEffect(action, "applied", delta, directive)
+
+
+class RuleBasedRecoveryOutcomeEvaluator:
+    """Credit recovery only for semantic progress or completed criteria."""
+
+    def evaluate(
+        self,
+        *,
+        execution_seq: int,
+        execution: RecoveryExecution,
+        progress_status: str,
+        completion_passed: bool,
+    ) -> RecoveryOutcome:
+        effective = completion_passed or progress_status == "progressed"
+        reason = (
+            "Recovery was followed by semantic task progress or completion."
+            if effective
+            else "Recovery produced no semantic task progress."
+        )
+        return RecoveryOutcome(
+            execution_seq,
+            tuple(effect.action for effect in execution.effects),
+            progress_status,
+            completion_passed,
+            effective,
+            reason,
+        )
 
 
 def parse_failure_categories(values: Sequence[str]) -> tuple[TaskFailureCategory, ...]:

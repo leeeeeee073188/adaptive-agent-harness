@@ -14,7 +14,7 @@
   "model_calls": 0,
   "new_model_tokens": 0,
   "observed_stop_turn": 2,
-  "pinned_runner_probe_event_count": 28,
+  "pinned_runner_probe_event_count": 29,
   "scope": "Durable bounded recovery integration",
-  "test_count": 56
+  "test_count": 57
 }

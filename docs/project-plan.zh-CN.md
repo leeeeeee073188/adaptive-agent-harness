@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 56 个零模型架构测试。
+- 57 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2189,7 +2189,19 @@ RecoveryAction Executor 完成后，继续加入以下执行前后Progress/Evide
 - RealReplica candidate runner默认组合ProgressDetector，pinned probe当前28条Ledger events；
 - 证据：`evidence/a10-progress-detector/summary.json`。
 
-下一步实现Recovery outcome evaluator：将action前后的Progress fingerprint、Evidence变化和Completion结果关联，只有实际产生Progress的action才计为有效；仍不继续付费扩跑。
+## P11：Recovery Outcome Attribution（已完成，零 Token）
+
+- 新增 `RecoveryOutcomeEvaluator` ServiceKey 与 `recovery/outcome-evaluated` durable event；
+- Outcome 通过 `execution_seq` 精确关联上一Turn尚未评估的 `recovery/executed`；
+- 只有下一Turn `progressed` 或 Completion通过才标记 `effective=true`；
+- `no_progress/regressed` 且未完成时标记 ineffective，工具调用变多不能获得credit；
+- Outcome 在当前Completion之后、新RecoveryDecision之前写入，避免归因到错误action batch；
+- TaskState可重建 recent recovery outcomes，后续Practice可离线统计action effectiveness，但本阶段不在线自修改策略权重；
+- 成功恢复合成场景记录effective，永久缺失artifact场景记录首批action ineffective并随后预算STOP；
+- RealReplica candidate runner默认组合OutcomeEvaluator，pinned probe当前29条Ledger events；
+- 证据：`evidence/a11-recovery-outcomes/summary.json`。
+
+下一步对历史/合成RecoveryOutcome建立按action的success/failure统计与最低样本门禁；在没有真实outcome样本前不做在线策略学习，也不继续付费扩跑。
 
 # 36. 关键风险
 

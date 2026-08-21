@@ -3,6 +3,9 @@ from __future__ import annotations
 import unittest
 
 from adaptive_harness.recovery import (
+    RecoveryActionEffect,
+    RecoveryExecution,
+    RuleBasedRecoveryOutcomeEvaluator,
     RuleBasedTaskRecoveryExecutor,
     RuleBasedTaskRecoveryPolicy,
     TaskFailureCategory,
@@ -71,6 +74,35 @@ class TaskRecoveryTests(unittest.TestCase):
         )
         self.assertTrue(execution.state_delta["recovery.partial_delivery_requested"])
         self.assertEqual(len(execution.directives), 2)
+
+    def test_outcome_requires_semantic_progress_or_completion(self) -> None:
+        execution = RecoveryExecution(
+            (
+                RecoveryActionEffect(
+                    TaskRecoveryAction.REFRESH_STATE,
+                    "applied",
+                    {},
+                    "refresh",
+                ),
+            )
+        )
+        evaluator = RuleBasedRecoveryOutcomeEvaluator()
+
+        failed = evaluator.evaluate(
+            execution_seq=3,
+            execution=execution,
+            progress_status="no_progress",
+            completion_passed=False,
+        )
+        passed = evaluator.evaluate(
+            execution_seq=3,
+            execution=execution,
+            progress_status="progressed",
+            completion_passed=False,
+        )
+
+        self.assertFalse(failed.effective)
+        self.assertTrue(passed.effective)
 
 
 if __name__ == "__main__":

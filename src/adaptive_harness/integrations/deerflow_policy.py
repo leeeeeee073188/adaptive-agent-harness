@@ -15,6 +15,7 @@ from urllib.request import Request, urlopen
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.progress import ProgressDetector, ProgressResult, ProgressSnapshot, ProgressStatus
 from adaptive_harness.recovery import (
+    RecoveryOutcomeEvaluator,
     TaskFailureCategory,
     TaskFailureContext,
     TaskRecoveryAction,
@@ -350,6 +351,7 @@ class DeerFlowPolicyBridge:
         recovery_policy: TaskRecoveryPolicy | None = None,
         recovery_executor: TaskRecoveryExecutor | None = None,
         progress_detector: ProgressDetector | None = None,
+        recovery_outcome_evaluator: RecoveryOutcomeEvaluator | None = None,
     ) -> None:
         if max_completion_turns < 1:
             raise ValueError("max_completion_turns must be at least one")
@@ -363,6 +365,7 @@ class DeerFlowPolicyBridge:
         self.recovery_policy = recovery_policy
         self.recovery_executor = recovery_executor
         self.progress_detector = progress_detector
+        self.recovery_outcome_evaluator = recovery_outcome_evaluator
 
     def start(
         self,
@@ -488,6 +491,7 @@ class DeerFlowPolicyBridge:
             result = self.completion_gate.verify(state)
         feedback = None if result.passed else self.completion_gate.feedback(result)
         ledger.append("completion/checked", {**result.to_payload(), "feedback": feedback})
+        self._evaluate_pending_recovery(ledger, result)
         recovery = None
         if not result.passed and self.recovery_policy is not None:
             context = self._failure_context(state, result)
@@ -508,6 +512,42 @@ class DeerFlowPolicyBridge:
                 if execution.directives:
                     feedback = f"{feedback}\n" + "\n".join(execution.directives)
         return result, feedback, recovery
+
+    def _evaluate_pending_recovery(
+        self,
+        ledger: SessionLedger,
+        completion: ContractCompletionResult,
+    ) -> None:
+        if self.recovery_outcome_evaluator is None:
+            return
+        evaluated = {
+            int(event.payload["execution_seq"])
+            for event in ledger.events
+            if event.type == "recovery/outcome-evaluated"
+        }
+        pending = [
+            event
+            for event in ledger.events
+            if event.type == "recovery/executed" and event.seq not in evaluated
+        ]
+        if not pending:
+            return
+        execution_event = pending[-1]
+        progress_events = [
+            event
+            for event in ledger.events
+            if event.type == "progress/checked" and event.seq > execution_event.seq
+        ]
+        if not progress_events:
+            return
+        execution = RecoveryExecutionRecord.from_payload(execution_event.payload).execution
+        outcome = self.recovery_outcome_evaluator.evaluate(
+            execution_seq=execution_event.seq,
+            execution=execution,
+            progress_status=str(progress_events[-1].payload["status"]),
+            completion_passed=completion.passed,
+        )
+        TaskEventWriter(ledger).record_recovery_outcome(outcome)
 
     def _criterion_supported(self, criterion: Any) -> bool:
         return any(

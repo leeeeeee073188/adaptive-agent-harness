@@ -1,0 +1,16 @@
+{
+  "all_passed": true,
+  "checks": {
+    "completed_recovery_effective": true,
+    "ineffective_no_progress_recorded": true,
+    "outcome_links_execution_seq": true,
+    "outcome_projection_replay_exact": true,
+    "progressed_recovery_effective": true,
+    "tool_activity_not_credited": true
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "pinned_runner_probe_event_count": 29,
+  "scope": "Recovery outcome attribution",
+  "test_count": 57
+}
