@@ -159,5 +159,12 @@ remaining work, and partial delivery is requested before risky continuation.
 These effects update TaskState; they do not claim the external action already
 succeeded.
 
+Turn-boundary progress is semantic rather than activity-based. Evidence is
+keyed by kind/subject and compared by value; repeated negative observations,
+extra tool calls, and recovery/progress control flags do not count. A transition
+from missing to present evidence does count. `progress/checked` is committed
+before the next recovery decision, so a no-progress recovery consumes its
+budget and stops instead of looping.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

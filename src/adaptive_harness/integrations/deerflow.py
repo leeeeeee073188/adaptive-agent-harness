@@ -161,6 +161,7 @@ class DeerFlowRuntimeAdapter:
         dedup_state = DeerFlowDedupState()
         message = request.message
         for turn in range(1, self.policy_bridge.max_completion_turns + 1):
+            progress_before = self.policy_bridge.begin_turn(ledger)
             ledger.append("turn/start", {"runtime": "deerflow"}, turn=turn)
             if turn > 1:
                 ledger.append(
@@ -215,6 +216,7 @@ class DeerFlowRuntimeAdapter:
                 raise
             summaries.append(summary)
             self.policy_bridge.observe_turn(ledger, contract, summary, turn=turn)
+            self.policy_bridge.check_progress(ledger, progress_before)
             completion, feedback, recovery = self.policy_bridge.check_completion(ledger)
             ledger.append(
                 "turn/end",

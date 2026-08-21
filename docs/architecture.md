@@ -98,3 +98,10 @@ Execution remains deliberately split: `RecoveryExecutor` applies auditable
 Harness control-state deltas and next-turn directives, while external browser,
 API, and file mutations remain ordinary tools. This prevents a control policy
 from fabricating world-state success.
+
+## Semantic progress
+
+Progress snapshots hash task Evidence and non-control state only. Repeating the
+same missing artifact with a new event id is no progress; changing it to an
+existing artifact is progress. Tool-call volume and `recovery.*` flags are
+excluded. The durable `progress/checked` result feeds the next RecoveryContext.

@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 53 个零模型架构测试。
+- 56 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2175,7 +2175,21 @@ MiniBench16 当前 provider-enforced task coverage：16/16，四个 block 均至
 - 合成缺失 artifact 场景验证 action event → state delta → next request → budget STOP 的完整顺序；
 - 证据继续归档于 `evidence/a9-durable-recovery/summary.json`。
 
-下一步需要为 refresh/switch等directive增加执行后 Progress/Evidence 对比，验证Recovery是否真的产生状态增量；没有结果证据前仍不宣称成功率提升，也不继续付费扩跑。
+RecoveryAction Executor 完成后，继续加入以下执行前后Progress/Evidence对比；没有结果证据前仍不宣称成功率提升，也不继续付费扩跑。
+
+## P10：Semantic Progress Detector（已完成，零 Token）
+
+- 新增 `ProgressDetector` ServiceKey、ProgressSnapshot/Result 和 `progress/checked` durable event；
+- Evidence 按 `kind + subject` 做语义去重，比较value而非event id；
+- 相同 `exists=false` 重复写入不算进展，false→true 或 artifact hash/state变化才算进展；
+- tool-call数量、重复busy work、`recovery.*` 与 `progress.*` 控制flag全部排除；
+- 每个 DeerFlow turn 开始前记录派生snapshot，Observation后写 `progress/checked`，再进行Completion/Recovery决策；
+- 无进展状态进入下一次 TaskFailureContext 的 `NO_PROGRESS` secondary category；
+- 合成三Turn场景产生 `progressed → no_progress`，随后预算耗尽于Turn 2提前STOP；
+- RealReplica candidate runner默认组合ProgressDetector，pinned probe当前28条Ledger events；
+- 证据：`evidence/a10-progress-detector/summary.json`。
+
+下一步实现Recovery outcome evaluator：将action前后的Progress fingerprint、Evidence变化和Completion结果关联，只有实际产生Progress的action才计为有效；仍不继续付费扩跑。
 
 # 36. 关键风险
 

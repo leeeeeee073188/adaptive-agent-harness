@@ -2,6 +2,7 @@
 
 from adaptive_harness.config import Bundle, PluginSpec, Profile
 from adaptive_harness.kernel import Kernel, Plugin, ServiceKey
+from adaptive_harness.progress import RuleBasedProgressDetector
 from adaptive_harness.recovery import RuleBasedTaskRecoveryExecutor, RuleBasedTaskRecoveryPolicy
 from adaptive_harness.runtime import AgentDriver, RunResult
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder, TaskContract
@@ -25,6 +26,7 @@ __all__ = [
     "RuleBasedTaskRecoveryExecutor",
     "RuleBasedContractChecker",
     "RuleBasedTaskContractBuilder",
+    "RuleBasedProgressDetector",
     "RunResult",
     "ServiceKey",
     "TaskContract",

@@ -21,6 +21,7 @@ from adaptive_harness.integrations.deerflow_policy import (
     StructuredDeerFlowObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.progress import RuleBasedProgressDetector
 from adaptive_harness.recovery import (
     RuleBasedTaskRecoveryExecutor,
     RuleBasedTaskRecoveryPolicy,
@@ -533,6 +534,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
             observation_providers=(FileArtifactObservationProvider(Path("/tmp")),),
             recovery_policy=RuleBasedTaskRecoveryPolicy(),
             recovery_executor=RuleBasedTaskRecoveryExecutor(),
+            progress_detector=RuleBasedProgressDetector(),
             max_completion_turns=3,
         )
         result = await DeerFlowRuntimeAdapter(
@@ -546,11 +548,16 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
 
         state = TaskStateProjector().project(result.ledger.events)
         headers = [event for event in result.ledger.events if event.type == "request/header"]
+        progress = [event for event in result.ledger.events if event.type == "progress/checked"]
         self.assertFalse(result.completed)
         self.assertEqual(result.turns, 2)
         self.assertEqual(len(client.calls), 2)
         self.assertEqual(len(state.recoveries), 2)
         self.assertEqual(len(state.recovery_executions), 2)
+        self.assertEqual(
+            [event.payload["status"] for event in progress],
+            ["progressed", "no_progress"],
+        )
         self.assertEqual(
             state.recoveries[0].decision.actions,
             (
@@ -570,6 +577,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(
             state.values["recovery.stop_requested"],
         )
+        self.assertEqual(state.values["progress.last_status"], "no_progress")
 
 
 if __name__ == "__main__":

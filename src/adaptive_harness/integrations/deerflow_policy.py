@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.progress import ProgressDetector, ProgressResult, ProgressSnapshot, ProgressStatus
 from adaptive_harness.recovery import (
     TaskFailureCategory,
     TaskFailureContext,
@@ -348,6 +349,7 @@ class DeerFlowPolicyBridge:
         unsupported_criteria: str = "reject",
         recovery_policy: TaskRecoveryPolicy | None = None,
         recovery_executor: TaskRecoveryExecutor | None = None,
+        progress_detector: ProgressDetector | None = None,
     ) -> None:
         if max_completion_turns < 1:
             raise ValueError("max_completion_turns must be at least one")
@@ -360,6 +362,7 @@ class DeerFlowPolicyBridge:
         self.unsupported_criteria = unsupported_criteria
         self.recovery_policy = recovery_policy
         self.recovery_executor = recovery_executor
+        self.progress_detector = progress_detector
 
     def start(
         self,
@@ -440,6 +443,31 @@ class DeerFlowPolicyBridge:
                     )
                 )
 
+    def begin_turn(self, ledger: SessionLedger) -> ProgressSnapshot | None:
+        if self.progress_detector is None:
+            return None
+        state = TaskStateProjector().project(ledger.events)
+        return self.progress_detector.snapshot(state)
+
+    def check_progress(
+        self,
+        ledger: SessionLedger,
+        before: ProgressSnapshot | None,
+    ) -> ProgressResult | None:
+        if self.progress_detector is None or before is None:
+            return None
+        state = TaskStateProjector().project(ledger.events)
+        result = self.progress_detector.detect(before, self.progress_detector.snapshot(state))
+        ledger.append("progress/checked", result.to_payload())
+        TaskEventWriter(ledger).update_state(
+            {
+                "progress.last_status": result.status.value,
+                "progress.last_fingerprint": result.after_fingerprint,
+            },
+            reason="semantic progress checked",
+        )
+        return result
+
     def check_completion(
         self,
         ledger: SessionLedger,
@@ -514,9 +542,15 @@ class DeerFlowPolicyBridge:
         for record in state.recoveries:
             for action in record.decision.actions:
                 attempts[action] = attempts.get(action, 0) + 1
+        secondary = [TaskFailureCategory.PREMATURE_FINISH]
+        progress_status = state.values.get("progress.last_status")
+        if progress_status == ProgressStatus.NO_PROGRESS.value:
+            secondary.append(TaskFailureCategory.NO_PROGRESS)
+        elif progress_status == ProgressStatus.REGRESSED.value:
+            secondary.append(TaskFailureCategory.STATE_INCONSISTENCY)
         return TaskFailureContext(
             primary,
-            (TaskFailureCategory.PREMATURE_FINISH,),
+            tuple(secondary),
             attempts=attempts,
         )
 

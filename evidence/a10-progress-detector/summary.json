@@ -1,0 +1,16 @@
+{
+  "all_passed": true,
+  "checks": {
+    "control_flags_ignored": true,
+    "negative_to_positive_is_progress": true,
+    "next_recovery_receives_no_progress": true,
+    "progress_event_ledger_backed": true,
+    "repeated_negative_is_no_progress": true,
+    "tool_activity_not_progress": true
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "pinned_runner_probe_event_count": 28,
+  "scope": "Semantic turn-boundary ProgressDetector",
+  "test_count": 56
+}
