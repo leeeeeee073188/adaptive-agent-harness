@@ -107,5 +107,12 @@ the runner now does so behind `deerflow.adaptive_policy_enabled`, archives
 evidence-bound preflight is ready for a paired MiniBench canary, but never
 starts paid work automatically.
 
+The first fresh paired canary (`file-google-trends-csv-flatten`) produced equal
+1.0 scores and semantically identical output. The candidate also produced a
+999-event canonical Ledger with artifact hash evidence. Its token usage was
+251,784 versus 152,041 for baseline (+65.6%), exceeding the 25% continuation
+limit, so the remaining Block 1 tasks were not started. This is treated as a
+cost regression signal—not hidden behind the passing score.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

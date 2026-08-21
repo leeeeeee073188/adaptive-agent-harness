@@ -1,0 +1,63 @@
+{
+  "analysis_model_calls": 0,
+  "analysis_new_tokens": 0,
+  "baseline": {
+    "capacity_score": 1.0,
+    "elapsed_sec": 36.575,
+    "passed": true,
+    "run_id": "adaptive-paired-b1t1-baseline-20260821",
+    "tool_calls": 9,
+    "total_tokens": 152041,
+    "variant": "vanilla_deerflow"
+  },
+  "candidate": {
+    "capacity_score": 1.0,
+    "elapsed_sec": 38.288,
+    "ledger_event_count": 999,
+    "passed": true,
+    "run_id": "adaptive-paired-b1t1-candidate-20260821",
+    "tool_calls": 13,
+    "total_tokens": 251784,
+    "variant": "adaptive_harness_a3"
+  },
+  "continue_block": false,
+  "controls": {
+    "model": true,
+    "runtime_image": true,
+    "seed": true,
+    "split": true,
+    "task_id": true
+  },
+  "cost": {
+    "elapsed_delta_sec": 1.7129999999999939,
+    "max_token_increase_fraction": 0.25,
+    "token_delta": 99743,
+    "token_increase_fraction": 0.6560269927190692,
+    "tool_call_delta": 4
+  },
+  "decision": "stop before remaining Block 1 tasks and optimize cost",
+  "gates": {
+    "baseline_integrity": true,
+    "candidate_integrity": true,
+    "candidate_ledger_present": true,
+    "completion_evidence_passed": true,
+    "paired_controls": true,
+    "quality_non_regression": true,
+    "semantic_outputs_equal": true,
+    "token_cost_within_limit": false
+  },
+  "output_comparison": {
+    "baseline_hashes": {
+      "trends_flat.csv": "1cd81bcba1d8182fb445837e3eb98479116f4430e029c30d3bbab0b60630cb5e"
+    },
+    "candidate_hashes": {
+      "trends_flat.csv": "1cd81bcba1d8182fb445837e3eb98479116f4430e029c30d3bbab0b60630cb5e"
+    },
+    "file_count": 1,
+    "same_paths": true,
+    "semantic_equal": true
+  },
+  "pair_valid": true,
+  "scope": "MiniBench fresh paired canary",
+  "task_id": "file-google-trends-csv-flatten"
+}

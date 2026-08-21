@@ -54,3 +54,11 @@ flowchart TD
    embedded-client code path, and the RealReplica candidate runner now invokes
    that path behind an explicit switch while preserving baseline behavior.
    Experience remains disabled until the leakage/admissibility gate passes.
+
+## Evaluation stop rule
+
+A paired cell must pass integrity, quality, semantic-output, Ledger-evidence,
+and token-cost gates. The first live pair passed every gate except cost
+(+65.6% tokens versus a +25% limit), so later Block 1 cells remain stopped.
+One stochastic pair is not enough to attribute the delta to policy overhead;
+the next optimization step must separate provider variance from Harness cost.

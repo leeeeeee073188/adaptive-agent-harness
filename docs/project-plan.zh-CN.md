@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0–A3 与 A4 Evaluation/Bridge 已实现；RealReplica candidate runner、pinned-container evidence 和全部 MiniBench preflight 门禁已通过，下一步为 Block 1 单任务 paired canary
+> 状态：A0–A4 已实现并完成首个 fresh paired canary；质量与语义一致性通过，但 Candidate Token +65.6% 超过 +25% 停止线，Block 1 剩余任务已暂停
 
 ---
 
@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 42 个零模型架构测试。
+- 44 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2064,7 +2064,31 @@ live_policy_bridge_ready      PASS
 paid_run_ready                TRUE
 ```
 
-所有静态、离线和容器 wiring gate 已通过。下一步只运行 MiniBench Block 1 的第一个任务做 fresh baseline/candidate paired canary；先验证 candidate 真实生成 `adaptive-ledger.jsonl`、Profile/seed/image 对齐和成本上限，再决定是否继续 Block 1 其余三个任务。绝不切换到完整 107 任务。
+所有静态、离线和容器 wiring gate 通过后，仅运行了 MiniBench Block 1 第一个任务的 fresh baseline/candidate paired canary；Candidate Ledger 与质量通过，但成本门禁失败，结果如下。完整 107 任务始终未运行。
+
+## P4：MiniBench Block 1 首个 Fresh Paired Canary（已完成，成本门禁停止）
+
+任务：`file-google-trends-csv-flatten`。
+
+| 指标 | Baseline | Candidate | Delta |
+|---|---:|---:|---:|
+| Passed / Capacity | true / 1.0 | true / 1.0 | 0 |
+| Total Tokens | 152,041 | 251,784 | +99,743 / +65.6% |
+| Tool Calls | 9 | 13 | +4 |
+| Elapsed | 36.575s | 38.288s | +1.713s |
+| Canonical Ledger | 无 | 999 events | Candidate-only evidence |
+
+验证结果：
+
+- model、runtime image、seed、split、task 全部对齐；
+- 两侧 integrity 均通过；
+- 输出文件路径一致，归一化 CRLF/LF 后 SHA-256 完全相同；
+- Candidate `evidence/added` 包含 exists/size/SHA-256，`completion/checked.passed=true`；
+- Candidate 成功率没有回退，但 Token 增幅超过 25% 门禁，因此 `continue_block=false`；
+- 该任务首轮模型输入并未被 PolicyBridge 修改，因此单次差值可能包含 provider 随机性，不能直接归因于 Harness。本项目选择停止扩跑，而不是用单次通过掩盖成本不确定性；
+- 证据位于 `evidence/a5-minibench-canary/summary.json`。
+
+下一步：先建立重复小样本/历史分布的 Token variance 基线，或在相同已录制模型响应上做 counterfactual replay，区分 provider variance 与 Harness 真实增量；成本结论清楚前不运行 Block 1 其余三个任务，更不运行完整 107 任务。
 
 # 36. 关键风险
 
