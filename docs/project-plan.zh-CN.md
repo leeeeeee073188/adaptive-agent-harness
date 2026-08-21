@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0–A3 已实现；A4 离线 Adapter、16/16 Contract coverage、public-client bridge 与 pinned-container 零模型 probe 已完成；付费运行仅剩 RealReplica candidate runner 实际接线路径
+> 状态：A0–A3 与 A4 Evaluation/Bridge 已实现；RealReplica candidate runner、pinned-container evidence 和全部 MiniBench preflight 门禁已通过，下一步为 Block 1 单任务 paired canary
 
 ---
 
@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 41 个零模型架构测试。
+- 42 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -1777,7 +1777,8 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - preflight 新增模型调用及 Token 为 0，证据位于 `evidence/a4-minibench-preflight/summary.json`。
 - bridge 证据位于 `evidence/a4-live-bridge/summary.json`。
 - pinned-container probe 使用 `--network none` 临时容器，将当前 Harness 源码复制进固定镜像，执行真实 `DeerFlowClient.stream` 两轮、21 条 Ledger facts、同 thread completion continuation，模型调用为 0；镜像 ID 为 `sha256:d2eed0f7...`，证据位于 `evidence/a4-container-wiring/summary.json`；
-- probe 只证明容器兼容性，不证明 RealReplica candidate command 已调用新路径。因此 evidence 明确记录 `realreplica_candidate_runner_wired=false`，preflight 不接受该 evidence 解锁付费运行。
+- RealReplica commit `a07330f` 增加 `deerflow.adaptive_policy_enabled`：candidate runner 复制 Harness、启用 PolicyBridge、保存 `agent/adaptive-ledger.jsonl`，并在 candidate 模式禁用会提前杀进程的旧 poller；baseline switch-off 路径保持不变；
+- 组合 probe 直接从 RealReplica runner 生成容器脚本，在 pinned image / `--network none` 下验证 exact candidate path，记录 `realreplica_candidate_runner_wired=true`、0 模型调用，preflight 五项 gate 全部通过；
 
 ## A5：Practice（V2）
 
@@ -2059,11 +2060,11 @@ frozen_dataset_valid          PASS
 historical_baseline_all_tasks PASS (16/16，仅作风险定位)
 paired_controls_valid         PASS (32 cells)
 contract_coverage_complete    PASS (16/16)
-live_policy_bridge_ready      FAIL
-paid_run_ready                FALSE
+live_policy_bridge_ready      PASS
+paid_run_ready                TRUE
 ```
 
-下一步仍不是付费跑 Block 1。容器内 bridge import/stream 已验证，接下来要让 RealReplica candidate runner 复制该包、启用 PolicyBridge、保存 canonical Ledger，并避免旧 early-terminate poller 在 bridge 完成检查前杀掉进程。完成后生成带 `realreplica_candidate_runner_wired=true` 且绑定 runtime image、Dataset fingerprint、Candidate Profile fingerprint 的 evidence，再通过 `--policy-bridge-evidence` 交给 preflight；不允许手工布尔开关绕过门禁。
+所有静态、离线和容器 wiring gate 已通过。下一步只运行 MiniBench Block 1 的第一个任务做 fresh baseline/candidate paired canary；先验证 candidate 真实生成 `adaptive-ledger.jsonl`、Profile/seed/image 对齐和成本上限，再决定是否继续 Block 1 其余三个任务。绝不切换到完整 107 任务。
 
 # 36. 关键风险
 

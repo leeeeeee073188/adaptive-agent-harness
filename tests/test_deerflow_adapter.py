@@ -14,6 +14,7 @@ from adaptive_harness.integrations.deerflow import (
 from adaptive_harness.integrations.deerflow_policy import (
     DeerFlowPolicyBridge,
     FileArtifactObservationProvider,
+    HttpJsonMatchObservationProvider,
     StructuredDeerFlowObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
@@ -350,6 +351,35 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.completed)
         self.assertTrue(evidence.payload["evidence"]["value"]["exists"])
         self.assertEqual(len(evidence.payload["evidence"]["value"]["sha256"]), 64)
+
+    async def test_loopback_http_provider_projects_public_early_terminate_signal(self) -> None:
+        provider = HttpJsonMatchObservationProvider(
+            url="http://127.0.0.1:3000/api/sessions",
+            subject="listing.submitted",
+            match_kind="list_any_field_equals",
+            match_field="status",
+            match_value="submitted",
+            fetch_json=lambda _url: [{"status": "submitted"}],
+        )
+        client = _TurnClient(
+            [[
+                _RawEvent("messages-tuple", {"type": "ai", "id": "a1", "content": "done"}),
+                _RawEvent("end", {"usage": {"total_tokens": 5}}),
+            ]]
+        )
+        result = await DeerFlowRuntimeAdapter(
+            client,
+            _FakeEnvironment(),
+            policy_bridge=DeerFlowPolicyBridge(observation_providers=(provider,)),
+        ).run(
+            DeerFlowRunRequest("帮我把商品发上线，发品系统打开后提交。", "thread-http"),
+            run_id="run-http",
+        )
+
+        self.assertTrue(result.completed)
+        evidence = next(event for event in result.ledger.events if event.type == "evidence/added")
+        self.assertEqual(evidence.payload["evidence"]["subject"], "listing.submitted")
+        self.assertTrue(evidence.payload["evidence"]["value"])
 
 
 if __name__ == "__main__":

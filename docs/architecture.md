@@ -51,6 +51,6 @@ flowchart TD
 5. Evaluation pins MiniBench16 by task-order hash and emits controlled paired
    manifests. Offline preflight and a public-client same-thread policy bridge
    are implemented. A network-disabled pinned-container probe verifies the real
-   embedded-client code path; paid execution stays blocked until the
-   RealReplica candidate runner itself invokes that path. Experience remains
-   disabled until the leakage/admissibility gate passes.
+   embedded-client code path, and the RealReplica candidate runner now invokes
+   that path behind an explicit switch while preserving baseline behavior.
+   Experience remains disabled until the leakage/admissibility gate passes.

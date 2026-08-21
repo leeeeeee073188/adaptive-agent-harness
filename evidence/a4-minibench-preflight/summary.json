@@ -212,7 +212,7 @@
     "contract_coverage_complete": true,
     "frozen_dataset_valid": true,
     "historical_baseline_all_tasks": true,
-    "live_policy_bridge_ready": false,
+    "live_policy_bridge_ready": true,
     "paired_controls_valid": true
   },
   "historical_baseline": {
@@ -227,9 +227,9 @@
   },
   "model_calls": 0,
   "new_model_tokens": 0,
-  "next_action": "Close paid gates before spending tokens: live_policy_bridge_ready.",
+  "next_action": "Run paired MiniBench blocks.",
   "offline_preflight_passed": true,
-  "paid_run_ready": false,
+  "paid_run_ready": true,
   "paired_manifest": {
     "baseline": {
       "model": "deepseek-v4-flash",

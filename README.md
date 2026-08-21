@@ -101,8 +101,11 @@ A reproducible `--network none` probe now copies the Harness into the pinned
 DeerFlow image and exercises the real `DeerFlowClient.stream` path with a
 deterministic in-process agent. It proves package import, same-thread bridge
 execution, Ledger persistence, and cleanup with zero provider calls. Formal
-readiness remains false until the RealReplica candidate runner invokes this
-path; a standalone probe cannot substitute for runner integration.
+readiness requires the RealReplica candidate runner to invoke this exact path;
+the runner now does so behind `deerflow.adaptive_policy_enabled`, archives
+`adaptive-ledger.jsonl`, and disables its legacy external kill poller. The
+evidence-bound preflight is ready for a paired MiniBench canary, but never
+starts paid work automatically.
 
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping, Sequence
+import json
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.task_contract import (
@@ -119,6 +122,63 @@ class StructuredDeerFlowObservationProvider:
         return tuple(evidence)
 
 
+class HttpJsonMatchObservationProvider:
+    """Project a public loopback state signal into one observation criterion."""
+
+    def __init__(
+        self,
+        *,
+        url: str,
+        subject: str,
+        match_kind: str,
+        match_field: str,
+        match_value: str,
+        fetch_json: Callable[[str], Any] | None = None,
+    ) -> None:
+        parsed = urlparse(url)
+        if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost"}:
+            raise ValueError("HTTP observation providers are restricted to loopback http endpoints")
+        if match_kind != "list_any_field_equals":
+            raise ValueError(f"unsupported HTTP observation match kind: {match_kind}")
+        self.url = url
+        self.subject = subject
+        self.match_kind = match_kind
+        self.match_field = match_field
+        self.match_value = match_value
+        self.fetch_json = fetch_json or _fetch_json
+
+    def observe(
+        self,
+        contract: TaskContract,
+        summary: DeerFlowReplaySummary,
+        *,
+        turn: int,
+    ) -> Sequence[Evidence]:
+        body = self.fetch_json(self.url)
+        matched = bool(
+            isinstance(body, list)
+            and any(
+                isinstance(item, Mapping)
+                and str(item.get(self.match_field)) == self.match_value
+                for item in body
+            )
+        )
+        return (
+            Evidence(
+                id=f"deerflow:t{turn}:http:{self.subject}",
+                kind=EvidenceKind.OBSERVATION,
+                subject=self.subject,
+                value=matched,
+                source=EvidenceSource.RUNTIME_OBSERVATION,
+                metadata={
+                    "provider": "loopback-http-json",
+                    "match_kind": self.match_kind,
+                    "match_field": self.match_field,
+                },
+            ),
+        )
+
+
 class DeerFlowPolicyBridge:
     """Evaluate each embedded-client turn and request continuation when needed."""
 
@@ -187,3 +247,8 @@ def _file_sha256(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _fetch_json(url: str) -> Any:
+    with urlopen(url, timeout=5) as response:
+        return json.loads(response.read().decode("utf-8"))

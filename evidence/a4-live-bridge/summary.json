@@ -10,10 +10,10 @@
     "structured_tool_evidence_only": true
   },
   "pinned_container_probe_verified": true,
-  "realreplica_candidate_runner_wired": false,
+  "realreplica_candidate_runner_wired": true,
   "model_calls": 0,
   "new_model_tokens": 0,
-  "paid_run_ready": false,
+  "paid_run_ready": true,
   "scope": "A4 public-client DeerFlow policy bridge",
-  "test_count": 41
+  "test_count": 42
 }

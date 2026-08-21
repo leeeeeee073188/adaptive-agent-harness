@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate zero-model bridge evidence inside the pinned DeerFlow container."""
+"""Exercise the exact RealReplica adaptive runner inside the pinned image."""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ import argparse
 import hashlib
 import json
 import subprocess
+import sys
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any
 
 from preflight_minibench16 import DEFAULT_IMAGE, _variant_specs
 
@@ -28,19 +28,30 @@ def main() -> int:
     parser.add_argument("--image", default=DEFAULT_IMAGE)
     args = parser.parse_args()
 
+    realreplica_root = args.realreplica_root.resolve()
     if args.image != DEFAULT_IMAGE:
         raise SystemExit("container probe only accepts the pinned MiniBench image")
-    dataset = RealReplicaMiniBenchAdapter().load(args.realreplica_root)
+    sys.path.insert(0, str(realreplica_root))
+    from real_replica_bench.harnesses.deerflow.runner import (  # noqa: PLC0415
+        _adaptive_deerflow_invocation_script,
+    )
+
+    dataset = RealReplicaMiniBenchAdapter().load(realreplica_root)
     _, candidate = _variant_specs(dataset.seed)
-    container = f"adaptive-wiring-{uuid.uuid4().hex[:12]}"
+    container = f"adaptive-runner-{uuid.uuid4().hex[:12]}"
     image_id = _run("docker", "image", "inspect", args.image, "--format", "{{.Id}}")
-    inner_script = ROOT / "scripts/container_wiring_probe.py"
     source_dir = ROOT / "src/adaptive_harness"
+    runner_path = realreplica_root / "real_replica_bench/harnesses/deerflow/runner.py"
+    candidate_config = realreplica_root / "configs/realreplicabench_adaptive_minibench16.yaml"
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
-        inner_output = tmp_path / "inner.json"
-        inner_ledger = tmp_path / "ledger.jsonl"
+        generated_script = tmp_path / "adaptive-runner.py"
+        prompt_path = tmp_path / "prompt.md"
+        result_path = tmp_path / "result.json"
+        ledger_path = tmp_path / "ledger.jsonl"
+        generated_script.write_text(_adaptive_deerflow_invocation_script() + "\n")
+        prompt_path.write_text("帮我把商品发上线，发品系统打开后提交。\n")
         try:
             _run(
                 "docker",
@@ -58,9 +69,18 @@ def main() -> int:
             network_mode = _run(
                 "docker", "inspect", container, "--format", "{{.HostConfig.NetworkMode}}"
             )
-            _run("docker", "exec", container, "mkdir", "-p", "/tmp/adaptive-src", "/tmp/adaptive-probe")
+            _run(
+                "docker",
+                "exec",
+                container,
+                "mkdir",
+                "-p",
+                "/tmp/adaptive-src",
+                "/tmp/adaptive-probe/task/outputs",
+            )
             _run("docker", "cp", str(source_dir), f"{container}:/tmp/adaptive-src/adaptive_harness")
-            _run("docker", "cp", str(inner_script), f"{container}:/tmp/container_wiring_probe.py")
+            _run("docker", "cp", str(generated_script), f"{container}:/tmp/adaptive-runner.py")
+            _run("docker", "cp", str(prompt_path), f"{container}:/tmp/prompt.md")
             source_sha = _run(
                 "docker",
                 "exec",
@@ -76,18 +96,26 @@ def main() -> int:
                 "PYTHONPATH=/tmp/adaptive-src",
                 "-e",
                 "DEER_FLOW_CONFIG_PATH=/opt/deer-flow/config.example.yaml",
+                "-e",
+                "ADAPTIVE_HARNESS_WIRING_PROBE=1",
                 "-w",
                 "/opt/deer-flow",
                 container,
                 DEERFLOW_PYTHON,
-                "/tmp/container_wiring_probe.py",
-                "--output",
+                "/tmp/adaptive-runner.py",
+                "/tmp/prompt.md",
                 "/tmp/adaptive-probe/result.json",
-                "--ledger",
                 "/tmp/adaptive-probe/ledger.jsonl",
+                "/opt/deer-flow/config.example.yaml",
+                "deepseek-v4-flash",
+                "probe-thread",
+                "disabled",
+                "100",
+                "/tmp/adaptive-probe/task",
+                "{}",
             )
-            _run("docker", "cp", f"{container}:/tmp/adaptive-probe/result.json", str(inner_output))
-            _run("docker", "cp", f"{container}:/tmp/adaptive-probe/ledger.jsonl", str(inner_ledger))
+            _run("docker", "cp", f"{container}:/tmp/adaptive-probe/result.json", str(result_path))
+            _run("docker", "cp", f"{container}:/tmp/adaptive-probe/ledger.jsonl", str(ledger_path))
         finally:
             subprocess.run(
                 ["docker", "rm", "-f", container],
@@ -96,30 +124,49 @@ def main() -> int:
                 text=True,
             )
 
-        inner = json.loads(inner_output.read_text(encoding="utf-8"))
+        payload = json.loads(result_path.read_text())
+        adaptive = payload.get("adaptive") or {}
+        runner_text = runner_path.read_text()
+        config_text = candidate_config.read_text()
         checks = {
-            **dict(inner.get("checks") or {}),
+            "adaptive_package_imported": True,
             "container_network_disabled": network_mode == "none",
             "deerflow_source_pinned": source_sha == EXPECTED_DEERFLOW_SHA,
-            "ledger_copied_from_container": inner_ledger.is_file() and inner_ledger.stat().st_size > 0,
+            "embedded_client_stream_exercised": adaptive.get("turns") == 2,
+            "ledger_persisted": ledger_path.is_file() and ledger_path.stat().st_size > 0,
+            "policy_bridge_enabled": adaptive.get("completed") is True,
+            "realreplica_candidate_config_enabled": "adaptive_policy_enabled: true" in config_text,
+            "realreplica_runner_copies_source": "/tmp/adaptive-src/adaptive_harness" in runner_text,
+            "realreplica_runner_persists_ledger": "adaptive-ledger.jsonl" in runner_text,
+            "runner_probe_used_zero_models": adaptive.get("model_calls") == 0,
         }
-        report: dict[str, Any] = {
-            "passed": bool(inner.get("passed")) and all(checks.values()),
-            "scope": "pinned DeerFlow container wiring probe",
+        runner_wired = all(
+            checks[key]
+            for key in (
+                "realreplica_candidate_config_enabled",
+                "realreplica_runner_copies_source",
+                "realreplica_runner_persists_ledger",
+                "runner_probe_used_zero_models",
+            )
+        )
+        report = {
+            "passed": all(checks.values()),
+            "scope": "RealReplica adaptive candidate runner wiring probe",
             "runtime_image": args.image,
             "runtime_image_id": image_id,
             "deerflow_source_sha": source_sha,
             "dataset_fingerprint": dataset.fingerprint,
             "candidate_profile_fingerprint": candidate.profile_fingerprint,
             "adaptive_source_sha256": _sha256_tree(source_dir),
-            "probe_script_sha256": hashlib.sha256(inner_script.read_bytes()).hexdigest(),
+            "runner_source_sha256": hashlib.sha256(runner_path.read_bytes()).hexdigest(),
+            "probe_script_sha256": hashlib.sha256(generated_script.read_bytes()).hexdigest(),
             "model_calls": 0,
             "new_model_tokens": 0,
-            "realreplica_candidate_runner_wired": False,
+            "realreplica_candidate_runner_wired": runner_wired,
             "checks": checks,
-            "ledger_event_count": inner.get("ledger_event_count"),
-            "ledger_sha256": hashlib.sha256(inner_ledger.read_bytes()).hexdigest(),
-            "usage": inner.get("usage") or {},
+            "ledger_event_count": adaptive.get("ledger_event_count"),
+            "ledger_sha256": hashlib.sha256(ledger_path.read_bytes()).hexdigest(),
+            "usage": adaptive.get("usage") or {},
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
