@@ -1,11 +1,12 @@
 {
   "contract_coverage": {
-    "coverage_rate": 0.6875,
-    "covered_tasks": 11,
-    "criterion_count": 31,
+    "coverage_rate": 1.0,
+    "covered_tasks": 16,
+    "criterion_count": 39,
     "criterion_kinds": {
       "artifact_exists": 28,
-      "exact_count": 3
+      "exact_count": 3,
+      "observation_equals": 8
     },
     "rows": [
       {
@@ -18,8 +19,10 @@
       },
       {
         "block": 1,
-        "criterion_count": 0,
-        "criterion_kinds": [],
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "observation_equals"
+        ],
         "task_id": "browser-alibaba-led-bulb-simple-publish"
       },
       {
@@ -50,9 +53,10 @@
       },
       {
         "block": 2,
-        "criterion_count": 1,
+        "criterion_count": 2,
         "criterion_kinds": [
-          "artifact_exists"
+          "artifact_exists",
+          "observation_equals"
         ],
         "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui"
       },
@@ -97,26 +101,36 @@
       },
       {
         "block": 3,
-        "criterion_count": 0,
-        "criterion_kinds": [],
+        "criterion_count": 3,
+        "criterion_kinds": [
+          "observation_equals",
+          "observation_equals",
+          "observation_equals"
+        ],
         "task_id": "api-gmail-vendor-brief-mcp"
       },
       {
         "block": 3,
-        "criterion_count": 0,
-        "criterion_kinds": [],
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "observation_equals"
+        ],
         "task_id": "api-google-docs-price-list-update-mcp"
       },
       {
         "block": 4,
-        "criterion_count": 0,
-        "criterion_kinds": [],
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "observation_equals"
+        ],
         "task_id": "cli-alibaba-pneumatic-valve-publish"
       },
       {
         "block": 4,
-        "criterion_count": 0,
-        "criterion_kinds": [],
+        "criterion_count": 1,
+        "criterion_kinds": [
+          "observation_equals"
+        ],
         "task_id": "browser-alibaba-custom-yoga-mat-publish"
       },
       {
@@ -148,13 +162,7 @@
       }
     ],
     "total_tasks": 16,
-    "uncovered_task_ids": [
-      "browser-alibaba-led-bulb-simple-publish",
-      "api-gmail-vendor-brief-mcp",
-      "api-google-docs-price-list-update-mcp",
-      "cli-alibaba-pneumatic-valve-publish",
-      "browser-alibaba-custom-yoga-mat-publish"
-    ]
+    "uncovered_task_ids": []
   },
   "dataset": {
     "blocks": {
@@ -201,7 +209,7 @@
     "seed": 20260818
   },
   "gates": {
-    "contract_coverage_complete": false,
+    "contract_coverage_complete": true,
     "frozen_dataset_valid": true,
     "historical_baseline_all_tasks": true,
     "live_policy_bridge_ready": false,
@@ -219,7 +227,7 @@
   },
   "model_calls": 0,
   "new_model_tokens": 0,
-  "next_action": "Close contract coverage and live DeerFlow policy-bridge gaps before spending tokens.",
+  "next_action": "Close paid gates before spending tokens: live_policy_bridge_ready.",
   "offline_preflight_passed": true,
   "paid_run_ready": false,
   "paired_manifest": {

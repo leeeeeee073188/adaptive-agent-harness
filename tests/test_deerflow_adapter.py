@@ -11,6 +11,11 @@ from adaptive_harness.integrations.deerflow import (
     DeerFlowRunRequest,
     DeerFlowRuntimeAdapter,
 )
+from adaptive_harness.integrations.deerflow_policy import (
+    DeerFlowPolicyBridge,
+    FileArtifactObservationProvider,
+    StructuredDeerFlowObservationProvider,
+)
 from adaptive_harness.ledger import SessionLedger
 
 
@@ -144,6 +149,17 @@ class _FakeClient:
         yield _RawEvent("end", {"usage": {"total_tokens": 3}})
 
 
+class _TurnClient:
+    def __init__(self, turns: list[list[_RawEvent]]) -> None:
+        self.turns = turns
+        self.calls: list[tuple[str, str | None]] = []
+
+    def stream(self, message: str, *, thread_id: str | None = None, **kwargs: Any):
+        index = len(self.calls)
+        self.calls.append((message, thread_id))
+        yield from self.turns[index]
+
+
 class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
     async def test_runtime_snapshots_request_and_cleans_environment(self) -> None:
         environment = _FakeEnvironment()
@@ -200,6 +216,140 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
             )
 
         self.assertFalse(environment.built)
+
+    async def test_policy_bridge_continues_same_thread_until_structured_evidence(self) -> None:
+        client = _TurnClient(
+            [
+                [
+                    _RawEvent("messages-tuple", {"type": "ai", "id": "a1", "content": "done"}),
+                    _RawEvent(
+                        "values",
+                        {"messages": [{"type": "ai", "id": "a1", "content": "done"}]},
+                    ),
+                    _RawEvent("end", {"usage": {"total_tokens": 10}}),
+                ],
+                [
+                    _RawEvent(
+                        "messages-tuple",
+                        {
+                            "type": "tool",
+                            "id": "tool-1",
+                            "tool_call_id": "call-1",
+                            "name": "submit_listing",
+                            "content": "ok",
+                            "artifact": {
+                                "adaptive_evidence": [
+                                    {
+                                        "kind": "observation",
+                                        "subject": "listing.submitted",
+                                        "value": True,
+                                    }
+                                ]
+                            },
+                        },
+                    ),
+                    _RawEvent("messages-tuple", {"type": "ai", "id": "a2", "content": "done"}),
+                    _RawEvent(
+                        "values",
+                        {
+                            "messages": [
+                                {"type": "ai", "id": "a1", "content": "done"},
+                                {
+                                    "type": "tool",
+                                    "id": "tool-1",
+                                    "tool_call_id": "call-1",
+                                    "name": "submit_listing",
+                                    "content": "ok",
+                                },
+                                {"type": "ai", "id": "a2", "content": "done"},
+                            ]
+                        },
+                    ),
+                    _RawEvent("end", {"usage": {"total_tokens": 20}}),
+                ],
+            ]
+        )
+        bridge = DeerFlowPolicyBridge(
+            observation_providers=(StructuredDeerFlowObservationProvider(),),
+            max_completion_turns=2,
+        )
+        adapter = DeerFlowRuntimeAdapter(client, _FakeEnvironment(), policy_bridge=bridge)
+
+        result = await adapter.run(
+            DeerFlowRunRequest(
+                "帮我把商品发上线，发品系统打开后提交。",
+                "thread-policy",
+                task_id="listing-task",
+            ),
+            run_id="run-policy",
+        )
+
+        event_types = [event.type for event in result.ledger.events]
+        checks = [event for event in result.ledger.events if event.type == "completion/checked"]
+        self.assertTrue(result.completed)
+        self.assertEqual(result.turns, 2)
+        self.assertEqual(result.summary.usage, {"total_tokens": 30})
+        self.assertEqual(client.calls[0][1], client.calls[1][1])
+        self.assertIn("Completion rejected by task evidence", client.calls[1][0])
+        self.assertEqual(event_types.count("runtime/turn-end"), 2)
+        self.assertEqual(event_types.count("runtime/end"), 1)
+        self.assertEqual(event_types.count("evidence/added"), 1)
+        self.assertEqual(event_types.count("assistant/message"), 2)
+        self.assertEqual(event_types.count("tool/result"), 1)
+        self.assertFalse(checks[0].payload["passed"])
+        self.assertTrue(checks[1].payload["passed"])
+
+    async def test_policy_bridge_fails_closed_when_turn_budget_expires(self) -> None:
+        client = _TurnClient(
+            [[
+                _RawEvent("messages-tuple", {"type": "ai", "id": "a1", "content": "done"}),
+                _RawEvent("end", {"usage": {"total_tokens": 5}}),
+            ]]
+        )
+        bridge = DeerFlowPolicyBridge(max_completion_turns=1)
+
+        result = await DeerFlowRuntimeAdapter(
+            client,
+            _FakeEnvironment(),
+            policy_bridge=bridge,
+        ).run(
+            DeerFlowRunRequest("Write outputs/report.csv.", "thread-budget"),
+            run_id="run-budget",
+        )
+
+        self.assertFalse(result.completed)
+        self.assertEqual(result.turns, 1)
+        self.assertEqual(result.ledger.events[-1].payload["reason"], "completion_rejected")
+
+    async def test_filesystem_provider_hashes_required_artifact(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "outputs/report.csv"
+            output.parent.mkdir()
+            output.write_text("header\nvalue\n")
+            client = _TurnClient(
+                [[
+                    _RawEvent("messages-tuple", {"type": "ai", "id": "a1", "content": "done"}),
+                    _RawEvent("end", {"usage": {"total_tokens": 5}}),
+                ]]
+            )
+            bridge = DeerFlowPolicyBridge(
+                observation_providers=(FileArtifactObservationProvider(root),),
+            )
+
+            result = await DeerFlowRuntimeAdapter(
+                client,
+                _FakeEnvironment(),
+                policy_bridge=bridge,
+            ).run(
+                DeerFlowRunRequest("Write outputs/report.csv.", "thread-file"),
+                run_id="run-file-policy",
+            )
+
+        evidence = next(event for event in result.ledger.events if event.type == "evidence/added")
+        self.assertTrue(result.completed)
+        self.assertTrue(evidence.payload["evidence"]["value"]["exists"])
+        self.assertEqual(len(evidence.payload["evidence"]["value"]["sha256"]), 64)
 
 
 if __name__ == "__main__":

@@ -242,6 +242,25 @@ class TaskContractStateTests(unittest.TestCase):
             ["outputs/result.json"],
         )
 
+    def test_public_state_transition_language_generates_provider_neutral_criteria(self) -> None:
+        builder = RuleBasedTaskContractBuilder()
+        listing = builder.build("listing", "帮我把商品发上线，发品系统打开后提交。")
+        workspace = builder.build(
+            "workspace",
+            "创建顶层标签，保存一封未发送草稿，再创建一个日历事件。",
+        )
+        document = builder.build("docs", "Apply the update to the price list document now.")
+
+        self.assertEqual(
+            [item.parameters["subject"] for item in listing.criteria],
+            ["listing.submitted"],
+        )
+        self.assertEqual(
+            {item.parameters["subject"] for item in workspace.criteria},
+            {"mail.label_created", "mail.draft_saved", "calendar.event_created"},
+        )
+        self.assertEqual(document.criteria[0].parameters["subject"], "document.updated")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -21,7 +21,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("realreplica_root", type=Path)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--policy-bridge-ready", action="store_true")
+    parser.add_argument("--policy-bridge-evidence", type=Path)
     args = parser.parse_args()
 
     adapter = RealReplicaMiniBenchAdapter()
@@ -58,13 +58,19 @@ def main() -> int:
     history_config_hashes = sorted(
         {row.run_config_sha256 for row in history_rows if row.run_config_sha256}
     )
+    bridge_evidence_valid = _bridge_evidence_valid(
+        args.policy_bridge_evidence,
+        dataset_fingerprint=dataset.fingerprint,
+        candidate_profile_fingerprint=candidate.profile_fingerprint,
+    )
     gates = {
         "frozen_dataset_valid": len(dataset.tasks) == 16,
         "historical_baseline_all_tasks": len(history) == len(dataset.tasks),
         "paired_controls_valid": len(manifest.cells) == len(dataset.tasks) * 2,
         "contract_coverage_complete": coverage.covered_count == coverage.total_count,
-        "live_policy_bridge_ready": args.policy_bridge_ready,
+        "live_policy_bridge_ready": bridge_evidence_valid,
     }
+    failed_paid_gates = [name for name, passed in gates.items() if not passed]
     report = {
         "scope": "A4 MiniBench16 zero-model preflight",
         "model_calls": 0,
@@ -123,7 +129,7 @@ def main() -> int:
         "next_action": (
             "Run paired MiniBench blocks."
             if all(gates.values())
-            else "Close contract coverage and live DeerFlow policy-bridge gaps before spending tokens."
+            else f"Close paid gates before spending tokens: {', '.join(failed_paid_gates)}."
         ),
     }
     rendered = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -132,6 +138,35 @@ def main() -> int:
         args.output.write_text(rendered, encoding="utf-8")
     print(rendered, end="")
     return 0 if report["offline_preflight_passed"] else 1
+
+
+def _bridge_evidence_valid(
+    path: Path | None,
+    *,
+    dataset_fingerprint: str,
+    candidate_profile_fingerprint: str,
+) -> bool:
+    if path is None or not path.is_file():
+        return False
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    required_checks = {
+        "adaptive_package_imported",
+        "embedded_client_stream_exercised",
+        "ledger_persisted",
+        "policy_bridge_enabled",
+    }
+    return bool(
+        isinstance(value, dict)
+        and value.get("passed") is True
+        and value.get("runtime_image") == DEFAULT_IMAGE
+        and value.get("dataset_fingerprint") == dataset_fingerprint
+        and value.get("candidate_profile_fingerprint") == candidate_profile_fingerprint
+        and value.get("model_calls") == 0
+        and required_checks <= {key for key, passed in (value.get("checks") or {}).items() if passed is True}
+    )
 
 
 if __name__ == "__main__":

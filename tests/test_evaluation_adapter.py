@@ -13,6 +13,7 @@ from adaptive_harness.integrations.realreplica import (
     VariantSpec,
     stable_profile_fingerprint,
 )
+from scripts.preflight_minibench16 import DEFAULT_IMAGE, _bridge_evidence_valid
 
 IMAGE = "realreplicabench/deerflow:test"
 
@@ -101,6 +102,40 @@ class EvaluationAdapterTests(unittest.TestCase):
     def test_profile_fingerprint_rejects_credentials(self) -> None:
         with self.assertRaisesRegex(ValueError, "must not contain credentials"):
             stable_profile_fingerprint({"api_key": "secret"})
+
+    def test_paid_bridge_gate_requires_pinned_container_evidence(self) -> None:
+        path = self.root / "bridge-evidence.json"
+        payload = {
+            "passed": True,
+            "runtime_image": DEFAULT_IMAGE,
+            "dataset_fingerprint": "dataset-fp",
+            "candidate_profile_fingerprint": "candidate-fp",
+            "model_calls": 0,
+            "checks": {
+                "adaptive_package_imported": True,
+                "embedded_client_stream_exercised": True,
+                "ledger_persisted": True,
+                "policy_bridge_enabled": True,
+            },
+        }
+        _write_json(path, payload)
+
+        self.assertTrue(
+            _bridge_evidence_valid(
+                path,
+                dataset_fingerprint="dataset-fp",
+                candidate_profile_fingerprint="candidate-fp",
+            )
+        )
+        payload["checks"].pop("ledger_persisted")
+        _write_json(path, payload)
+        self.assertFalse(
+            _bridge_evidence_valid(
+                path,
+                dataset_fingerprint="dataset-fp",
+                candidate_profile_fingerprint="candidate-fp",
+            )
+        )
 
 
 def _variant(name: str, seed: int, profile: str) -> VariantSpec:

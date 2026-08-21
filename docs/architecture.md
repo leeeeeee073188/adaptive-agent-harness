@@ -49,6 +49,7 @@ flowchart TD
 4. Tool reliability and evidence completion policies attach through
    independently switchable config/service seams (implemented).
 5. Evaluation pins MiniBench16 by task-order hash and emits controlled paired
-   manifests. Offline preflight is implemented; paid execution stays blocked
-   until contract coverage and the live DeerFlow policy bridge pass. Experience
-   remains disabled until the leakage/admissibility gate passes.
+   manifests. Offline preflight and a public-client same-thread policy bridge
+   are implemented; paid execution stays blocked until that bridge is wired and
+   verified inside the pinned DeerFlow container. Experience remains disabled
+   until the leakage/admissibility gate passes.

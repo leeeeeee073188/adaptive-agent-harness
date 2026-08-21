@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0–A3 已实现；A4 MiniBench16 离线 Evaluation Adapter / preflight 已完成，付费运行仍被 contract coverage 与 live policy bridge 门禁阻止
+> 状态：A0–A3 已实现；A4 MiniBench16 离线 Adapter、16/16 Contract coverage 与 public-client policy bridge 已实现，付费运行仅剩 pinned DeerFlow container wiring/verification 门禁
 
 ---
 
@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 36 个零模型架构测试。
+- 41 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -1768,10 +1768,14 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - 生成 32-cell baseline/candidate paired manifest，强制 model、runtime image、seed、task/block 相同，同时要求 Profile fingerprint 不同；
 - paired statistics 只统计同时存在 baseline 与 candidate 的 sample，禁止 unmatched rollout 稀释或抬高结果；
 - 历史 baseline 16/16 都有 integrity/formal-eligible 记录，但来自 6 种 run-config fingerprint，因此只用于失败定位，明确禁止复用为正式 paired baseline；
-- public prompt contract coverage 当前 11/16、31 个 criterion（28 artifact + 3 exact-count）；未覆盖 5 个 stateful/browser/API 任务；
-- `live_policy_bridge_ready=false`，因此 `paid_run_ready=false`。在这两个门禁关闭前不运行任何付费 MiniBench block；
-- 全量 36 个零模型测试通过，A1 四个历史 replay hash 保持不变；
+- public prompt contract coverage 已达到 16/16、39 个 criterion（28 artifact + 3 exact-count + 8 observation）；5 个 stateful/browser/API 任务通过 provider-neutral `observation_equals` contract 覆盖，不按 task-id 存答案；
+- `DeerFlowPolicyBridge` 使用公开 embedded-client stream，在同一 thread 内执行有界 continuation：首次 finish 缺证据则落 `completion/checked`、写入反馈并继续下一 turn；
+- `FileArtifactObservationProvider` 对隔离 task root 下的必需文件记录 exists/size/SHA-256；`StructuredDeerFlowObservationProvider` 只接受 Tool artifact 中显式 evidence，不解析工具 prose；
+- 每个 DeerFlow turn 使用 `runtime/turn-end`，全局只落一个 `runtime/end`，多 turn usage 可重建累加；达到 turn budget 仍缺证据时 fail closed；
+- public-client bridge 的零模型 same-thread、structured observation、filesystem hash、budget exhaustion 测试已通过，但尚未安装/验证到 pinned DeerFlow container，故 `live_policy_bridge_ready=false`、`paid_run_ready=false`；
+- 全量 41 个零模型测试通过，A1 四个历史 replay hash 保持不变；
 - preflight 新增模型调用及 Token 为 0，证据位于 `evidence/a4-minibench-preflight/summary.json`。
+- bridge 证据位于 `evidence/a4-live-bridge/summary.json`。
 
 ## A5：Practice（V2）
 
@@ -2052,12 +2056,12 @@ CompletionChecked
 frozen_dataset_valid          PASS
 historical_baseline_all_tasks PASS (16/16，仅作风险定位)
 paired_controls_valid         PASS (32 cells)
-contract_coverage_complete    FAIL (11/16)
+contract_coverage_complete    PASS (16/16)
 live_policy_bridge_ready      FAIL
 paid_run_ready                FALSE
 ```
 
-下一步不是付费跑 Block 1，而是补齐 5 个 stateful 任务的公开 observation criterion/provider，并把 A2/A3 durable facts 接入 DeerFlow live stream；完成后重新运行同一 preflight。
+下一步仍不是付费跑 Block 1，而是把已通过零模型测试的 public-client bridge 打包并接入 pinned DeerFlow/RealReplica runner，在不读取 verifier 的前提下验证 container 内 artifact/state observation。通过后生成绑定 runtime image、Dataset fingerprint、Candidate Profile fingerprint 的零模型 wiring evidence，并通过 `--policy-bridge-evidence` 交给同一 preflight；不允许手工布尔开关绕过门禁。
 
 # 36. 关键风险
 

@@ -90,5 +90,12 @@ It reports `paid_run_ready=false` until both contract coverage and the live
 DeerFlow policy bridge are complete; historical results are never reused as a
 formal paired baseline.
 
+The public-client policy bridge now supports bounded same-thread continuation:
+each DeerFlow turn is translated into durable facts, explicit tool artifacts
+and filesystem inspections become evidence, and an unsupported finish claim
+is returned to the same thread as ledger-backed feedback. MiniBench public
+contract coverage is 16/16. Container wiring is intentionally still a closed
+gate, so this implementation alone does not authorize paid runs.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

@@ -121,6 +121,38 @@ class RuleBasedTaskContractBuilder:
         "nine": 9,
         "ten": 10,
     }
+    _STATE_RULES = (
+        (
+            "listing.submitted",
+            True,
+            "Listing submission is observed",
+            (r"发上线|publish|submit", r"发品系统|listing|product|商品"),
+        ),
+        (
+            "mail.label_created",
+            True,
+            "Required mail label is observed",
+            (r"创建(?:顶层)?标签|create (?:a )?(?:top-level )?label",),
+        ),
+        (
+            "mail.draft_saved",
+            True,
+            "Required unsent draft is observed",
+            (r"未发送草稿|unsent draft|save (?:an? )?draft",),
+        ),
+        (
+            "calendar.event_created",
+            True,
+            "Required calendar event is observed",
+            (r"日历事件|calendar event", r"再建|创建|create|schedule"),
+        ),
+        (
+            "document.updated",
+            True,
+            "Target document update is observed",
+            (r"document|文档", r"apply it|update|更新|修改"),
+        ),
+    )
     _FORBIDDEN_SCHEMA_KEYS = {
         "expected_answer",
         "ground_truth",
@@ -203,6 +235,19 @@ class RuleBasedTaskContractBuilder:
                     id=_unique_id("count", subject, used_ids),
                     description=f"Exactly {expected} {subject}",
                     kind=CriterionKind.EXACT_COUNT,
+                    source=CriterionSource.TASK_PROMPT,
+                    parameters={"subject": subject, "expected": expected},
+                )
+            )
+
+        for subject, expected, description, pattern_group in self._STATE_RULES:
+            if not all(re.search(pattern, task_prompt, re.IGNORECASE) for pattern in pattern_group):
+                continue
+            criteria.append(
+                Criterion(
+                    id=_unique_id("observation", subject, used_ids),
+                    description=description,
+                    kind=CriterionKind.OBSERVATION_EQUALS,
                     source=CriterionSource.TASK_PROMPT,
                     parameters={"subject": subject, "expected": expected},
                 )

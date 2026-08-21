@@ -1,0 +1,18 @@
+{
+  "all_passed": true,
+  "checks": {
+    "artifact_hash_evidence": true,
+    "completion_turn_budget_fail_closed": true,
+    "historical_replay_compatibility": true,
+    "minibench_contract_coverage_16_of_16": true,
+    "provider_neutral_state_criteria": true,
+    "same_thread_completion_continuation": true,
+    "structured_tool_evidence_only": true
+  },
+  "live_deerflow_container_wiring_verified": false,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "paid_run_ready": false,
+  "scope": "A4 public-client DeerFlow policy bridge",
+  "test_count": 41
+}

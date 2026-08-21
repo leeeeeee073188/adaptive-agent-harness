@@ -12,10 +12,14 @@ import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from adaptive_harness.capabilities import Environment
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.task_state import TaskStateProjector
+
+if TYPE_CHECKING:
+    from adaptive_harness.integrations.deerflow_policy import DeerFlowPolicyBridge
 
 _USAGE_KEYS = ("input_tokens", "output_tokens", "total_tokens")
 
@@ -30,6 +34,15 @@ class DeerFlowReplaySummary:
     canonical_event_count: int
 
 
+@dataclass
+class DeerFlowDedupState:
+    """Thread-scoped ids retained across multiple DeerFlowClient turns."""
+
+    messages: set[str] = field(default_factory=set)
+    tool_calls: set[str] = field(default_factory=set)
+    tool_results: set[str] = field(default_factory=set)
+
+
 @dataclass(frozen=True)
 class DeerFlowRunRequest:
     """Non-secret inputs that determine one embedded DeerFlow run."""
@@ -39,6 +52,8 @@ class DeerFlowRunRequest:
     client_options: Mapping[str, Any] = field(default_factory=dict)
     tool_schemas: Sequence[Mapping[str, Any]] = ()
     context: Mapping[str, Any] = field(default_factory=dict)
+    task_id: str | None = None
+    public_schema: Mapping[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +61,8 @@ class DeerFlowRunResult:
     run_id: str
     ledger: SessionLedger
     summary: DeerFlowReplaySummary
+    completed: bool = True
+    turns: int = 1
 
 
 class DeerFlowClient(Protocol):
@@ -63,9 +80,16 @@ class DeerFlowClient(Protocol):
 class DeerFlowRuntimeAdapter:
     """Thin runtime provider around an embedded DeerFlowClient instance."""
 
-    def __init__(self, client: DeerFlowClient, environment: Environment) -> None:
+    def __init__(
+        self,
+        client: DeerFlowClient,
+        environment: Environment,
+        *,
+        policy_bridge: DeerFlowPolicyBridge | None = None,
+    ) -> None:
         self.client = client
         self.environment = environment
+        self.policy_bridge = policy_bridge
 
     async def run(
         self,
@@ -76,10 +100,13 @@ class DeerFlowRuntimeAdapter:
     ) -> DeerFlowRunResult:
         run_id = run_id or str(uuid.uuid4())
         ledger = SessionLedger(run_id, ledger_path)
-        adapter = DeerFlowEventAdapter()
+        adapter: DeerFlowEventAdapter | None = None
         _reject_secret_options(request.client_options)
         try:
             await self.environment.build()
+            if self.policy_bridge is not None:
+                return self._run_with_policy_bridge(request, run_id, ledger)
+            adapter = DeerFlowEventAdapter()
             ledger.append(
                 "request/header",
                 {
@@ -106,28 +133,142 @@ class DeerFlowRuntimeAdapter:
             summary = adapter.finish(ledger)
             return DeerFlowRunResult(run_id, ledger, summary)
         except Exception as error:
-            ledger.append(
-                "runtime/error",
-                {"type": type(error).__name__, "message": str(error), "source": "deerflow"},
-            )
-            adapter.finish(ledger)
+            if not any(event.type == "runtime/error" for event in ledger.events):
+                ledger.append(
+                    "runtime/error",
+                    {"type": type(error).__name__, "message": str(error), "source": "deerflow"},
+                )
+            if adapter is not None:
+                adapter.finish(ledger)
             raise
         finally:
             await self.environment.cleanup()
+
+    def _run_with_policy_bridge(
+        self,
+        request: DeerFlowRunRequest,
+        run_id: str,
+        ledger: SessionLedger,
+    ) -> DeerFlowRunResult:
+        assert self.policy_bridge is not None
+        contract = self.policy_bridge.start(
+            ledger,
+            task_id=request.task_id or run_id,
+            task_prompt=request.message,
+            public_schema=request.public_schema,
+        )
+        summaries: list[DeerFlowReplaySummary] = []
+        dedup_state = DeerFlowDedupState()
+        message = request.message
+        for turn in range(1, self.policy_bridge.max_completion_turns + 1):
+            ledger.append("turn/start", {"runtime": "deerflow"}, turn=turn)
+            if turn > 1:
+                ledger.append(
+                    "user/message",
+                    {"content": message, "source": "completion_policy"},
+                    turn=turn,
+                )
+            task_state = TaskStateProjector().project(ledger.events).to_context()
+            ledger.append(
+                "request/header",
+                {
+                    "messages": [{"role": "user", "content": message}],
+                    "tools": [dict(schema) for schema in request.tool_schemas],
+                    "context": {
+                        "run_id": run_id,
+                        "thread_id": request.thread_id,
+                        "turn": turn,
+                        "environment": dict(self.environment.state()),
+                        "task": task_state,
+                        **dict(request.context),
+                    },
+                    "runtime": "deerflow",
+                    "client_options": dict(request.client_options),
+                },
+                turn=turn,
+                step=1,
+            )
+            adapter = DeerFlowEventAdapter(
+                end_event_type="runtime/turn-end",
+                dedup_state=dedup_state,
+            )
+            canonical_start = len(ledger.events)
+            try:
+                for raw_event in self.client.stream(
+                    message,
+                    thread_id=request.thread_id,
+                    **dict(request.client_options),
+                ):
+                    adapter.append(ledger, _event_mapping(raw_event))
+                summary = _summary_with_count(
+                    adapter.finish(ledger),
+                    len(ledger.events) - canonical_start,
+                )
+            except Exception as error:
+                ledger.append(
+                    "runtime/error",
+                    {"type": type(error).__name__, "message": str(error), "source": "deerflow"},
+                    turn=turn,
+                )
+                adapter.finish(ledger)
+                ledger.append("turn/end", {"reason": "runtime_error"}, turn=turn)
+                raise
+            summaries.append(summary)
+            self.policy_bridge.observe_turn(ledger, contract, summary, turn=turn)
+            completion, feedback = self.policy_bridge.check_completion(ledger)
+            ledger.append(
+                "turn/end",
+                {"reason": "completed" if completion.passed else "completion_rejected"},
+                turn=turn,
+            )
+            if completion.passed:
+                combined = _combine_summaries(summaries)
+                ledger.append(
+                    "runtime/end",
+                    {"usage": dict(combined.usage), "source": "adaptive-deerflow-bridge"},
+                )
+                return DeerFlowRunResult(run_id, ledger, combined, True, turn)
+            if feedback is not None:
+                message = feedback
+
+        combined = _combine_summaries(summaries)
+        ledger.append(
+            "runtime/end",
+            {
+                "usage": dict(combined.usage),
+                "source": "adaptive-deerflow-bridge",
+                "reason": "completion_rejected",
+            },
+        )
+        return DeerFlowRunResult(
+            run_id,
+            ledger,
+            combined,
+            False,
+            self.policy_bridge.max_completion_turns,
+        )
 
 
 class DeerFlowEventAdapter:
     """Stateful, idempotent adapter for one DeerFlow run."""
 
-    def __init__(self, *, include_chunks: bool = True) -> None:
+    def __init__(
+        self,
+        *,
+        include_chunks: bool = True,
+        end_event_type: str = "runtime/end",
+        dedup_state: DeerFlowDedupState | None = None,
+    ) -> None:
         self.include_chunks = include_chunks
+        self.end_event_type = end_event_type
         self._source_event_count = 0
         self._response_chunks: dict[str, list[str]] = {}
         self._complete_responses: dict[str, str] = {}
         self._response_order: list[str] = []
-        self._seen_messages: set[str] = set()
-        self._seen_tool_calls: set[str] = set()
-        self._seen_tool_results: set[str] = set()
+        dedup_state = dedup_state or DeerFlowDedupState()
+        self._seen_messages = dedup_state.messages
+        self._seen_tool_calls = dedup_state.tool_calls
+        self._seen_tool_results = dedup_state.tool_results
         self._tool_calls: list[Mapping[str, Any]] = []
         self._tool_results: list[Mapping[str, Any]] = []
         self._usage: dict[str, int] = {}
@@ -181,7 +322,7 @@ class DeerFlowEventAdapter:
 
         if not self._finished and not self._saw_end:
             ledger.append(
-                "runtime/end",
+                self.end_event_type,
                 {"usage": dict(self._usage), "source": "deerflow-recovered"},
             )
         self._finished = True
@@ -347,7 +488,7 @@ class DeerFlowEventAdapter:
         self._saw_end = True
         self._final_usage = _usage(data.get("usage"))
         ledger.append(
-            "runtime/end",
+            self.end_event_type,
             {"usage": dict(self._final_usage), "source": "deerflow"},
         )
 
@@ -398,6 +539,32 @@ def _message_key(message: Mapping[str, Any], kind: str, position: int) -> str:
 
 def _stable_key(value: Mapping[str, Any]) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, default=str, separators=(",", ":"))
+
+
+def _combine_summaries(summaries: Sequence[DeerFlowReplaySummary]) -> DeerFlowReplaySummary:
+    usage: dict[str, int] = {}
+    for summary in summaries:
+        for key, value in summary.usage.items():
+            usage[key] = usage.get(key, 0) + value
+    return DeerFlowReplaySummary(
+        response_text=summaries[-1].response_text if summaries else "",
+        tool_calls=tuple(call for summary in summaries for call in summary.tool_calls),
+        tool_results=tuple(result for summary in summaries for result in summary.tool_results),
+        usage=usage,
+        source_event_count=sum(summary.source_event_count for summary in summaries),
+        canonical_event_count=sum(summary.canonical_event_count for summary in summaries),
+    )
+
+
+def _summary_with_count(summary: DeerFlowReplaySummary, count: int) -> DeerFlowReplaySummary:
+    return DeerFlowReplaySummary(
+        summary.response_text,
+        summary.tool_calls,
+        summary.tool_results,
+        summary.usage,
+        summary.source_event_count,
+        count,
+    )
 
 
 def _event_mapping(raw: Any) -> Mapping[str, Any]:
