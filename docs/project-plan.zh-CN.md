@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0–A4 已实现并完成首个 fresh paired canary；质量/语义/证据通过，单次观测 Token +65.6% 触发暂停，但 counterfactual 证明该 cell 可归因 Harness Token 增量为 0，当前阻塞项是 provider variance 置信度
+> 状态：A0–A4、首个 paired canary 与全 MiniBench16 completion counterfactual 已完成；provider-aware Gate 在历史数据上捕获 5/10 failure、成功任务误拦截 0/6，扩跑仍因 Token variance 置信度不足暂停
 
 ---
 
@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 44 个零模型架构测试。
+- 46 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -1768,7 +1768,7 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - 生成 32-cell baseline/candidate paired manifest，强制 model、runtime image、seed、task/block 相同，同时要求 Profile fingerprint 不同；
 - paired statistics 只统计同时存在 baseline 与 candidate 的 sample，禁止 unmatched rollout 稀释或抬高结果；
 - 历史 baseline 16/16 都有 integrity/formal-eligible 记录，但来自 6 种 run-config fingerprint，因此只用于失败定位，明确禁止复用为正式 paired baseline；
-- public prompt contract coverage 已达到 16/16、39 个 criterion（28 artifact + 3 exact-count + 8 observation）；5 个 stateful/browser/API 任务通过 provider-neutral `observation_equals` contract 覆盖，不按 task-id 存答案；
+- public prompt contract coverage 已达到 16/16、37 个 criterion（26 artifact + 3 exact-count + 8 observation）；5 个 stateful/browser/API 任务通过 provider-neutral `observation_equals` contract 覆盖，不按 task-id 存答案；
 - `DeerFlowPolicyBridge` 使用公开 embedded-client stream，在同一 thread 内执行有界 continuation：首次 finish 缺证据则落 `completion/checked`、写入反馈并继续下一 turn；
 - `FileArtifactObservationProvider` 对隔离 task root 下的必需文件记录 exists/size/SHA-256；`StructuredDeerFlowObservationProvider` 只接受 Tool artifact 中显式 evidence，不解析工具 prose；
 - 每个 DeerFlow turn 使用 `runtime/turn-end`，全局只落一个 `runtime/end`，多 turn usage 可重建累加；达到 turn budget 仍缺证据时 fail closed；
@@ -2091,7 +2091,34 @@ paid_run_ready                TRUE
 - 因此 +65.6% 是真实发生的运行成本差，但不是已证明的 Harness 回归。当前 `attribution_confident=false`，仍选择停止扩跑，避免在统计不确定时继续付费；
 - 证据位于 `evidence/a5-minibench-canary/summary.json`。
 
-下一步：对已有失败任务优先做零 Token counterfactual“若启用 Completion Gate 是否会继续”的命中分析，并设计最小重复样本统计规则；在 attribution confidence 足够前不运行 Block 1 其余三个任务，更不运行完整 107 任务。
+在停止付费扩跑后，继续执行了以下零 Token completion counterfactual；完整 107 任务仍未运行。
+
+## P5：Provider-aware Completion Counterfactual（已完成，零 Token）
+
+此前 Contract coverage 16/16 不等于 runtime provider coverage 16/16。新版 Bridge 要求每个 ObservationProvider 显式声明 `supports(criterion)`：
+
+- File provider：强制 `artifact_exists`；
+- Loopback HTTP provider：强制公开 early-terminate 对应的 `listing.submitted`；
+- Structured tool provider：只有 probe 明确声明能力时才强制；
+- 未实现 provider 的 exact-count、Gmail、Docs criterion 保留在 Contract/Ledger，但降为 observe-only，不得假装已验证，也不得误拦截。
+
+MiniBench16 当前 provider coverage：14/16 tasks，完整可执行 block 为 1、2、4；Block 3 的 Gmail/Docs 仍需专用 MCP state provider。
+
+将16个历史 baseline 终态仅用公开 prompt、输出文件和公开 early-terminate observation 做零 Token counterfactual：
+
+| 结果 | 数量 |
+|---|---:|
+| 历史失败且 Gate 会阻止结束 | 5 |
+| 历史成功但 Gate 误阻止 | 0 |
+| 历史成功且 Gate 接受 | 6 |
+| 历史失败但 Gate 接受（constraint/content，超出 completion scope） | 5 |
+
+- Failure capture：50%；
+- Successful-task false-block：0%；
+- 说明 Gate 有效降低 missing-artifact / missing-state premature completion，但不冒充 verifier，也不解决内容正确性或复杂约束错误；
+- 证据：`evidence/a6-completion-counterfactual/summary.json`。
+
+下一步优先实现 Gmail/Docs MCP state provider，或对已有失败轨迹做更细的 Failure Taxonomy 映射；在 Token variance 置信度解决前不继续付费扩跑。
 
 # 36. 关键风险
 

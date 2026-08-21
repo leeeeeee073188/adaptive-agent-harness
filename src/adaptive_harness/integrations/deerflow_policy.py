@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlparse
@@ -34,6 +35,8 @@ if TYPE_CHECKING:
 
 
 class DeerFlowObservationProvider(Protocol):
+    def supports(self, criterion: Any) -> bool: ...
+
     def observe(
         self,
         contract: TaskContract,
@@ -48,6 +51,9 @@ class FileArtifactObservationProvider:
 
     def __init__(self, task_root: Path) -> None:
         self.task_root = task_root.resolve()
+
+    def supports(self, criterion: Any) -> bool:
+        return criterion.kind is CriterionKind.ARTIFACT_EXISTS
 
     def observe(
         self,
@@ -85,6 +91,12 @@ class FileArtifactObservationProvider:
 
 class StructuredDeerFlowObservationProvider:
     """Read explicit evidence attached by tools; never interpret result prose."""
+
+    def __init__(self, *, assume_all: bool = False) -> None:
+        self.assume_all = assume_all
+
+    def supports(self, criterion: Any) -> bool:
+        return self.assume_all
 
     def observe(
         self,
@@ -147,6 +159,12 @@ class HttpJsonMatchObservationProvider:
         self.match_value = match_value
         self.fetch_json = fetch_json or _fetch_json
 
+    def supports(self, criterion: Any) -> bool:
+        return (
+            criterion.kind is CriterionKind.OBSERVATION_EQUALS
+            and criterion.parameters.get("subject") == self.subject
+        )
+
     def observe(
         self,
         contract: TaskContract,
@@ -189,13 +207,17 @@ class DeerFlowPolicyBridge:
         completion_gate: TaskCompletionGate | None = None,
         observation_providers: Sequence[DeerFlowObservationProvider] = (),
         max_completion_turns: int = 2,
+        unsupported_criteria: str = "reject",
     ) -> None:
         if max_completion_turns < 1:
             raise ValueError("max_completion_turns must be at least one")
+        if unsupported_criteria not in {"reject", "observe_only"}:
+            raise ValueError("unsupported_criteria must be 'reject' or 'observe_only'")
         self.contract_builder = contract_builder or RuleBasedTaskContractBuilder()
         self.completion_gate = completion_gate or EvidenceCompletionGate()
         self.observation_providers = tuple(observation_providers)
         self.max_completion_turns = max_completion_turns
+        self.unsupported_criteria = unsupported_criteria
 
     def start(
         self,
@@ -206,7 +228,33 @@ class DeerFlowPolicyBridge:
         public_schema: Mapping[str, object] | None,
     ) -> TaskContract:
         contract = self.contract_builder.build(task_id, task_prompt, public_schema)
+        if self.unsupported_criteria == "observe_only":
+            criteria = tuple(
+                criterion
+                if not criterion.required or self._criterion_supported(criterion)
+                else replace(criterion, required=False)
+                for criterion in contract.criteria
+            )
+            contract = TaskContract(
+                contract.task_id,
+                contract.original_request,
+                criteria,
+                contract.public_schema_hash,
+            )
         TaskEventWriter(ledger).create_contract(contract)
+        ledger.append(
+            "policy/configured",
+            {
+                "completion_gate": "evidence",
+                "unsupported_criteria": self.unsupported_criteria,
+                "enforced_criterion_ids": [
+                    criterion.id for criterion in contract.criteria if criterion.required
+                ],
+                "observe_only_criterion_ids": [
+                    criterion.id for criterion in contract.criteria if not criterion.required
+                ],
+            },
+        )
         return contract
 
     def observe_turn(
@@ -235,10 +283,28 @@ class DeerFlowPolicyBridge:
 
     def check_completion(self, ledger: SessionLedger) -> tuple[ContractCompletionResult, str | None]:
         state = TaskStateProjector().project(ledger.events)
-        result = self.completion_gate.verify(state)
+        if (
+            self.unsupported_criteria == "observe_only"
+            and state.contract is not None
+            and not any(criterion.required for criterion in state.contract.criteria)
+        ):
+            result = ContractCompletionResult(
+                True,
+                (),
+                (),
+                "No provider-backed criteria; completion gate is observe-only.",
+            )
+        else:
+            result = self.completion_gate.verify(state)
         feedback = None if result.passed else self.completion_gate.feedback(result)
         ledger.append("completion/checked", {**result.to_payload(), "feedback": feedback})
         return result, feedback
+
+    def _criterion_supported(self, criterion: Any) -> bool:
+        return any(
+            bool(getattr(provider, "supports", lambda _criterion: False)(criterion))
+            for provider in self.observation_providers
+        )
 
 
 def _file_sha256(path: Path) -> str:

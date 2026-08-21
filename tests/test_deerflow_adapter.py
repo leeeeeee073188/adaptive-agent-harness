@@ -381,6 +381,68 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(evidence.payload["evidence"]["subject"], "listing.submitted")
         self.assertTrue(evidence.payload["evidence"]["value"])
 
+    async def test_unsupported_state_criteria_are_observe_only_in_candidate_mode(self) -> None:
+        client = _TurnClient(
+            [[
+                _RawEvent("messages-tuple", {"type": "ai", "id": "a1", "content": "done"}),
+                _RawEvent("end", {"usage": {"total_tokens": 5}}),
+            ]]
+        )
+        bridge = DeerFlowPolicyBridge(
+            observation_providers=(StructuredDeerFlowObservationProvider(),),
+            unsupported_criteria="observe_only",
+        )
+        result = await DeerFlowRuntimeAdapter(
+            client,
+            _FakeEnvironment(),
+            policy_bridge=bridge,
+        ).run(
+            DeerFlowRunRequest(
+                "创建顶层标签，保存一封未发送草稿，再创建一个日历事件。",
+                "thread-observe-only",
+            ),
+            run_id="run-observe-only",
+        )
+
+        policy = next(event for event in result.ledger.events if event.type == "policy/configured")
+        self.assertTrue(result.completed)
+        self.assertEqual(result.turns, 1)
+        self.assertEqual(policy.payload["enforced_criterion_ids"], [])
+        self.assertEqual(len(policy.payload["observe_only_criterion_ids"]), 3)
+
+    async def test_mixed_contract_enforces_artifact_but_not_unprovided_count(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "outputs/report.json"
+            output.parent.mkdir()
+            output.write_text("{}")
+            client = _TurnClient(
+                [[
+                    _RawEvent("messages-tuple", {"type": "ai", "id": "a1", "content": "done"}),
+                    _RawEvent("end", {"usage": {"total_tokens": 5}}),
+                ]]
+            )
+            bridge = DeerFlowPolicyBridge(
+                observation_providers=(FileArtifactObservationProvider(root),),
+                unsupported_criteria="observe_only",
+            )
+            result = await DeerFlowRuntimeAdapter(
+                client,
+                _FakeEnvironment(),
+                policy_bridge=bridge,
+            ).run(
+                DeerFlowRunRequest(
+                    "Write outputs/report.json with exactly 3 records.",
+                    "thread-mixed",
+                ),
+                run_id="run-mixed",
+            )
+
+        policy = next(event for event in result.ledger.events if event.type == "policy/configured")
+        self.assertTrue(result.completed)
+        self.assertEqual(len(policy.payload["enforced_criterion_ids"]), 1)
+        self.assertEqual(len(policy.payload["observe_only_criterion_ids"]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

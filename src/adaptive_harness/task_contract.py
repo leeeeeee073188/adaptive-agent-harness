@@ -267,21 +267,33 @@ class RuleBasedTaskContractBuilder:
         directory_pattern = r"`?outputs/`?(?=\s|下|内|中|[:：])"
         for match in re.finditer(directory_pattern, task_prompt, re.IGNORECASE):
             tail = task_prompt[match.start() : match.start() + 3500]
-            heading = re.search(r"\n#{1,3}\s", tail[1:])
-            segment = tail[: heading.start() + 1] if heading else tail
             nearby = task_prompt[max(0, match.start() - 100) : match.end() + 100]
             count_match = self._EXACT_COUNT.search(nearby) or self._EXACT_COUNT_WORD.search(nearby)
             declared_count = None
             if count_match:
                 raw_count = count_match.group("count").lower()
                 declared_count = int(raw_count) if raw_count.isdigit() else self._NUMBER_WORDS[raw_count]
-            for code_match in self._CODE_FILE.finditer(segment):
-                raw = code_match.group("path").replace("\\", "/")
-                if raw.startswith(("workspace/", "http://", "https://", "/")):
-                    continue
-                path = _normalize_path(raw if raw.startswith("outputs/") else f"outputs/{raw}")
-                if path not in files:
-                    files.append(path)
+            started = False
+            for line in tail.splitlines():
+                line_matches = list(self._CODE_FILE.finditer(line))
+                has_explicit_output = any(
+                    code_match.group("path").replace("\\", "/").startswith("outputs/")
+                    for code_match in line_matches
+                )
+                if started and not line.strip():
+                    break
+                for code_match in line_matches:
+                    raw = code_match.group("path").replace("\\", "/")
+                    if has_explicit_output and not raw.startswith("outputs/"):
+                        continue
+                    if raw.startswith(("workspace/", "http://", "https://", "/")):
+                        continue
+                    path = _normalize_path(raw if raw.startswith("outputs/") else f"outputs/{raw}")
+                    if path not in files:
+                        files.append(path)
+                        started = True
+                    if declared_count is not None and len(files) >= declared_count:
+                        break
                 if declared_count is not None and len(files) >= declared_count:
                     break
         return tuple(files)

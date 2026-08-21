@@ -12,7 +12,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from adaptive_harness.task_contract import ContractBuilder, RuleBasedTaskContractBuilder
+from adaptive_harness.task_contract import (
+    ContractBuilder,
+    CriterionKind,
+    RuleBasedTaskContractBuilder,
+)
 
 MINIBENCH_TASK_COUNT = 16
 
@@ -31,6 +35,7 @@ class MiniBenchTask:
     prompt: str
     prompt_sha256: str
     smoke_reuse: bool
+    public_observation_subjects: tuple[str, ...] = ()
 
     def identity_payload(self) -> dict[str, Any]:
         return {
@@ -45,6 +50,7 @@ class MiniBenchTask:
             "language": self.language,
             "prompt_sha256": self.prompt_sha256,
             "smoke_reuse": self.smoke_reuse,
+            "public_observation_subjects": list(self.public_observation_subjects),
         }
 
 
@@ -91,6 +97,36 @@ class ContractCoverageReport:
     @property
     def uncovered_task_ids(self) -> tuple[str, ...]:
         return tuple(row.task_id for row in self.rows if row.criterion_count == 0)
+
+
+@dataclass(frozen=True)
+class ProviderCoverageRow:
+    task_id: str
+    block: int
+    enforced_criterion_count: int
+    observe_only_criterion_count: int
+
+
+@dataclass(frozen=True)
+class ProviderCoverageReport:
+    rows: tuple[ProviderCoverageRow, ...]
+
+    @property
+    def enforced_task_count(self) -> int:
+        return sum(row.enforced_criterion_count > 0 for row in self.rows)
+
+    @property
+    def ready_blocks(self) -> tuple[int, ...]:
+        blocks = sorted({row.block for row in self.rows})
+        return tuple(
+            block
+            for block in blocks
+            if all(
+                row.enforced_criterion_count > 0
+                for row in self.rows
+                if row.block == block
+            )
+        )
 
 
 @dataclass(frozen=True)
@@ -198,6 +234,7 @@ class RealReplicaMiniBenchAdapter:
         for task_id in task_ids:
             task_path, task_document = task_paths[task_id]
             public_task = task_document.get("task") or {}
+            public_environment = task_document.get("environment") or {}
             entrypoint = str(public_task["entrypoint"])
             prompt_path = (task_path.parent / entrypoint).resolve()
             if not prompt_path.is_relative_to(task_path.parent.resolve()):
@@ -221,6 +258,9 @@ class RealReplicaMiniBenchAdapter:
                     prompt=prompt,
                     prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),
                     smoke_reuse=bool(row["smoke_reuse"]),
+                    public_observation_subjects=_public_observation_subjects(
+                        public_environment
+                    ),
                 )
             )
         identity = {
@@ -301,6 +341,35 @@ class RealReplicaMiniBenchAdapter:
             tuple(cells),
             _canonical_hash(payload),
         )
+
+    def provider_coverage(
+        self,
+        dataset: MiniBenchDataset,
+        builder: ContractBuilder | None = None,
+    ) -> ProviderCoverageReport:
+        builder = builder or RuleBasedTaskContractBuilder()
+        rows = []
+        for task in dataset.tasks:
+            contract = builder.build(task.task_id, task.prompt)
+            enforced = 0
+            for criterion in contract.criteria:
+                if criterion.kind is CriterionKind.ARTIFACT_EXISTS:
+                    enforced += 1
+                elif (
+                    criterion.kind is CriterionKind.OBSERVATION_EQUALS
+                    and criterion.parameters.get("subject")
+                    in task.public_observation_subjects
+                ):
+                    enforced += 1
+            rows.append(
+                ProviderCoverageRow(
+                    task.task_id,
+                    task.block,
+                    enforced,
+                    len(contract.criteria) - enforced,
+                )
+            )
+        return ProviderCoverageReport(tuple(rows))
 
     def historical_baselines(
         self,
@@ -415,3 +484,12 @@ def _read_json(path: Path) -> dict[str, Any]:
 def _canonical_hash(value: Mapping[str, Any]) -> str:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _public_observation_subjects(environment: Mapping[str, Any]) -> tuple[str, ...]:
+    early = environment.get("early_terminate")
+    if not isinstance(early, Mapping):
+        return ()
+    if early.get("match_field") == "status" and early.get("match_value") == "submitted":
+        return ("listing.submitted",)
+    return (f"runtime.{early.get('match_field')}",) if early.get("match_field") else ()

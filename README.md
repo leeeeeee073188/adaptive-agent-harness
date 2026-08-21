@@ -119,5 +119,13 @@ runs have a 22.4% token coefficient of variation, so the observed delta remains
 an unresolved provider/trajectory-variance signal rather than a proven Harness
 regression.
 
+Completion enforcement is provider-capability-aware. Artifact and public
+loopback-state criteria remain mandatory; criteria without a live provider are
+recorded as observe-only instead of falsely blocking successful tasks. A
+zero-model replay over all MiniBench16 historical terminal states blocked 5/10
+failed tasks associated with missing completion evidence and 0/6 successful
+tasks. The other five failures were accepted as constraint/content errors,
+explicitly outside this completion gate's scope.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

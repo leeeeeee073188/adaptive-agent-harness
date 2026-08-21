@@ -31,11 +31,14 @@ class EvaluationAdapterTests(unittest.TestCase):
     def test_loader_pins_frozen_subset_and_public_prompts(self) -> None:
         dataset = self.adapter.load(self.root)
         coverage = self.adapter.contract_coverage(dataset)
+        provider_coverage = self.adapter.provider_coverage(dataset)
 
         self.assertEqual(len(dataset.tasks), 16)
         self.assertEqual(dataset.counts()["difficulty_band"], {"easy": 4, "hard": 8, "medium": 4})
         self.assertEqual(coverage.covered_count, 8)
         self.assertEqual(coverage.total_count, 16)
+        self.assertEqual(provider_coverage.enforced_task_count, 8)
+        self.assertEqual(provider_coverage.ready_blocks, ())
         self.assertEqual(len(dataset.fingerprint), 64)
 
     def test_selection_order_drift_fails_closed(self) -> None:

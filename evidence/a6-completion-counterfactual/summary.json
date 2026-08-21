@@ -1,0 +1,178 @@
+{
+  "counts": {
+    "accepted_failure_out_of_scope": 5,
+    "accepted_success": 6,
+    "blocked_failure": 5,
+    "blocked_success": 0
+  },
+  "failure_capture_rate": 0.5,
+  "interpretation": "Accepted failures may contain constraint/content errors outside the completion gate's scope.",
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "rows": [
+    {
+      "block": 1,
+      "enforced_criteria": 1,
+      "historical_passed": true,
+      "missing_count": 0,
+      "observe_only_criteria": 0,
+      "outcome": "accepted_success",
+      "task_id": "file-google-trends-csv-flatten",
+      "would_block_completion": false
+    },
+    {
+      "block": 1,
+      "enforced_criteria": 1,
+      "historical_passed": false,
+      "missing_count": 1,
+      "observe_only_criteria": 0,
+      "outcome": "blocked_failure",
+      "task_id": "browser-alibaba-led-bulb-simple-publish",
+      "would_block_completion": true
+    },
+    {
+      "block": 1,
+      "enforced_criteria": 1,
+      "historical_passed": false,
+      "missing_count": 0,
+      "observe_only_criteria": 0,
+      "outcome": "accepted_failure_out_of_scope",
+      "task_id": "cli-google-trends-data-quality-audit",
+      "would_block_completion": false
+    },
+    {
+      "block": 1,
+      "enforced_criteria": 1,
+      "historical_passed": false,
+      "missing_count": 0,
+      "observe_only_criteria": 0,
+      "outcome": "accepted_failure_out_of_scope",
+      "task_id": "cli-google-trends-counterfactual-rebalance",
+      "would_block_completion": false
+    },
+    {
+      "block": 2,
+      "enforced_criteria": 1,
+      "historical_passed": true,
+      "missing_count": 0,
+      "observe_only_criteria": 2,
+      "outcome": "accepted_success",
+      "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract",
+      "would_block_completion": false
+    },
+    {
+      "block": 2,
+      "enforced_criteria": 1,
+      "historical_passed": false,
+      "missing_count": 1,
+      "observe_only_criteria": 1,
+      "outcome": "blocked_failure",
+      "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui",
+      "would_block_completion": true
+    },
+    {
+      "block": 2,
+      "enforced_criteria": 1,
+      "historical_passed": false,
+      "missing_count": 0,
+      "observe_only_criteria": 0,
+      "outcome": "accepted_failure_out_of_scope",
+      "task_id": "api-travel-asia-supplier-tour-handoff",
+      "would_block_completion": false
+    },
+    {
+      "block": 2,
+      "enforced_criteria": 1,
+      "historical_passed": false,
+      "missing_count": 1,
+      "observe_only_criteria": 0,
+      "outcome": "blocked_failure",
+      "task_id": "browser-freightos-booking",
+      "would_block_completion": true
+    },
+    {
+      "block": 3,
+      "enforced_criteria": 3,
+      "historical_passed": true,
+      "missing_count": 0,
+      "observe_only_criteria": 0,
+      "outcome": "accepted_success",
+      "task_id": "cli-commerce-camping-stove-listing-config",
+      "would_block_completion": false
+    },
+    {
+      "block": 3,
+      "enforced_criteria": 4,
+      "historical_passed": false,
+      "missing_count": 0,
+      "observe_only_criteria": 0,
+      "outcome": "accepted_failure_out_of_scope",
+      "task_id": "cli-commerce-skincare-order-reconciliation",
+      "would_block_completion": false
+    },
+    {
+      "block": 3,
+      "enforced_criteria": 0,
+      "historical_passed": true,
+      "missing_count": 0,
+      "observe_only_criteria": 3,
+      "outcome": "accepted_success",
+      "task_id": "api-gmail-vendor-brief-mcp",
+      "would_block_completion": false
+    },
+    {
+      "block": 3,
+      "enforced_criteria": 0,
+      "historical_passed": true,
+      "missing_count": 0,
+      "observe_only_criteria": 1,
+      "outcome": "accepted_success",
+      "task_id": "api-google-docs-price-list-update-mcp",
+      "would_block_completion": false
+    },
+    {
+      "block": 4,
+      "enforced_criteria": 1,
+      "historical_passed": false,
+      "missing_count": 0,
+      "observe_only_criteria": 0,
+      "outcome": "accepted_failure_out_of_scope",
+      "task_id": "cli-alibaba-pneumatic-valve-publish",
+      "would_block_completion": false
+    },
+    {
+      "block": 4,
+      "enforced_criteria": 1,
+      "historical_passed": false,
+      "missing_count": 1,
+      "observe_only_criteria": 0,
+      "outcome": "blocked_failure",
+      "task_id": "browser-alibaba-custom-yoga-mat-publish",
+      "would_block_completion": true
+    },
+    {
+      "block": 4,
+      "enforced_criteria": 9,
+      "historical_passed": false,
+      "missing_count": 9,
+      "observe_only_criteria": 0,
+      "outcome": "blocked_failure",
+      "task_id": "browser-alibaba-yushengxm-shop-diagnosis",
+      "would_block_completion": true
+    },
+    {
+      "block": 4,
+      "enforced_criteria": 3,
+      "historical_passed": true,
+      "missing_count": 0,
+      "observe_only_criteria": 1,
+      "outcome": "accepted_success",
+      "task_id": "file-commerce-ops-returns-dispute-evidence-pack",
+      "would_block_completion": false
+    }
+  ],
+  "safe_to_enable_provider_aware_gate": true,
+  "scope": "MiniBench16 provider-aware completion counterfactual",
+  "successful_task_false_block_rate": 0.0,
+  "task_count": 16
+}

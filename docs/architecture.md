@@ -64,3 +64,13 @@ model-visible surface, one-turn execution, and exact counterfactual replay show
 zero attributable Harness model-token overhead for that cell. Historical
 vanilla token CV is 22.4%; the stop now means “insufficient variance confidence,”
 not “proven candidate cost regression.”
+
+## Capability-negotiated completion
+
+Contract parsing and criterion enforcement are distinct. Each observation
+provider declares which criterion kinds/subjects it can prove. Unsupported
+criteria stay in the Ledger and model context as observe-only facts; they do
+not block completion until a provider exists. Historical MiniBench replay shows
+5/10 failed runs blocked and 0/6 successful runs falsely blocked. Accepted
+failures are content/constraint errors beyond an artifact/state completion
+gate, not silent claims of full task correctness.

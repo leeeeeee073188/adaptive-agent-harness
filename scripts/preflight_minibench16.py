@@ -51,6 +51,7 @@ def main() -> int:
     adapter = RealReplicaMiniBenchAdapter()
     dataset = adapter.load(args.realreplica_root)
     coverage = adapter.contract_coverage(dataset)
+    provider_coverage = adapter.provider_coverage(dataset)
     baseline, candidate = _variant_specs(dataset.seed)
     manifest = adapter.paired_manifest(dataset, baseline, candidate)
     history = adapter.historical_baselines(args.realreplica_root, dataset, baseline)
@@ -70,6 +71,7 @@ def main() -> int:
         "paired_controls_valid": len(manifest.cells) == len(dataset.tasks) * 2,
         "contract_coverage_complete": coverage.covered_count == coverage.total_count,
         "live_policy_bridge_ready": bridge_evidence_valid,
+        "block_1_provider_coverage": 1 in provider_coverage.ready_blocks,
     }
     failed_paid_gates = [name for name, passed in gates.items() if not passed]
     report = {
@@ -106,6 +108,22 @@ def main() -> int:
                 for row in coverage.rows
             ],
         },
+        "provider_coverage": {
+            "enforced_tasks": provider_coverage.enforced_task_count,
+            "total_tasks": len(provider_coverage.rows),
+            "ready_blocks": list(provider_coverage.ready_blocks),
+            "full_coverage": provider_coverage.enforced_task_count
+            == len(provider_coverage.rows),
+            "rows": [
+                {
+                    "task_id": row.task_id,
+                    "block": row.block,
+                    "enforced_criterion_count": row.enforced_criterion_count,
+                    "observe_only_criterion_count": row.observe_only_criterion_count,
+                }
+                for row in provider_coverage.rows
+            ],
+        },
         "historical_baseline": {
             "covered_tasks": len(history),
             "passed_tasks": sum(row.passed for row in history_rows),
@@ -128,7 +146,7 @@ def main() -> int:
         ),
         "paid_run_ready": all(gates.values()),
         "next_action": (
-            "Run paired MiniBench blocks."
+            f"Eligible paired blocks: {', '.join(map(str, provider_coverage.ready_blocks))}."
             if all(gates.values())
             else f"Close paid gates before spending tokens: {', '.join(failed_paid_gates)}."
         ),
