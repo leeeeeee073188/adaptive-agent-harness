@@ -487,9 +487,17 @@ def _canonical_hash(value: Mapping[str, Any]) -> str:
 
 
 def _public_observation_subjects(environment: Mapping[str, Any]) -> tuple[str, ...]:
+    subjects: list[str] = []
     early = environment.get("early_terminate")
-    if not isinstance(early, Mapping):
-        return ()
-    if early.get("match_field") == "status" and early.get("match_value") == "submitted":
-        return ("listing.submitted",)
-    return (f"runtime.{early.get('match_field')}",) if early.get("match_field") else ()
+    if isinstance(early, Mapping):
+        if early.get("match_field") == "status" and early.get("match_value") == "submitted":
+            subjects.append("listing.submitted")
+        elif early.get("match_field"):
+            subjects.append(f"runtime.{early.get('match_field')}")
+    runtime_mocks = environment.get("runtime_mocks")
+    if isinstance(runtime_mocks, Mapping):
+        if "gmail_mock" in runtime_mocks:
+            subjects.extend(("mail.label_created", "calendar.event_created"))
+        if "google_docs_mock" in runtime_mocks:
+            subjects.append("document.updated")
+    return tuple(dict.fromkeys(subjects))

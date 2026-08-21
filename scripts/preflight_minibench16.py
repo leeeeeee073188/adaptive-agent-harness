@@ -112,8 +112,12 @@ def main() -> int:
             "enforced_tasks": provider_coverage.enforced_task_count,
             "total_tasks": len(provider_coverage.rows),
             "ready_blocks": list(provider_coverage.ready_blocks),
-            "full_coverage": provider_coverage.enforced_task_count
+            "full_task_coverage": provider_coverage.enforced_task_count
             == len(provider_coverage.rows),
+            "all_criteria_enforced": all(
+                row.observe_only_criterion_count == 0
+                for row in provider_coverage.rows
+            ),
             "rows": [
                 {
                     "task_id": row.task_id,

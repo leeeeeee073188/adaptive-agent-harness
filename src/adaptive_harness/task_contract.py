@@ -243,13 +243,15 @@ class RuleBasedTaskContractBuilder:
         for subject, expected, description, pattern_group in self._STATE_RULES:
             if not all(re.search(pattern, task_prompt, re.IGNORECASE) for pattern in pattern_group):
                 continue
+            parameters = {"subject": subject, "expected": expected}
+            parameters.update(self._state_target_parameters(subject, task_prompt))
             criteria.append(
                 Criterion(
                     id=_unique_id("observation", subject, used_ids),
                     description=description,
                     kind=CriterionKind.OBSERVATION_EQUALS,
                     source=CriterionSource.TASK_PROMPT,
-                    parameters={"subject": subject, "expected": expected},
+                    parameters=parameters,
                 )
             )
 
@@ -297,6 +299,21 @@ class RuleBasedTaskContractBuilder:
                 if declared_count is not None and len(files) >= declared_count:
                     break
         return tuple(files)
+
+    def _state_target_parameters(self, subject: str, task_prompt: str) -> dict[str, str]:
+        patterns = {
+            "mail.label_created": r"(?:顶层标签|label)\s*`([^`]+)`|`([^`]+)`\s*(?:标签|label)",
+            "calendar.event_created": r"`([^`]+)`\s*(?:日历事件|calendar event)",
+            "document.updated": r"(?:titled|标题为)\s*\**[\"“]([^\"”*]+)[\"”]\**",
+        }
+        pattern = patterns.get(subject)
+        if pattern is None:
+            return {}
+        match = re.search(pattern, task_prompt, re.IGNORECASE)
+        if match is None:
+            return {}
+        target = next((group for group in match.groups() if group), "").strip()
+        return {"target": target} if target else {}
 
     def _schema_criteria(
         self,

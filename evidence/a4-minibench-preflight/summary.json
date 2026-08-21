@@ -202,7 +202,7 @@
       "smoke_reused": 5,
       "total": 16
     },
-    "fingerprint": "62fc06bac60ad0c9aa42ba4fce23b214a2f6422507cc63d145565eda9447e4c9",
+    "fingerprint": "3c7304d726ea871ae7f2ffcd8940bb2df330a36ceaf06231174b5422881a63c0",
     "id": "adaptive_deerflow_minibench16_v1",
     "seed": 20260818
   },
@@ -226,7 +226,7 @@
   },
   "model_calls": 0,
   "new_model_tokens": 0,
-  "next_action": "Eligible paired blocks: 1, 2, 4.",
+  "next_action": "Eligible paired blocks: 1, 2, 3, 4.",
   "offline_preflight_passed": true,
   "paid_run_ready": true,
   "paired_manifest": {
@@ -247,206 +247,208 @@
     "cells": [
       {
         "block": 1,
-        "pair_key": "ed58b14f858203ce",
+        "pair_key": "868f25637c7ad75f",
         "task_id": "file-google-trends-csv-flatten",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 1,
-        "pair_key": "ed58b14f858203ce",
+        "pair_key": "868f25637c7ad75f",
         "task_id": "file-google-trends-csv-flatten",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 1,
-        "pair_key": "6d5c3ec913ae49b1",
+        "pair_key": "0e41ebb9f94df690",
         "task_id": "browser-alibaba-led-bulb-simple-publish",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 1,
-        "pair_key": "6d5c3ec913ae49b1",
+        "pair_key": "0e41ebb9f94df690",
         "task_id": "browser-alibaba-led-bulb-simple-publish",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 1,
-        "pair_key": "830dd9b50743d602",
+        "pair_key": "1bf3058eed88e72e",
         "task_id": "cli-google-trends-data-quality-audit",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 1,
-        "pair_key": "830dd9b50743d602",
+        "pair_key": "1bf3058eed88e72e",
         "task_id": "cli-google-trends-data-quality-audit",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 1,
-        "pair_key": "a332a311e911f7f8",
+        "pair_key": "318acac17e641c8a",
         "task_id": "cli-google-trends-counterfactual-rebalance",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 1,
-        "pair_key": "a332a311e911f7f8",
+        "pair_key": "318acac17e641c8a",
         "task_id": "cli-google-trends-counterfactual-rebalance",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 2,
-        "pair_key": "f896ed5aedff141e",
+        "pair_key": "d83e51d7bd7dc3ef",
         "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 2,
-        "pair_key": "f896ed5aedff141e",
+        "pair_key": "d83e51d7bd7dc3ef",
         "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 2,
-        "pair_key": "1bc39a9ac1b37e76",
+        "pair_key": "38f4ca367ab00653",
         "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 2,
-        "pair_key": "1bc39a9ac1b37e76",
+        "pair_key": "38f4ca367ab00653",
         "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 2,
-        "pair_key": "1db935bf29bbe242",
+        "pair_key": "c0e132cafd2afa10",
         "task_id": "api-travel-asia-supplier-tour-handoff",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 2,
-        "pair_key": "1db935bf29bbe242",
+        "pair_key": "c0e132cafd2afa10",
         "task_id": "api-travel-asia-supplier-tour-handoff",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 2,
-        "pair_key": "25bb7cc3f2d014ca",
+        "pair_key": "d1106efd0e707f27",
         "task_id": "browser-freightos-booking",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 2,
-        "pair_key": "25bb7cc3f2d014ca",
+        "pair_key": "d1106efd0e707f27",
         "task_id": "browser-freightos-booking",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 3,
-        "pair_key": "6e20aa922bd6ec5a",
+        "pair_key": "a394f2419cf5d2ef",
         "task_id": "cli-commerce-camping-stove-listing-config",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 3,
-        "pair_key": "6e20aa922bd6ec5a",
+        "pair_key": "a394f2419cf5d2ef",
         "task_id": "cli-commerce-camping-stove-listing-config",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 3,
-        "pair_key": "3b71c18d83373821",
+        "pair_key": "88baa0cc46e773dc",
         "task_id": "cli-commerce-skincare-order-reconciliation",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 3,
-        "pair_key": "3b71c18d83373821",
+        "pair_key": "88baa0cc46e773dc",
         "task_id": "cli-commerce-skincare-order-reconciliation",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 3,
-        "pair_key": "fdcdd90d5524ed34",
+        "pair_key": "4a47ded461160277",
         "task_id": "api-gmail-vendor-brief-mcp",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 3,
-        "pair_key": "fdcdd90d5524ed34",
+        "pair_key": "4a47ded461160277",
         "task_id": "api-gmail-vendor-brief-mcp",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 3,
-        "pair_key": "104913c6d22b6369",
+        "pair_key": "bdec261a86b33f57",
         "task_id": "api-google-docs-price-list-update-mcp",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 3,
-        "pair_key": "104913c6d22b6369",
+        "pair_key": "bdec261a86b33f57",
         "task_id": "api-google-docs-price-list-update-mcp",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 4,
-        "pair_key": "58b7af9d6c6124e2",
+        "pair_key": "040ccf7a60debf26",
         "task_id": "cli-alibaba-pneumatic-valve-publish",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 4,
-        "pair_key": "58b7af9d6c6124e2",
+        "pair_key": "040ccf7a60debf26",
         "task_id": "cli-alibaba-pneumatic-valve-publish",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 4,
-        "pair_key": "6caf2e7623a2f1e9",
+        "pair_key": "ff60773cb04fbf7d",
         "task_id": "browser-alibaba-custom-yoga-mat-publish",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 4,
-        "pair_key": "6caf2e7623a2f1e9",
+        "pair_key": "ff60773cb04fbf7d",
         "task_id": "browser-alibaba-custom-yoga-mat-publish",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 4,
-        "pair_key": "76b748de12070eec",
+        "pair_key": "e451b915d88e30ff",
         "task_id": "browser-alibaba-yushengxm-shop-diagnosis",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 4,
-        "pair_key": "76b748de12070eec",
+        "pair_key": "e451b915d88e30ff",
         "task_id": "browser-alibaba-yushengxm-shop-diagnosis",
         "variant": "adaptive_harness_a3"
       },
       {
         "block": 4,
-        "pair_key": "4b04368f20b71beb",
+        "pair_key": "0724c0387ad15436",
         "task_id": "file-commerce-ops-returns-dispute-evidence-pack",
         "variant": "vanilla_deerflow"
       },
       {
         "block": 4,
-        "pair_key": "4b04368f20b71beb",
+        "pair_key": "0724c0387ad15436",
         "task_id": "file-commerce-ops-returns-dispute-evidence-pack",
         "variant": "adaptive_harness_a3"
       }
     ],
-    "dataset_fingerprint": "62fc06bac60ad0c9aa42ba4fce23b214a2f6422507cc63d145565eda9447e4c9",
-    "fingerprint": "a61eb7c780256933203ac27178e2c05db9118cf5f26748c11eb16e010af185aa"
+    "dataset_fingerprint": "3c7304d726ea871ae7f2ffcd8940bb2df330a36ceaf06231174b5422881a63c0",
+    "fingerprint": "81e154de88d671d8439fa187672613d7a0b63132b2f3190442c5c6b6f46652b8"
   },
   "provider_coverage": {
-    "enforced_tasks": 14,
-    "full_coverage": false,
+    "all_criteria_enforced": false,
+    "enforced_tasks": 16,
+    "full_task_coverage": true,
     "ready_blocks": [
       1,
       2,
+      3,
       4
     ],
     "rows": [
@@ -512,14 +514,14 @@
       },
       {
         "block": 3,
-        "enforced_criterion_count": 0,
-        "observe_only_criterion_count": 3,
+        "enforced_criterion_count": 2,
+        "observe_only_criterion_count": 1,
         "task_id": "api-gmail-vendor-brief-mcp"
       },
       {
         "block": 3,
-        "enforced_criterion_count": 0,
-        "observe_only_criterion_count": 1,
+        "enforced_criterion_count": 1,
+        "observe_only_criterion_count": 0,
         "task_id": "api-google-docs-price-list-update-mcp"
       },
       {

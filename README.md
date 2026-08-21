@@ -127,5 +127,13 @@ failed tasks associated with missing completion evidence and 0/6 successful
 tasks. The other five failures were accepted as constraint/content errors,
 explicitly outside this completion gate's scope.
 
+Read-only Gmail and Google Docs MCP providers close the remaining task-level
+coverage gaps without verifier credentials. Gmail verifies the public label
+and calendar event through `gmail.listLabels` / `calendar.listEvents`; Docs
+hashes the named document before and after the run through `search_docs` and
+`docs.documents.get`. Provider-enforced task coverage is now 16/16 across all
+four MiniBench blocks. The Gmail draft criterion remains explicitly
+observe-only because the public mock exposes no draft-read tool.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

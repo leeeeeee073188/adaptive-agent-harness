@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 46 个零模型架构测试。
+- 48 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2102,7 +2102,7 @@ paid_run_ready                TRUE
 - Structured tool provider：只有 probe 明确声明能力时才强制；
 - 未实现 provider 的 exact-count、Gmail、Docs criterion 保留在 Contract/Ledger，但降为 observe-only，不得假装已验证，也不得误拦截。
 
-MiniBench16 当前 provider coverage：14/16 tasks，完整可执行 block 为 1、2、4；Block 3 的 Gmail/Docs 仍需专用 MCP state provider。
+MiniBench16 当前 provider-enforced task coverage：16/16，四个 block 均至少有一个可执行 criterion。Gmail draft 因公共 mock 没有 read/list draft 工具仍为 observe-only，因此“task coverage 16/16”不等于“所有 criterion 100% 强制”。
 
 将16个历史 baseline 终态仅用公开 prompt、输出文件和公开 early-terminate observation 做零 Token counterfactual：
 
@@ -2118,7 +2118,17 @@ MiniBench16 当前 provider coverage：14/16 tasks，完整可执行 block 为 1
 - 说明 Gate 有效降低 missing-artifact / missing-state premature completion，但不冒充 verifier，也不解决内容正确性或复杂约束错误；
 - 证据：`evidence/a6-completion-counterfactual/summary.json`。
 
-下一步优先实现 Gmail/Docs MCP state provider，或对已有失败轨迹做更细的 Failure Taxonomy 映射；在 Token variance 置信度解决前不继续付费扩跑。
+## P6：Gmail / Google Docs Public MCP State Provider（已完成，零 Token）
+
+- ContractBuilder 从公开 prompt 提取 `VBR-52` label、`VBR-52 Harbor Stitch` event 和目标 Docs 标题，不按 task-id 硬编码；
+- Gmail Provider 通过 `gmail.listLabels` 与 `calendar.listEvents` 做只读 postcondition；
+- Docs Provider 在 Agent 运行前后通过 `search_docs` + `docs.documents.get` 计算目标文档 canonical SHA-256，只有内容变化才满足 `document.updated`；
+- 所有 endpoint 必须是 loopback HTTP；不使用 Gmail `/api/state` 或 verifier token；
+- RealReplica runner 从公开 `runtime_mocks` metadata 自动生成 MCP provider 配置；
+- Gmail mock 没有公共 draft read/list tool，因此 `mail.draft_saved` 明确保留 observe-only，避免伪造验证能力；
+- Provider-enforced task coverage 达到 16/16，ready blocks 为 1/2/3/4；证据：`evidence/a7-mcp-providers/summary.json`。
+
+下一步继续对已有失败轨迹做 Failure Taxonomy/Recovery 命中分析；在 Token variance 置信度解决前不继续付费扩跑。
 
 # 36. 关键风险
 

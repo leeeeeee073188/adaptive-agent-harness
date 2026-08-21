@@ -74,3 +74,9 @@ not block completion until a provider exists. Historical MiniBench replay shows
 5/10 failed runs blocked and 0/6 successful runs falsely blocked. Accepted
 failures are content/constraint errors beyond an artifact/state completion
 gate, not silent claims of full task correctness.
+
+MCP state providers use only read-only public tools on loopback endpoints.
+Gmail label/calendar existence and Google Docs pre/post content hashes raise
+task-level provider coverage to 16/16. Unsupported Gmail draft verification
+remains observe-only; task coverage must never be presented as every-criterion
+coverage.

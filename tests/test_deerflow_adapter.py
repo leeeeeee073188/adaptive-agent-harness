@@ -8,16 +8,20 @@ from typing import Any
 
 from adaptive_harness.integrations.deerflow import (
     DeerFlowEventAdapter,
+    DeerFlowReplaySummary,
     DeerFlowRunRequest,
     DeerFlowRuntimeAdapter,
 )
 from adaptive_harness.integrations.deerflow_policy import (
     DeerFlowPolicyBridge,
     FileArtifactObservationProvider,
+    GmailMcpObservationProvider,
+    GoogleDocsMcpChangeObservationProvider,
     HttpJsonMatchObservationProvider,
     StructuredDeerFlowObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.task_contract import RuleBasedTaskContractBuilder
 
 
 class DeerFlowAdapterTests(unittest.TestCase):
@@ -111,6 +115,70 @@ class DeerFlowAdapterTests(unittest.TestCase):
         )
         self.assertEqual(ledger.events[-1].type, "runtime/end")
         self.assertEqual(ledger.events[-1].payload["source"], "deerflow-recovered")
+
+    def test_gmail_mcp_provider_reads_label_and_calendar_postconditions(self) -> None:
+        def call_tool(_endpoint: str, name: str, _arguments: dict[str, Any]):
+            if name == "gmail.listLabels":
+                return {"labels": [{"name": "VBR-52"}]}
+            if name == "calendar.listEvents":
+                return {"events": [{"title": "VBR-52 Harbor Stitch"}]}
+            raise AssertionError(name)
+
+        contract = RuleBasedTaskContractBuilder().build(
+            "gmail",
+            "创建顶层标签 `VBR-52`，再建一个 `VBR-52 Harbor Stitch` 日历事件。",
+        )
+        provider = GmailMcpObservationProvider(
+            "http://127.0.0.1:3071/mcp",
+            call_tool=call_tool,
+        )
+        evidence = provider.observe(
+            contract,
+            DeerFlowReplaySummary("", (), (), {}, 0, 0),
+            turn=1,
+        )
+
+        self.assertEqual({item.subject for item in evidence}, {
+            "mail.label_created",
+            "calendar.event_created",
+        })
+        self.assertTrue(all(item.value is True for item in evidence))
+
+    def test_google_docs_mcp_provider_compares_pre_and_post_content(self) -> None:
+        reads = 0
+
+        def call_tool(_endpoint: str, name: str, _arguments: dict[str, Any]):
+            nonlocal reads
+            if name == "search_docs":
+                return {
+                    "files": [{
+                        "id": "doc-1",
+                        "name": "AccessoryHub Wholesale Price List — Q3 2026",
+                    }]
+                }
+            if name == "docs.documents.get":
+                reads += 1
+                return {"documentId": "doc-1", "body": "before" if reads == 1 else "after"}
+            raise AssertionError(name)
+
+        contract = RuleBasedTaskContractBuilder().build(
+            "docs",
+            'The document is titled **"AccessoryHub Wholesale Price List — Q3 2026"**; update it.',
+        )
+        provider = GoogleDocsMcpChangeObservationProvider(
+            "http://127.0.0.1:3081/mcp",
+            call_tool=call_tool,
+        )
+        provider.before_run(contract)
+        evidence = provider.observe(
+            contract,
+            DeerFlowReplaySummary("", (), (), {}, 0, 0),
+            turn=1,
+        )
+
+        self.assertEqual(len(evidence), 1)
+        self.assertEqual(evidence[0].subject, "document.updated")
+        self.assertTrue(evidence[0].value)
 
 
 @dataclass

@@ -1,0 +1,20 @@
+{
+  "all_passed": true,
+  "all_required_criteria_enforced": false,
+  "checks": {
+    "docs_pre_post_hash_provider": true,
+    "gmail_calendar_read_provider": true,
+    "gmail_label_read_provider": true,
+    "loopback_only": true,
+    "public_prompt_targets": true,
+    "runner_mcp_config_wired": true,
+    "verifier_credentials_unused": true
+  },
+  "gmail_draft_observe_only": true,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "provider_enforced_tasks": 16,
+  "ready_blocks": [1, 2, 3, 4],
+  "scope": "Public Gmail and Google Docs MCP observation providers",
+  "test_count": 48
+}

@@ -261,6 +261,22 @@ class TaskContractStateTests(unittest.TestCase):
         )
         self.assertEqual(document.criteria[0].parameters["subject"], "document.updated")
 
+        targeted = builder.build(
+            "targets",
+            "创建顶层标签 `VBR-52`，再建一个 `VBR-52 Harbor Stitch` 日历事件。 "
+            'The document is titled **"AccessoryHub Wholesale Price List — Q3 2026"**; update it.',
+        )
+        targets = {
+            item.parameters["subject"]: item.parameters.get("target")
+            for item in targeted.criteria
+        }
+        self.assertEqual(targets["mail.label_created"], "VBR-52")
+        self.assertEqual(targets["calendar.event_created"], "VBR-52 Harbor Stitch")
+        self.assertEqual(
+            targets["document.updated"],
+            "AccessoryHub Wholesale Price List — Q3 2026",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
