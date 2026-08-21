@@ -13,7 +13,7 @@ The project is intentionally **not** another monolithic agent loop. It combines:
 - DeerFlow as the first runtime adapter rather than the architectural core;
 - RealReplicaBench as an external evaluation adapter rather than runtime logic.
 
-Implemented M0 architecture kernel:
+Implemented architecture core (A0 + A1):
 
 ```text
 Profile / Bundle
@@ -24,11 +24,35 @@ Profile / Bundle
                     -> deterministic message/state projections
 
 Evaluation plane (offline): RolloutRecord -> JudgeResult -> admissible ExperienceCandidate
+
+DeerFlow RuntimeAdapter:
+    DeerFlowClient.stream -> canonical event reconciliation -> SessionLedger
+    request/header snapshot + Environment build/cleanup + partial-run recovery
 ```
+
+The DeerFlow bridge reconciles incremental `messages-tuple` events with
+cumulative `values` snapshots, deduplicates tool calls/results, treats the
+`end` usage record as authoritative, and preserves interrupted runs as a
+replayable ledger. DeerFlow remains a runtime provider; it does not own task
+state or evaluation policy.
 
 Run the zero-model verification suite:
 
 ```bash
+uvx ruff check src tests scripts
 PYTHONPATH=src python -m unittest discover -s tests -v
-python -m compileall -q src tests
+python -m compileall -q src tests scripts
 ```
+
+Replay a historical RealReplicaBench run at zero model cost:
+
+```bash
+PYTHONPATH=src python scripts/replay_deerflow_m0.py /path/to/task-run
+```
+
+The checked-in `evidence/a1-replay/summary.json` records four exact historical
+replays across file, browser, API/MCP, and browser-vision tasks. All response,
+tool-count, and token-usage checks pass with zero new model calls.
+
+Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
+and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

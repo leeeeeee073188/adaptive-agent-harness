@@ -42,9 +42,10 @@ flowchart TD
 ## Migration stages
 
 1. Kernel, ledger, capability contracts, synthetic driver (implemented).
-2. DeerFlow adapter writes canonical events and consumes a profile-selected
-   policy set.
-3. TaskContract/TaskState become ledger projections, not mutable globals.
+2. DeerFlow adapter writes canonical events, snapshots request inputs, owns
+   environment lifecycle, and recovers partial streams (implemented).
+3. TaskContract/TaskState become ledger projections, not mutable globals
+   (next).
 4. Tool reliability and completion policies attach through event/service seams.
 5. Evaluation compares rollouts offline; Experience remains disabled until the
    leakage/admissibility gate passes.

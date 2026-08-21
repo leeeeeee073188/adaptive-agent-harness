@@ -1,0 +1,70 @@
+{
+  "all_passed": true,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "passed_count": 4,
+  "run_count": 4,
+  "runs": [
+    {
+      "canonical_event_count": 934,
+      "canonical_event_sha256": "80feaf309ed8688c84e18fe7bb7ee6842b4cb23afa9936ca227493540763229c",
+      "checks": {
+        "response_exact": true,
+        "tool_call_count": true,
+        "tool_result_count": true,
+        "usage_exact": true
+      },
+      "family": "file",
+      "historical_outcome": "stable-pass",
+      "passed": true,
+      "run": "04-file-google-trends-csv-flatten",
+      "source_event_count": 942
+    },
+    {
+      "canonical_event_count": 3732,
+      "canonical_event_sha256": "9dc9d7e14d43091253ebca891f1698196c32ced93ad39be27300677761d962f7",
+      "checks": {
+        "response_exact": true,
+        "tool_call_count": true,
+        "tool_result_count": true,
+        "usage_exact": true
+      },
+      "family": "browser",
+      "historical_outcome": "historical-failure",
+      "passed": true,
+      "run": "02-browser-freightos-booking",
+      "source_event_count": 3771
+    },
+    {
+      "canonical_event_count": 2137,
+      "canonical_event_sha256": "ff2ed150d94fafb92c6ba5073e47e66b190cebeafa9e24b4d2fd985bc701a6f7",
+      "checks": {
+        "response_exact": true,
+        "tool_call_count": true,
+        "tool_result_count": true,
+        "usage_exact": true
+      },
+      "family": "api-mcp",
+      "historical_outcome": "stable-pass",
+      "passed": true,
+      "run": "05-api-gmail-vendor-brief-mcp",
+      "source_event_count": 2135
+    },
+    {
+      "canonical_event_count": 694,
+      "canonical_event_sha256": "a751d44476d3dae4760486f94828f353b965c60194ca82ea2570fd5a6d29076d",
+      "checks": {
+        "response_exact": true,
+        "tool_call_count": true,
+        "tool_result_count": true,
+        "usage_exact": true
+      },
+      "family": "browser-vision",
+      "historical_outcome": "historical-failure",
+      "passed": true,
+      "run": "03-browser-alibaba-custom-yoga-mat-publish",
+      "source_event_count": 702
+    }
+  ],
+  "scope": "A1 DeerFlow RuntimeAdapter zero-model historical replay"
+}

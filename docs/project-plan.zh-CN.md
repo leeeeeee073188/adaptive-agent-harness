@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：独立 Harness Kernel M0 已实现，DeerFlow / RealReplicaBench 进入 Adapter 迁移阶段
+> 状态：A0 Independent Kernel 与 A1 DeerFlow Runtime Adapter 已实现，下一阶段为 A2 TaskContract + TaskState Projection
 
 ---
 
@@ -1696,12 +1696,22 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - Environment/Toolkit/Context/Tool contracts；
 - synthetic Turn/Step driver。
 
-## A1：DeerFlow Runtime Adapter
+## A1：DeerFlow Runtime Adapter（已完成）
 
 - 将当前 RealReplica runner 的事件转换逻辑迁入 Adapter；
 - exact request/header 与 Tool schema snapshot；
 - runtime/environment lifecycle；
 - 与现有 M0 run bundle 做零 Token replay 等价测试。
+
+实现证据：
+
+- `DeerFlowClient.stream` 的结构化 Runtime bridge；
+- `messages-tuple / values / end` 的幂等 canonical event 映射；
+- `request/header` 记录 messages、tool schemas、runtime context 与非敏感 client options；
+- Environment `build/cleanup` 以及异常时 partial ledger 恢复；
+- 13 个零模型单元测试；
+- 4 个历史 M0 run 离线回放全部通过 response、tool call/result count、usage exact check，新增模型调用与 Token 均为 0；
+- 回放证据位于 `evidence/a1-replay/summary.json`，报告仅保存长度与 SHA-256，不保存任务响应正文。
 
 ## A2：TaskContract + TaskState Projection
 
@@ -1947,18 +1957,21 @@ Held-out RealReplicaBench
 
 # 35. 下一步立即执行的任务
 
-## P0：从测试工程迁移到独立架构内核（进行中）
+## P0：从测试工程迁移到独立架构内核（A1 核心已完成）
 
-已完成 A0。下一步把现有 DeerFlow runner 中：
+已完成 A0，以及现有 DeerFlow runner 中的 event conversion、token accounting、runtime/environment lifecycle 迁移，并通过历史轨迹等价回放。benchmark 专属 config generation 暂留 Evaluation Adapter；Runtime 仅接收 Profile 解析后的非敏感 client options 与 tool schemas，避免把 benchmark 配置反向耦合进架构内核。
+
+下一步进入 A2，实现：
 
 ```text
-config generation
-event conversion
-token accounting
-runtime lifecycle
+TaskContractCreated
+StateUpdated
+EvidenceAdded
+FailureClassified
+CompletionChecked
 ```
 
-迁入 `integrations/deerflow.py`，同时保持现有 benchmark 输出完全一致。先做 replay，不产生模型 Token。
+这些事实只追加到 Ledger；TaskState 是可删除、可重放重建的 projection，不读取 verifier 或 ground truth。
 
 ## P1：Ledger Projection
 
