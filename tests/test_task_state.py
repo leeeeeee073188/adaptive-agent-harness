@@ -1,0 +1,215 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.task_contract import (
+    CriterionKind,
+    CriterionSource,
+    RuleBasedTaskContractBuilder,
+)
+from adaptive_harness.task_state import (
+    COMPLETION_CHECKED,
+    CriterionStatus,
+    Evidence,
+    EvidenceKind,
+    EvidenceSource,
+    Failure,
+    TaskEventWriter,
+    TaskStateProjector,
+)
+
+
+class TaskContractStateTests(unittest.TestCase):
+    def test_missing_artifact_and_exact_count_require_runtime_evidence(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "task-1",
+            "Write outputs/report.csv containing exactly 3 records.",
+        )
+        ledger = SessionLedger("run-1")
+        writer = TaskEventWriter(ledger)
+        writer.create_contract(contract)
+
+        missing = writer.check_completion()
+        writer.add_evidence(
+            Evidence(
+                "artifact-1",
+                EvidenceKind.ARTIFACT,
+                "/task/outputs/report.csv",
+                {"exists": True, "sha256": "abc"},
+                EvidenceSource.ARTIFACT_INSPECTION,
+            )
+        )
+        writer.add_evidence(
+            Evidence(
+                "count-1",
+                EvidenceKind.COUNT,
+                "records",
+                2,
+                EvidenceSource.RUNTIME_OBSERVATION,
+            )
+        )
+        wrong_count = writer.check_completion()
+        writer.add_evidence(
+            Evidence(
+                "count-2",
+                EvidenceKind.COUNT,
+                "records",
+                3,
+                EvidenceSource.RUNTIME_OBSERVATION,
+            )
+        )
+        complete = writer.check_completion()
+
+        self.assertFalse(missing.passed)
+        self.assertIn("Missing artifact evidence", " ".join(missing.missing))
+        self.assertFalse(wrong_count.passed)
+        self.assertIn("observed 2", " ".join(wrong_count.missing))
+        self.assertTrue(complete.passed)
+        self.assertEqual([item.kind for item in contract.criteria], [
+            CriterionKind.ARTIFACT_EXISTS,
+            CriterionKind.EXACT_COUNT,
+        ])
+        self.assertTrue(all(item.source is CriterionSource.TASK_PROMPT for item in contract.criteria))
+        self.assertEqual(sum(event.type == COMPLETION_CHECKED for event in ledger.events), 3)
+
+    def test_dependency_stays_blocked_until_prerequisite_has_evidence(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "task-2",
+            "Prepare and publish the report.",
+            {
+                "artifacts": [{"id": "prepare", "path": "outputs/report.csv"}],
+                "criteria": [
+                    {
+                        "id": "publish",
+                        "kind": "dependency",
+                        "description": "Publish only after preparing the artifact",
+                        "depends_on": ["prepare"],
+                    }
+                ],
+            },
+        )
+        ledger = SessionLedger("run-2")
+        writer = TaskEventWriter(ledger)
+        writer.create_contract(contract)
+
+        blocked = writer.check_completion()
+        writer.add_evidence(
+            Evidence(
+                "artifact-2",
+                EvidenceKind.ARTIFACT,
+                "outputs/report.csv",
+                True,
+                EvidenceSource.ARTIFACT_INSPECTION,
+            )
+        )
+        complete = writer.check_completion()
+
+        statuses = {item.criterion_id: item.status for item in blocked.assessments}
+        self.assertEqual(statuses["prepare"], CriterionStatus.PENDING)
+        self.assertEqual(statuses["publish"], CriterionStatus.BLOCKED)
+        self.assertTrue(complete.passed)
+
+    def test_projection_is_deleted_and_rebuilt_from_jsonl(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "task-3",
+            "Create the required output.",
+            {"artifacts": ["outputs/result.json"]},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "events.jsonl"
+            ledger = SessionLedger("run-3", path)
+            writer = TaskEventWriter(ledger)
+            writer.create_contract(contract)
+            writer.update_state({"current_subgoal": "write-result", "attempts": 1}, reason="tool started")
+            writer.add_evidence(
+                Evidence(
+                    "artifact-3",
+                    EvidenceKind.ARTIFACT,
+                    "outputs/result.json",
+                    True,
+                    EvidenceSource.TOOL_RESULT,
+                )
+            )
+            writer.classify_failure(
+                Failure(
+                    "failure-1",
+                    "TRANSIENT_IO",
+                    "first write was interrupted",
+                    EvidenceSource.TOOL_RESULT,
+                    {"recovered": True},
+                )
+            )
+            writer.check_completion()
+            before = TaskStateProjector().project(ledger.events)
+
+            del writer, ledger
+            replayed = SessionLedger.replay(path)
+            after = TaskStateProjector().project(replayed.events)
+
+        self.assertEqual(after, before)
+        self.assertEqual(after.values["attempts"], 1)
+        self.assertEqual(after.failures[0].error_type, "TRANSIENT_IO")
+        self.assertTrue(after.latest_completion and after.latest_completion.passed)
+
+    def test_model_context_is_bounded_but_ledger_keeps_full_evidence(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "task-context",
+            "Create outputs/result.txt.",
+        )
+        ledger = SessionLedger("run-context")
+        writer = TaskEventWriter(ledger)
+        writer.create_contract(contract)
+        long_observation = "x" * 10_000
+        writer.add_evidence(
+            Evidence(
+                "large-observation",
+                EvidenceKind.OBSERVATION,
+                "command output",
+                long_observation,
+                EvidenceSource.TOOL_RESULT,
+            )
+        )
+
+        state = TaskStateProjector().project(ledger.events)
+        context = state.to_context()
+
+        self.assertEqual(state.evidence[0].value, long_observation)
+        self.assertLess(len(context["evidence"][0]["value"]), 600)
+        self.assertIn("chars omitted", context["evidence"][0]["value"])
+
+    def test_public_schema_rejects_evaluation_only_fields(self) -> None:
+        builder = RuleBasedTaskContractBuilder()
+
+        with self.assertRaisesRegex(ValueError, "evaluation-only field"):
+            builder.build(
+                "task-4",
+                "Create an output.",
+                {"criteria": [], "metadata": {"ground_truth": "hidden answer"}},
+            )
+
+        empty_contract = builder.build("task-empty", "Summarize the request.")
+        ledger = SessionLedger("run-empty")
+        writer = TaskEventWriter(ledger)
+        writer.create_contract(empty_contract)
+        result = writer.check_completion()
+        self.assertFalse(result.passed)
+        self.assertEqual(result.missing, ("verifiable criteria",))
+
+    def test_invalid_dependency_graph_fails_closed(self) -> None:
+        builder = RuleBasedTaskContractBuilder()
+        schema = {
+            "criteria": [
+                {"id": "a", "kind": "dependency", "depends_on": ["b"]},
+                {"id": "b", "kind": "dependency", "depends_on": ["a"]},
+            ]
+        }
+
+        with self.assertRaisesRegex(ValueError, "cycle"):
+            builder.build("task-5", "Do the task.", schema)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -13,7 +13,7 @@ The project is intentionally **not** another monolithic agent loop. It combines:
 - DeerFlow as the first runtime adapter rather than the architectural core;
 - RealReplicaBench as an external evaluation adapter rather than runtime logic.
 
-Implemented architecture core (A0 + A1):
+Implemented architecture core (A0–A2):
 
 ```text
 Profile / Bundle
@@ -28,6 +28,10 @@ Evaluation plane (offline): RolloutRecord -> JudgeResult -> admissible Experienc
 DeerFlow RuntimeAdapter:
     DeerFlowClient.stream -> canonical event reconciliation -> SessionLedger
     request/header snapshot + Environment build/cleanup + partial-run recovery
+
+TaskContract / TaskState:
+    public prompt/schema -> typed criteria -> durable task facts
+    Ledger -> disposable TaskState projection -> bounded model working set
 ```
 
 The DeerFlow bridge reconciles incremental `messages-tuple` events with
@@ -35,6 +39,12 @@ cumulative `values` snapshots, deduplicates tool calls/results, treats the
 `end` usage record as authoritative, and preserves interrupted runs as a
 replayable ledger. DeerFlow remains a runtime provider; it does not own task
 state or evaluation policy.
+
+Task contracts are derived conservatively from the public task prompt/schema.
+Artifact, exact-count, observation, and dependency criteria are checked only
+against runtime evidence. Evaluation-only fields such as verifier, rubric,
+ground truth, and expected answers are rejected at the contract boundary.
+Projection context is bounded, while the ledger retains complete evidence.
 
 Run the zero-model verification suite:
 
@@ -53,6 +63,8 @@ PYTHONPATH=src python scripts/replay_deerflow_m0.py /path/to/task-run
 The checked-in `evidence/a1-replay/summary.json` records four exact historical
 replays across file, browser, API/MCP, and browser-vision tasks. All response,
 tool-count, and token-usage checks pass with zero new model calls.
+`evidence/a2-projection/summary.json` records the zero-model A2 contract/state
+checks and confirms all four A1 historical replay hashes remain unchanged.
 
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

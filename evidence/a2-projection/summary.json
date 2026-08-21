@@ -1,0 +1,20 @@
+{
+  "all_passed": true,
+  "a1_historical_replay_compatibility": {
+    "passed_count": 4,
+    "run_count": 4
+  },
+  "checks": {
+    "bounded_model_context": true,
+    "dependency_blocking": true,
+    "evaluation_fields_rejected": true,
+    "exact_count_requires_evidence": true,
+    "missing_artifact_rejected": true,
+    "projection_rebuild_exact": true,
+    "runtime_request_is_ledger_backed": true
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "scope": "A2 TaskContract and TaskState projection",
+  "test_count": 21
+}

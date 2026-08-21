@@ -11,7 +11,15 @@ from adaptive_harness.capabilities import (
 )
 from adaptive_harness.kernel import Kernel, PluginContext
 from adaptive_harness.runtime import AgentDriver
-from adaptive_harness.services import COMPLETION_POLICY, CONTEXT_MANAGER, ENVIRONMENT, MODEL, TOOL_RUNTIME
+from adaptive_harness.services import (
+    COMPLETION_POLICY,
+    CONTEXT_MANAGER,
+    ENVIRONMENT,
+    MODEL,
+    TASK_CONTRACT_BUILDER,
+    TOOL_RUNTIME,
+)
+from adaptive_harness.task_contract import RuleBasedTaskContractBuilder
 from adaptive_harness.tool_runtime import ToolRuntime
 
 
@@ -58,6 +66,14 @@ class RuntimePlugin:
         )
 
 
+class ContractPlugin:
+    name = "task-contract"
+    requires = ()
+
+    async def mount(self, context: PluginContext) -> None:
+        context.provide(TASK_CONTRACT_BUILDER, RuleBasedTaskContractBuilder())
+
+
 class RuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def test_driver_records_reconstructable_tool_turn(self) -> None:
         kernel = Kernel()
@@ -91,3 +107,38 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         headers = [event for event in result.ledger.events if event.type == "request/header"]
         self.assertEqual(headers[0].payload["context"]["step"], 1)
         self.assertIn("Current runtime snapshot", str(headers[0].payload["messages"]))
+
+    async def test_driver_projects_public_contract_into_recorded_request(self) -> None:
+        kernel = Kernel()
+        await kernel.mount(ContractPlugin())
+        await kernel.mount(RuntimePlugin())
+
+        result = await AgentDriver(kernel).run(
+            "Write outputs/report.csv.",
+            run_id="run-contract",
+            task_id="public-task",
+        )
+
+        self.assertEqual(result.ledger.events[0].type, "task/contract-created")
+        contract = result.ledger.events[0].payload["contract"]
+        self.assertEqual(contract["task_id"], "public-task")
+        self.assertEqual(contract["criteria"][0]["parameters"]["path"], "outputs/report.csv")
+        first_header = next(event for event in result.ledger.events if event.type == "request/header")
+        self.assertIn("artifact_exists", str(first_header.payload["messages"]))
+
+    async def test_contract_rejection_still_cleans_environment(self) -> None:
+        kernel = Kernel()
+        contract_plugin = ContractPlugin()
+        runtime_plugin = RuntimePlugin()
+        await kernel.mount(contract_plugin)
+        await kernel.mount(runtime_plugin)
+        environment = kernel.services.get(ENVIRONMENT)
+
+        with self.assertRaisesRegex(ValueError, "evaluation-only field"):
+            await AgentDriver(kernel).run(
+                "Do the task.",
+                run_id="run-rejected",
+                public_schema={"ground_truth": "forbidden"},
+            )
+
+        self.assertFalse(environment.built)

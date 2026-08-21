@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0 Independent Kernel 与 A1 DeerFlow Runtime Adapter 已实现，下一阶段为 A2 TaskContract + TaskState Projection
+> 状态：A0–A2 已实现，下一阶段为 A3 Tool Reliability + Completion Policy
 
 ---
 
@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 8 个零模型架构测试。
+- 21 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -1713,12 +1713,24 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - 4 个历史 M0 run 离线回放全部通过 response、tool call/result count、usage exact check，新增模型调用与 Token 均为 0；
 - 回放证据位于 `evidence/a1-replay/summary.json`，报告仅保存长度与 SHA-256，不保存任务响应正文。
 
-## A2：TaskContract + TaskState Projection
+## A2：TaskContract + TaskState Projection（已完成）
 
 - 从公开 task prompt/schema 生成 criterion；
 - Contract/State 只通过 ledger event 演化；
 - 不接 verifier；
 - synthetic missing-artifact / exact-count / dependency tests。
+
+实现证据：
+
+- `task_contract_builder` 稳定 ServiceKey，可被 Profile/Plugin 替换；
+- 仅从公开 task prompt/public schema 生成 artifact、exact-count、observation、dependency criterion；
+- public schema 出现 `verifier / rubric / ground_truth / expected_answer / judge` 字段时 fail closed；
+- `task/contract-created`、`state/updated`、`evidence/added`、`failure/classified`、`completion/checked` 全部为 append-only durable facts；
+- `TaskStateProjector` 不保留 mutable source of truth，删除后从 JSONL replay 可精确重建；
+- Driver 只在 Profile 提供 builder 时启用，并把有界 TaskState working set 写入 `request/header`；完整 evidence 仍只保存在 Ledger，避免长工具输出反复消耗模型 Token；
+- missing-artifact、exact-count mismatch、dependency blocked、空 criterion、循环依赖均 fail closed；
+- 全量 21 个零模型测试通过，A1 四个历史回放的 canonical SHA-256 保持不变；
+- 证据位于 `evidence/a2-projection/summary.json`。
 
 ## A3：Tool Reliability + Completion Policy
 
@@ -1961,7 +1973,7 @@ Held-out RealReplicaBench
 
 已完成 A0，以及现有 DeerFlow runner 中的 event conversion、token accounting、runtime/environment lifecycle 迁移，并通过历史轨迹等价回放。benchmark 专属 config generation 暂留 Evaluation Adapter；Runtime 仅接收 Profile 解析后的非敏感 client options 与 tool schemas，避免把 benchmark 配置反向耦合进架构内核。
 
-下一步进入 A2，实现：
+随后完成 A2 的：
 
 ```text
 TaskContractCreated
@@ -1973,7 +1985,7 @@ CompletionChecked
 
 这些事实只追加到 Ledger；TaskState 是可删除、可重放重建的 projection，不读取 verifier 或 ground truth。
 
-## P1：Ledger Projection
+## P1：Ledger Projection（已完成）
 
 实现：
 
