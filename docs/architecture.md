@@ -80,3 +80,11 @@ Gmail label/calendar existence and Google Docs pre/post content hashes raise
 task-level provider coverage to 16/16. Unsupported Gmail draft verification
 remains observe-only; task coverage must never be presented as every-criterion
 coverage.
+
+## Recovery separation
+
+Transient provider failures belong to bounded ToolRuntime retries. Semantic or
+task-level failures never enter that retry loop: a separate replaceable service
+chooses at most three state refresh, tool switch, contract validation, replan,
+or partial-delivery actions. This mirrors the DeepSeek Harness capability seam
+and Youtu-Agent policy/environment separation while preventing retry storms.

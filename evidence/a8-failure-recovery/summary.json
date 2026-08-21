@@ -1,0 +1,345 @@
+{
+  "bounded_recovery_count": 12,
+  "category_action_coverage": 1.0,
+  "failure_count": 12,
+  "interpretation": "This validates recommendation mapping, not that a recovery would make the task pass.",
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "no_progress_label_count": 4,
+  "no_progress_trajectory_signal_rate": 1.0,
+  "policy_mapping_passed": true,
+  "primary_categories": {
+    "ARTIFACT_ERROR": 1,
+    "BROWSER_GROUNDING": 4,
+    "CONSTRAINT_MISS": 4,
+    "PLAN_INCOMPLETE": 2,
+    "WRONG_TOOL": 1
+  },
+  "recommended_actions": {
+    "refresh_state": 5,
+    "repair_argument": 1,
+    "replan": 6,
+    "stop_repeated_action": 5,
+    "switch_tool": 6,
+    "validate_contract": 5,
+    "write_partial": 3
+  },
+  "rows": [
+    {
+      "actions": [
+        "stop_repeated_action",
+        "refresh_state",
+        "switch_tool"
+      ],
+      "expected_action_hit": true,
+      "primary": "BROWSER_GROUNDING",
+      "secondary": [
+        "NO_PROGRESS",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 2,
+        "fallback_shell_count": 17,
+        "max_identical_signature_count": 2,
+        "token_capped": true,
+        "tool_call_count": 40,
+        "tool_error_count": 10,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": false,
+      "target_slice_hit": true,
+      "task_id": "browser-alibaba-led-bulb-simple-publish"
+    },
+    {
+      "actions": [
+        "validate_contract",
+        "replan"
+      ],
+      "expected_action_hit": true,
+      "primary": "CONSTRAINT_MISS",
+      "secondary": [
+        "TASK_UNDERSTANDING",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 0,
+        "fallback_shell_count": 17,
+        "max_identical_signature_count": 1,
+        "token_capped": true,
+        "tool_call_count": 34,
+        "tool_error_count": 8,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": true,
+      "target_slice_hit": true,
+      "task_id": "cli-google-trends-data-quality-audit"
+    },
+    {
+      "actions": [
+        "validate_contract",
+        "replan"
+      ],
+      "expected_action_hit": true,
+      "primary": "CONSTRAINT_MISS",
+      "secondary": [
+        "TASK_UNDERSTANDING",
+        "STATE_INCONSISTENCY"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 0,
+        "fallback_shell_count": 11,
+        "max_identical_signature_count": 1,
+        "token_capped": false,
+        "tool_call_count": 26,
+        "tool_error_count": 1,
+        "unpaired_tool_call_count": 0
+      },
+      "target_slice": true,
+      "target_slice_hit": true,
+      "task_id": "cli-google-trends-counterfactual-rebalance"
+    },
+    {
+      "actions": [
+        "switch_tool",
+        "refresh_state",
+        "replan"
+      ],
+      "expected_action_hit": true,
+      "primary": "WRONG_TOOL",
+      "secondary": [
+        "BROWSER_GROUNDING",
+        "PLAN_INCOMPLETE",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 2,
+        "fallback_shell_count": 28,
+        "max_identical_signature_count": 2,
+        "token_capped": true,
+        "tool_call_count": 42,
+        "tool_error_count": 19,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": false,
+      "target_slice_hit": true,
+      "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui"
+    },
+    {
+      "actions": [
+        "validate_contract",
+        "replan"
+      ],
+      "expected_action_hit": true,
+      "primary": "CONSTRAINT_MISS",
+      "secondary": [
+        "TASK_UNDERSTANDING",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 0,
+        "fallback_shell_count": 20,
+        "max_identical_signature_count": 1,
+        "token_capped": true,
+        "tool_call_count": 44,
+        "tool_error_count": 14,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": true,
+      "target_slice_hit": true,
+      "task_id": "api-travel-asia-supplier-tour-handoff"
+    },
+    {
+      "actions": [
+        "replan",
+        "repair_argument",
+        "write_partial"
+      ],
+      "expected_action_hit": true,
+      "primary": "PLAN_INCOMPLETE",
+      "secondary": [
+        "BROWSER_GROUNDING",
+        "TOOL_ARGUMENT",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 1,
+        "fallback_shell_count": 34,
+        "max_identical_signature_count": 1,
+        "token_capped": true,
+        "tool_call_count": 36,
+        "tool_error_count": 4,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": false,
+      "target_slice_hit": true,
+      "task_id": "browser-freightos-booking"
+    },
+    {
+      "actions": [
+        "validate_contract",
+        "write_partial",
+        "stop_repeated_action"
+      ],
+      "expected_action_hit": true,
+      "primary": "ARTIFACT_ERROR",
+      "secondary": [
+        "CONSTRAINT_MISS",
+        "LOOP"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 0,
+        "fallback_shell_count": 4,
+        "max_identical_signature_count": 1,
+        "token_capped": false,
+        "tool_call_count": 29,
+        "tool_error_count": 2,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": true,
+      "target_slice_hit": true,
+      "task_id": "cli-commerce-skincare-order-reconciliation"
+    },
+    {
+      "actions": [
+        "validate_contract"
+      ],
+      "expected_action_hit": true,
+      "primary": "CONSTRAINT_MISS",
+      "secondary": [
+        "ARTIFACT_ERROR",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 0,
+        "fallback_shell_count": 13,
+        "max_identical_signature_count": 1,
+        "token_capped": false,
+        "tool_call_count": 59,
+        "tool_error_count": 27,
+        "unpaired_tool_call_count": 0
+      },
+      "target_slice": true,
+      "target_slice_hit": true,
+      "task_id": "cli-alibaba-pneumatic-valve-publish"
+    },
+    {
+      "actions": [
+        "stop_repeated_action",
+        "refresh_state",
+        "switch_tool"
+      ],
+      "expected_action_hit": true,
+      "primary": "BROWSER_GROUNDING",
+      "secondary": [
+        "NO_PROGRESS",
+        "LOOP",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 8,
+        "fallback_shell_count": 18,
+        "max_identical_signature_count": 2,
+        "token_capped": true,
+        "tool_call_count": 64,
+        "tool_error_count": 25,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": false,
+      "target_slice_hit": true,
+      "task_id": "browser-alibaba-custom-yoga-mat-publish"
+    },
+    {
+      "actions": [
+        "stop_repeated_action",
+        "refresh_state",
+        "switch_tool"
+      ],
+      "expected_action_hit": true,
+      "primary": "BROWSER_GROUNDING",
+      "secondary": [
+        "NO_PROGRESS",
+        "PLAN_INCOMPLETE",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 11,
+        "fallback_shell_count": 30,
+        "max_identical_signature_count": 4,
+        "token_capped": true,
+        "tool_call_count": 41,
+        "tool_error_count": 17,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": false,
+      "target_slice_hit": true,
+      "task_id": "browser-alibaba-yushengxm-shop-diagnosis"
+    },
+    {
+      "actions": [
+        "stop_repeated_action",
+        "refresh_state",
+        "switch_tool"
+      ],
+      "expected_action_hit": true,
+      "primary": "BROWSER_GROUNDING",
+      "secondary": [
+        "NO_PROGRESS",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 7,
+        "fallback_shell_count": 18,
+        "max_identical_signature_count": 1,
+        "token_capped": true,
+        "tool_call_count": 64,
+        "tool_error_count": 24,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": false,
+      "target_slice_hit": true,
+      "task_id": "browser-alibaba-bluetooth-earbuds-mixed-publish"
+    },
+    {
+      "actions": [
+        "replan",
+        "switch_tool",
+        "write_partial"
+      ],
+      "expected_action_hit": true,
+      "primary": "PLAN_INCOMPLETE",
+      "secondary": [
+        "WRONG_TOOL",
+        "BROWSER_GROUNDING",
+        "PREMATURE_FINISH"
+      ],
+      "should_continue": true,
+      "signals": {
+        "browser_tool_count": 1,
+        "fallback_shell_count": 30,
+        "max_identical_signature_count": 1,
+        "token_capped": true,
+        "tool_call_count": 39,
+        "tool_error_count": 9,
+        "unpaired_tool_call_count": 1
+      },
+      "target_slice": false,
+      "target_slice_hit": true,
+      "task_id": "browser-gmail-returns-escalation"
+    }
+  ],
+  "scope": "Dev20 human-labeled failure recovery simulation",
+  "target_constraint_artifact_count": 5,
+  "target_constraint_artifact_coverage": 1.0,
+  "unsafe_blind_retry_count": 0
+}

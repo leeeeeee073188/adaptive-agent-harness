@@ -135,5 +135,14 @@ hashes the named document before and after the run through `search_docs` and
 four MiniBench blocks. The Gmail draft criterion remains explicitly
 observe-only because the public mock exposes no draft-read tool.
 
+Task-level recovery is also separated from transient tool retries. A bounded
+policy maps browser grounding, constraint, planning, wrong-tool, and artifact
+failures to at most three structural actions (`refresh_state`, `switch_tool`,
+`validate_contract`, `replan`, or partial delivery). On 12 human-reviewed
+Dev20 failures it achieved 12/12 category-to-action coverage, 5/5 coverage of
+the target constraint/artifact slice, detected trajectory evidence for all
+four no-progress labels, and recommended zero blind retries. This validates
+the mapping, not that replayed recovery would necessarily make tasks pass.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

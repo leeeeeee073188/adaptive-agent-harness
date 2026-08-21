@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 48 个零模型架构测试。
+- 51 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2129,6 +2129,31 @@ MiniBench16 当前 provider-enforced task coverage：16/16，四个 block 均至
 - Provider-enforced task coverage 达到 16/16，ready blocks 为 1/2/3/4；证据：`evidence/a7-mcp-providers/summary.json`。
 
 下一步继续对已有失败轨迹做 Failure Taxonomy/Recovery 命中分析；在 Token variance 置信度解决前不继续付费扩跑。
+
+## P7：Failure Taxonomy / Bounded Recovery Simulation（已完成，零 Token）
+
+新增 `TaskRecoveryPolicy` ServiceKey，将任务级恢复与 ToolRuntime 瞬时错误重试彻底分离：
+
+- Browser Grounding + No Progress：停止重复动作 → refresh state → switch tool；
+- Constraint Miss：validate contract，必要时 replan；
+- Wrong Tool：switch tool → refresh → replan；
+- Plan Incomplete：replan，按需 repair argument / switch tool，再写 partial；
+- Artifact Error：validate contract → write partial，循环时停止重复动作；
+- 每次 decision 最多3个动作，每类动作默认最多1次；预算耗尽后 STOP；语义错误绝不进入 blind retry。
+
+在12条 human-reviewed Dev20 failure 和对应公开 trajectory 上离线模拟：
+
+| 指标 | 结果 |
+|---|---:|
+| Category→Action coverage | 12/12 (100%) |
+| Constraint/Artifact target slice | 5/5 (100%) |
+| No-progress label具备轨迹信号 | 4/4 (100%) |
+| Blind retry recommendation | 0 |
+| 单次最大恢复动作 | 3 |
+
+该结果只证明推荐映射与预算安全，不声称 recovery 一定使任务转为通过。证据：`evidence/a8-failure-recovery/summary.json`。
+
+下一步将 RecoveryDecision 接入 durable Ledger 与下一 Turn context，并先用合成/历史 replay 验证 action 消耗和停止语义；Token variance 置信度解决前仍不继续付费扩跑。
 
 # 36. 关键风险
 
