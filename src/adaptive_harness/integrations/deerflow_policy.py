@@ -102,6 +102,48 @@ class FileArtifactObservationProvider:
         return tuple(evidence)
 
 
+class OutputFileCountObservationProvider:
+    """Count visible output files for an explicit public `exactly N files` criterion."""
+
+    def __init__(self, task_root: Path) -> None:
+        self.outputs = (task_root.resolve() / "outputs").resolve()
+
+    def supports(self, criterion: Any) -> bool:
+        return (
+            criterion.kind is CriterionKind.EXACT_COUNT
+            and criterion.parameters.get("subject") == "files"
+        )
+
+    def observe(
+        self,
+        contract: TaskContract,
+        summary: DeerFlowReplaySummary,
+        *,
+        turn: int,
+    ) -> Sequence[Evidence]:
+        if not any(self.supports(criterion) for criterion in contract.criteria):
+            return ()
+        count = (
+            sum(
+                path.is_file()
+                and not any(part.startswith(".") for part in path.relative_to(self.outputs).parts)
+                for path in self.outputs.rglob("*")
+            )
+            if self.outputs.is_dir()
+            else 0
+        )
+        return (
+            Evidence(
+                f"deerflow:t{turn}:output-file-count",
+                EvidenceKind.COUNT,
+                "files",
+                count,
+                EvidenceSource.ARTIFACT_INSPECTION,
+                {"provider": "output-file-count", "root": "outputs/"},
+            ),
+        )
+
+
 class StructuredDeerFlowObservationProvider:
     """Read explicit evidence attached by tools; never interpret result prose."""
 

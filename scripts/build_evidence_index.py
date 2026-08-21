@@ -28,6 +28,7 @@ REQUIRED = tuple(
         (11, "recovery-outcomes"),
         (12, "recovery-practice"),
         (13, "browser-fallback-guard"),
+        (14, "exact-count-provider"),
     )
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
@@ -79,7 +80,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     practice = doc("a12-recovery-practice/summary.json") if not missing else {}
     guard = doc("a13-browser-fallback-guard/summary.json") if not missing else {}
     claims = {
-        "zero_model_unit_tests": 67,
+        "zero_model_unit_tests": 69,
         "historical_replay_exact": f"{replay.get('passed_count', 0)}/{replay.get('run_count', 0)}",
         "minibench_task_count": (preflight.get("dataset") or {}).get("counts", {}).get("total"),
         "contract_coverage": (preflight.get("contract_coverage") or {}).get("covered_tasks"),

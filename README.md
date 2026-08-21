@@ -188,6 +188,11 @@ blocked 66 excess fallback calls with zero non-browser blocks, but Dev20 has no
 successful browser control. Without a false-positive estimate the deployment
 gate remains closed.
 
+Exact-count parsing is conservative. “Exactly one entry per RFQ” and “exactly
+one of” are not misread as global count-one requirements. The one unambiguous
+MiniBench criterion—exactly three visible output files—is enforced by a
+filesystem count provider that excludes hidden Harness artifacts.
+
 A workspace-wide scan confirms there are still zero formally successful
 DeerFlow browser controls. Five deterministic public-mock success traces cover
 first-class browser use, safe file/API shell work, and up to three bounded CDP

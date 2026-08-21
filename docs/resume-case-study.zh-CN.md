@@ -73,7 +73,7 @@ MiniBench16通过task order hash、Dataset fingerprint、Profile fingerprint、�
 
 | 项目 | 证据 |
 |---|---:|
-| 零模型单元测试 | 67 |
+| 零模型单元测试 | 69 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |
@@ -96,7 +96,7 @@ MiniBench16通过task order hash、Dataset fingerprint、Profile fingerprint、�
 
 ## 6. 简历Bullet（建议版本）
 
-- 设计并实现事件溯源Agent Harness：自研Plugin Kernel、typed ServiceKey、Turn/Step lifecycle、append-only Ledger及可重建TaskState，参考DeepSeek Harness与Youtu-Agent实现Runtime/Evaluation/Practice解耦，累计67项零模型测试与4/4历史轨迹精确回放。
+- 设计并实现事件溯源Agent Harness：自研Plugin Kernel、typed ServiceKey、Turn/Step lifecycle、append-only Ledger及可重建TaskState，参考DeepSeek Harness与Youtu-Agent实现Runtime/Evaluation/Practice解耦，累计69项零模型测试与4/4历史轨迹精确回放。
 - 构建Capability-negotiated Completion与Durable Recovery链路，在冻结MiniBench16上实现Contract/Provider任务覆盖16/16；历史counterfactual捕获5/10 missing-state/artifact类失败且成功任务误拦截0/6，12条人工失败标签Recovery映射覆盖12/12、blind retry为0。
 - 建立成本敏感paired evaluation与Wilson置信门禁：固定model/image/seed/Profile fingerprint，发现首个Candidate虽保持1.0质量但单次Token观测+65.6%，通过surface fingerprint和counterfactual replay判定不可归因于Harness，并停止后续付费扩跑，避免用单次成功掩盖成本不确定性。
 

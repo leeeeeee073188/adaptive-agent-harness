@@ -356,6 +356,11 @@ class RealReplicaMiniBenchAdapter:
                 if criterion.kind is CriterionKind.ARTIFACT_EXISTS:
                     enforced += 1
                 elif (
+                    criterion.kind is CriterionKind.EXACT_COUNT
+                    and criterion.parameters.get("subject") == "files"
+                ):
+                    enforced += 1
+                elif (
                     criterion.kind is CriterionKind.OBSERVATION_EQUALS
                     and criterion.parameters.get("subject")
                     in task.public_observation_subjects

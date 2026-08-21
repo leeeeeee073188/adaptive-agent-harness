@@ -16,14 +16,14 @@
       "sha256": "c9f22e647af8e6386a19cbe353d2295a3cd0c9ec3482ef68a59aefbe0bd51f20"
     },
     {
-      "bytes": 15576,
+      "bytes": 15526,
       "path": "a4-minibench-preflight/summary.json",
-      "sha256": "ed1a3433a3c1fcc739a4ff9d09a9f998bf41636100418e4e45eb08205de163ee"
+      "sha256": "e290174da8908c6d9e5ae9af0ff78064e55e3e0713346e974fa11095656f9e32"
     },
     {
       "bytes": 1544,
       "path": "a4-container-wiring/summary.json",
-      "sha256": "56240f38c9e41f2276d55f29087d1db3e3c7f7f9369b4548fbf9ef001c0016f1"
+      "sha256": "526dc124788b2f25e3d329487a3d61d415cfb7134ae586bfe8645f43a3ebd808"
     },
     {
       "bytes": 2937,
@@ -33,7 +33,7 @@
     {
       "bytes": 5209,
       "path": "a6-completion-counterfactual/summary.json",
-      "sha256": "24d2c54261f6a91f8d66ec4877cd8da04d711ae55313e8482b9d60bf477b39f6"
+      "sha256": "fd9dbea9a708759cb57be6f4a44eca099decf1cfce37c37ee96be07b96b1ed07"
     },
     {
       "bytes": 583,
@@ -69,6 +69,11 @@
       "bytes": 8110,
       "path": "a13-browser-fallback-guard/summary.json",
       "sha256": "bb078ee4ec0eea9c0d91805969e86f55cbc618714e9b466326c115a53426deff"
+    },
+    {
+      "bytes": 482,
+      "path": "a14-exact-count-provider/summary.json",
+      "sha256": "ce8c78fbbc51221cc99a287006e6e22085b75cd2e569718897d11293a969bb93"
     }
   ],
   "claim_boundary": "No measured MiniBench success-rate uplift; only one paired cell was run and expansion stopped.",
@@ -90,9 +95,9 @@
     "provider_enforced_task_coverage": 16,
     "recovery_category_mapping": "12/12",
     "recovery_practice_enabled": false,
-    "zero_model_unit_tests": 67
+    "zero_model_unit_tests": 69
   },
-  "git_head": "1c46625f791a1c02f45f3a603a34c2b2681d107d",
+  "git_head": "71134e79652278456b7a66d32fa03f39c39b4396",
   "invariants": {
     "all_evidence_present": true,
     "minibench_not_full_107": true,

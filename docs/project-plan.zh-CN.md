@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 67 个零模型架构测试。
+- 69 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -1768,7 +1768,7 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - 生成 32-cell baseline/candidate paired manifest，强制 model、runtime image、seed、task/block 相同，同时要求 Profile fingerprint 不同；
 - paired statistics 只统计同时存在 baseline 与 candidate 的 sample，禁止 unmatched rollout 稀释或抬高结果；
 - 历史 baseline 16/16 都有 integrity/formal-eligible 记录，但来自 6 种 run-config fingerprint，因此只用于失败定位，明确禁止复用为正式 paired baseline；
-- public prompt contract coverage 已达到 16/16、37 个 criterion（26 artifact + 3 exact-count + 8 observation）；5 个 stateful/browser/API 任务通过 provider-neutral `observation_equals` contract 覆盖，不按 task-id 存答案；
+- public prompt contract coverage 已达到 16/16、35 个 criterion（26 artifact + 1 exact-count + 8 observation）；5 个 stateful/browser/API 任务通过 provider-neutral `observation_equals` contract 覆盖，不按task-id存答案；
 - `DeerFlowPolicyBridge` 使用公开 embedded-client stream，在同一 thread 内执行有界 continuation：首次 finish 缺证据则落 `completion/checked`、写入反馈并继续下一 turn；
 - `FileArtifactObservationProvider` 对隔离 task root 下的必需文件记录 exists/size/SHA-256；`StructuredDeerFlowObservationProvider` 只接受 Tool artifact 中显式 evidence，不解析工具 prose；
 - 每个 DeerFlow turn 使用 `runtime/turn-end`，全局只落一个 `runtime/end`，多 turn usage 可重建累加；达到 turn budget 仍缺证据时 fail closed；
@@ -2100,7 +2100,7 @@ paid_run_ready                TRUE
 - File provider：强制 `artifact_exists`；
 - Loopback HTTP provider：强制公开 early-terminate 对应的 `listing.submitted`；
 - Structured tool provider：只有 probe 明确声明能力时才强制；
-- 未实现 provider 的 exact-count、Gmail、Docs criterion 保留在 Contract/Ledger，但降为 observe-only，不得假装已验证，也不得误拦截。
+- 未实现provider的Gmail draft与Browser calendar criterion保留在Contract/Ledger并降为observe-only；明确的全局output files count由FileCount Provider强制，模糊per-input/one-of语句不生成错误criterion。
 
 MiniBench16 当前 provider-enforced task coverage：16/16，四个 block 均至少有一个可执行 criterion。Gmail draft 因公共 mock 没有 read/list draft 工具仍为 observe-only，因此“task coverage 16/16”不等于“所有 criterion 100% 强制”。
 
@@ -2236,6 +2236,17 @@ Dev20 20任务历史回放：
 扩大扫描到workspace全部现有正式DeerFlow runs后，成功Browser controls仍为0。补充5条`deterministic_integration`公开mock成功trace（first-class browser、safe bash、MCP curl、最多3次CDP debug、artifact capture），候选误拦截为0；但它们不能替代真实成功运行，故 `deployment_ready=false`、`candidate_enabled=false`。项目没有因失败覆盖率高或合成正例通过就直接上线Guard。证据：`evidence/a13-browser-fallback-guard/summary.json`。
 
 下一步先寻找已有成功Browser运行作为只读对照或构造公开mock成功轨迹；误拦截门禁满足前不接入live middleware，也不继续付费扩跑。
+
+## P15：Conservative Exact-count Provider（已完成，零 Token）
+
+- 修复`exactly one entry per RFQ file`被错误解析为total=1，以及`exactly one of`被解析为subject=of的问题；
+- Parser遇到`per`或one-of stopword时不生成全局Count criterion；
+- MiniBench唯一无歧义计数要求`exactly three files`由OutputFileCount Provider读取visible outputs递归计数；
+- `.browser-frames`等hidden Harness文件不计入业务产物；
+- Exact-count criterion从3个收敛为1个且已强制执行，Completion历史counterfactual仍保持成功误拦截0/6；
+- 证据：`evidence/a14-exact-count-provider/summary.json`。
+
+下一步继续寻找真实成功Browser controls；Guard部署门禁满足前保持disabled，付费MiniBench扩跑仍暂停。
 
 ## P14：Resume-safe Evidence Index / Case Study（已完成）
 

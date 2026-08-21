@@ -55,7 +55,7 @@
       "enforced_criteria": 1,
       "historical_passed": true,
       "missing_count": 0,
-      "observe_only_criteria": 2,
+      "observe_only_criteria": 0,
       "outcome": "accepted_success",
       "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract",
       "would_block_completion": false
@@ -162,10 +162,10 @@
     },
     {
       "block": 4,
-      "enforced_criteria": 3,
+      "enforced_criteria": 4,
       "historical_passed": true,
       "missing_count": 0,
-      "observe_only_criteria": 1,
+      "observe_only_criteria": 0,
       "outcome": "accepted_success",
       "task_id": "file-commerce-ops-returns-dispute-evidence-pack",
       "would_block_completion": false

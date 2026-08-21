@@ -2,10 +2,10 @@
   "contract_coverage": {
     "coverage_rate": 1.0,
     "covered_tasks": 16,
-    "criterion_count": 37,
+    "criterion_count": 35,
     "criterion_kinds": {
       "artifact_exists": 26,
-      "exact_count": 3,
+      "exact_count": 1,
       "observation_equals": 8
     },
     "rows": [
@@ -43,11 +43,9 @@
       },
       {
         "block": 2,
-        "criterion_count": 3,
+        "criterion_count": 1,
         "criterion_kinds": [
-          "artifact_exists",
-          "exact_count",
-          "exact_count"
+          "artifact_exists"
         ],
         "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract"
       },
@@ -479,7 +477,7 @@
       {
         "block": 2,
         "enforced_criterion_count": 1,
-        "observe_only_criterion_count": 2,
+        "observe_only_criterion_count": 0,
         "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract"
       },
       {
@@ -544,8 +542,8 @@
       },
       {
         "block": 4,
-        "enforced_criterion_count": 3,
-        "observe_only_criterion_count": 1,
+        "enforced_criterion_count": 4,
+        "observe_only_criterion_count": 0,
         "task_id": "file-commerce-ops-returns-dispute-evidence-pack"
       }
     ],

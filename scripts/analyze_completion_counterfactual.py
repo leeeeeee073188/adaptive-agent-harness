@@ -14,6 +14,7 @@ from adaptive_harness.integrations.deerflow import DeerFlowReplaySummary
 from adaptive_harness.integrations.deerflow_policy import (
     DeerFlowPolicyBridge,
     FileArtifactObservationProvider,
+    OutputFileCountObservationProvider,
 )
 from adaptive_harness.integrations.realreplica import RealReplicaMiniBenchAdapter
 from adaptive_harness.ledger import SessionLedger
@@ -82,6 +83,7 @@ def analyze(root: Path) -> dict[str, Any]:
         manifest = _read_json(run_dir / "manifest.json")
         providers = (
             FileArtifactObservationProvider(run_dir / "workspace"),
+            OutputFileCountObservationProvider(run_dir / "workspace"),
             HistoricalListingObservationProvider(manifest),
         )
         bridge = DeerFlowPolicyBridge(

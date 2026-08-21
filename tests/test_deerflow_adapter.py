@@ -18,6 +18,7 @@ from adaptive_harness.integrations.deerflow_policy import (
     GmailMcpObservationProvider,
     GoogleDocsMcpChangeObservationProvider,
     HttpJsonMatchObservationProvider,
+    OutputFileCountObservationProvider,
     StructuredDeerFlowObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
@@ -187,6 +188,31 @@ class DeerFlowAdapterTests(unittest.TestCase):
         self.assertEqual(len(evidence), 1)
         self.assertEqual(evidence[0].subject, "document.updated")
         self.assertTrue(evidence[0].value)
+
+    def test_output_file_count_provider_ignores_hidden_harness_files(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outputs = root / "outputs"
+            outputs.mkdir()
+            for name in ("one.json", "two.md", "three.csv"):
+                (outputs / name).write_text(name)
+            hidden = outputs / ".browser-frames"
+            hidden.mkdir()
+            (hidden / "frame.jpg").write_bytes(b"frame")
+            contract = RuleBasedTaskContractBuilder().build(
+                "files",
+                "Write exactly three files to `outputs/`: `one.json`, `two.md`, `three.csv`.",
+            )
+            provider = OutputFileCountObservationProvider(root)
+
+            evidence = provider.observe(
+                contract,
+                DeerFlowReplaySummary("", (), (), {}, 0, 0),
+                turn=1,
+            )
+
+        self.assertEqual(evidence[0].subject, "files")
+        self.assertEqual(evidence[0].value, 3)
 
 
 @dataclass

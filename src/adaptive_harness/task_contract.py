@@ -207,7 +207,10 @@ class RuleBasedTaskContractBuilder:
 
         for match in self._EXACT_COUNT.finditer(task_prompt):
             subject = " ".join(match.group("subject").lower().split())
-            if subject.split()[0] in {"a", "an", "of", "the"}:
+            if (
+                subject.split()[0] in {"a", "an", "of", "the"}
+                or task_prompt[match.end() :].lstrip().lower().startswith("per ")
+            ):
                 continue
             expected = int(match.group("count"))
             criteria.append(
@@ -222,6 +225,11 @@ class RuleBasedTaskContractBuilder:
 
         for match in self._EXACT_COUNT_WORD.finditer(task_prompt):
             subject = match.group("subject").lower()
+            if (
+                subject in {"a", "an", "of", "the"}
+                or task_prompt[match.end() :].lstrip().lower().startswith("per ")
+            ):
+                continue
             expected = self._NUMBER_WORDS[match.group("count").lower()]
             if any(
                 item.kind is CriterionKind.EXACT_COUNT

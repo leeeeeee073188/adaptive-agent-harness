@@ -120,3 +120,7 @@ Mid-turn guards follow the same evidence discipline. A browser shell/CDP
 fallback candidate has strong failure coverage but no successful-browser
 controls, so it remains an offline, disabled Profile candidate. Failure-only
 coverage cannot justify production interception.
+
+Count criteria require explicit global semantics and a structural provider.
+Per-input and enum wording is rejected by the parser; visible output-file count
+is supported. This favors missing a heuristic over enforcing a false contract.

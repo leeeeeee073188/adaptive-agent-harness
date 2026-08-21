@@ -1,0 +1,17 @@
+{
+  "all_passed": true,
+  "checks": {
+    "global_files_count_enforced": true,
+    "hidden_harness_files_excluded": true,
+    "per_input_count_not_misparsed": true,
+    "one_of_enum_not_misparsed": true,
+    "successful_counterfactual_false_blocks_zero": true
+  },
+  "contract_exact_count_before": 3,
+  "contract_exact_count_now": 1,
+  "enforced_exact_count": 1,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "scope": "Unambiguous output-file count provider",
+  "test_count": 69
+}

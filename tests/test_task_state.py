@@ -331,6 +331,14 @@ class TaskContractStateTests(unittest.TestCase):
             "AccessoryHub Wholesale Price List — Q3 2026",
         )
 
+    def test_per_item_count_and_enum_phrases_are_not_misparsed_as_global_counts(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "per-item",
+            "Produce exactly one entry per RFQ file. Use exactly one of: A, B, C.",
+        )
+
+        self.assertEqual(contract.criteria, ())
+
 
 if __name__ == "__main__":
     unittest.main()
