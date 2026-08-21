@@ -331,6 +331,16 @@ class TaskContractStateTests(unittest.TestCase):
             "AccessoryHub Wholesale Price List — Q3 2026",
         )
 
+        contains_any = builder.build(
+            "workbench",
+            "不要删除已有的日历事件；在日历里创建会议事件；"
+            "标题里要带 `Solar Pump` 或 `RFQ`。",
+        )
+        self.assertEqual(
+            contains_any.criteria[0].parameters["target_any"],
+            ["Solar Pump", "RFQ"],
+        )
+
     def test_per_item_count_and_enum_phrases_are_not_misparsed_as_global_counts(self) -> None:
         contract = RuleBasedTaskContractBuilder().build(
             "per-item",

@@ -18,12 +18,12 @@
     {
       "bytes": 15526,
       "path": "a4-minibench-preflight/summary.json",
-      "sha256": "e290174da8908c6d9e5ae9af0ff78064e55e3e0713346e974fa11095656f9e32"
+      "sha256": "dd00458db1ffc5d027255ffaa0830686cfd06525c97dc4a08a6d7b5711baaf26"
     },
     {
       "bytes": 1544,
       "path": "a4-container-wiring/summary.json",
-      "sha256": "526dc124788b2f25e3d329487a3d61d415cfb7134ae586bfe8645f43a3ebd808"
+      "sha256": "bcd7fd4aebb4e1f724618571925acfd4646240170388ea51234689c4e04afc5c"
     },
     {
       "bytes": 2937,
@@ -33,7 +33,7 @@
     {
       "bytes": 5209,
       "path": "a6-completion-counterfactual/summary.json",
-      "sha256": "fd9dbea9a708759cb57be6f4a44eca099decf1cfce37c37ee96be07b96b1ed07"
+      "sha256": "e04af05aec70c9b79d84ba93c40f1657fc7ff68b76b2c6fce7c4da8b54bf7cc7"
     },
     {
       "bytes": 583,
@@ -74,6 +74,11 @@
       "bytes": 482,
       "path": "a14-exact-count-provider/summary.json",
       "sha256": "ce8c78fbbc51221cc99a287006e6e22085b75cd2e569718897d11293a969bb93"
+    },
+    {
+      "bytes": 500,
+      "path": "a15-workbench-calendar-provider/summary.json",
+      "sha256": "8829f816fffbbbbdb5f2f751aebf38f599bf46dd7cd32a1a3a24afed6da204a8"
     }
   ],
   "claim_boundary": "No measured MiniBench success-rate uplift; only one paired cell was run and expansion stopped.",
@@ -95,9 +100,9 @@
     "provider_enforced_task_coverage": 16,
     "recovery_category_mapping": "12/12",
     "recovery_practice_enabled": false,
-    "zero_model_unit_tests": 69
+    "zero_model_unit_tests": 70
   },
-  "git_head": "71134e79652278456b7a66d32fa03f39c39b4396",
+  "git_head": "3139ee8ff8dfe49b5f1a495a477d0fec56c75ff8",
   "invariants": {
     "all_evidence_present": true,
     "minibench_not_full_107": true,

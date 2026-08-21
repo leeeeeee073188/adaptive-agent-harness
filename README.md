@@ -193,6 +193,12 @@ one of” are not misread as global count-one requirements. The one unambiguous
 MiniBench criterion—exactly three visible output files—is enforced by a
 filesystem count provider that excludes hidden Harness artifacts.
 
+The browser Mail/Calendar task now has a read-only provider over the public
+`outputs/mock_state/workbench_final.json` materialization. It verifies the
+prompt's contains-any title rule (`Solar Pump` or `RFQ`) against
+`created_events` without calling the task-forbidden backend API. Only the Gmail
+draft criterion remains observe-only across MiniBench16.
+
 A workspace-wide scan confirms there are still zero formally successful
 DeerFlow browser controls. Five deterministic public-mock success traces cover
 first-class browser use, safe file/API shell work, and up to three bounded CDP

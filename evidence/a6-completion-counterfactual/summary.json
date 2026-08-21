@@ -62,10 +62,10 @@
     },
     {
       "block": 2,
-      "enforced_criteria": 1,
+      "enforced_criteria": 2,
       "historical_passed": false,
-      "missing_count": 1,
-      "observe_only_criteria": 1,
+      "missing_count": 2,
+      "observe_only_criteria": 0,
       "outcome": "blocked_failure",
       "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui",
       "would_block_completion": true

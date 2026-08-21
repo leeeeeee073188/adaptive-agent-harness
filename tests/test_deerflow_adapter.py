@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,6 +21,7 @@ from adaptive_harness.integrations.deerflow_policy import (
     HttpJsonMatchObservationProvider,
     OutputFileCountObservationProvider,
     StructuredDeerFlowObservationProvider,
+    WorkbenchCalendarObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.progress import RuleBasedProgressDetector
@@ -213,6 +215,40 @@ class DeerFlowAdapterTests(unittest.TestCase):
 
         self.assertEqual(evidence[0].subject, "files")
         self.assertEqual(evidence[0].value, 3)
+
+    def test_workbench_calendar_provider_reads_public_materialized_state(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / "outputs/mock_state/workbench_final.json"
+            state.parent.mkdir(parents=True)
+            state.write_text(
+                json.dumps(
+                    {
+                        "created_events": [
+                            {"title": "Solar Pump Supplier RFQ Alignment"}
+                        ]
+                    }
+                )
+            )
+            contract = RuleBasedTaskContractBuilder().build(
+                "workbench",
+                "不要删除已有的日历事件；在日历里创建会议事件；"
+                "标题里要带 `Solar Pump` 或 `RFQ`。",
+            )
+            provider = WorkbenchCalendarObservationProvider(root)
+
+            evidence = provider.observe(
+                contract,
+                DeerFlowReplaySummary("", (), (), {}, 0, 0),
+                turn=1,
+            )
+
+        self.assertEqual(len(evidence), 1)
+        self.assertTrue(evidence[0].value)
+        self.assertEqual(
+            evidence[0].metadata["provider"],
+            "workbench-materialized-state",
+        )
 
 
 @dataclass

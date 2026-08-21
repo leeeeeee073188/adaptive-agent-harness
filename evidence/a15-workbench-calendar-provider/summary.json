@@ -1,0 +1,17 @@
+{
+  "all_passed": true,
+  "checks": {
+    "contains_any_title_semantics": true,
+    "historical_completion_false_blocks_zero": true,
+    "public_materialized_state_only": true,
+    "runner_provider_wired": true,
+    "verifier_api_unused": true
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "observe_only_criteria_remaining": 1,
+  "provider_enforced_tasks": 16,
+  "remaining_observe_only": ["mail.draft_saved"],
+  "scope": "Browser workbench calendar observation provider",
+  "test_count": 70
+}

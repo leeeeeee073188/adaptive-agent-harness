@@ -362,8 +362,15 @@ class RealReplicaMiniBenchAdapter:
                     enforced += 1
                 elif (
                     criterion.kind is CriterionKind.OBSERVATION_EQUALS
-                    and criterion.parameters.get("subject")
-                    in task.public_observation_subjects
+                    and (
+                        criterion.parameters.get("subject")
+                        in task.public_observation_subjects
+                        or (
+                            criterion.parameters.get("subject")
+                            == "calendar.event_created"
+                            and bool(criterion.parameters.get("target_any"))
+                        )
+                    )
                 ):
                     enforced += 1
             rows.append(

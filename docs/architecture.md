@@ -124,3 +124,7 @@ coverage cannot justify production interception.
 Count criteria require explicit global semantics and a structural provider.
 Per-input and enum wording is rejected by the parser; visible output-file count
 is supported. This favors missing a heuristic over enforcing a false contract.
+
+Browser-only services can expose postconditions through public materialized
+outputs. The workbench calendar provider reads `created_events` and applies the
+public contains-any title rule; it never bypasses the UI through backend APIs.

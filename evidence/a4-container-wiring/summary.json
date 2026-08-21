@@ -1,5 +1,5 @@
 {
-  "adaptive_source_sha256": "e2c4ac49f3f3609e8738b3dc808ff86b6db347f12a2ed660f0dde7f0cf118d7e",
+  "adaptive_source_sha256": "63aa794d83c31453acc97adcb86380459dd683a73c2c8b4dd4991ec39ded1a5f",
   "candidate_profile_fingerprint": "742166de4101134c8988eaf3766640eaaa3001caf76acb17660e84cce87392ba",
   "checks": {
     "adaptive_package_imported": true,
@@ -16,13 +16,13 @@
   "dataset_fingerprint": "3c7304d726ea871ae7f2ffcd8940bb2df330a36ceaf06231174b5422881a63c0",
   "deerflow_source_sha": "0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
   "ledger_event_count": 29,
-  "ledger_sha256": "eeecc634249c596287575a22ec714875a2f1d009ab4f3b9700d5bee26c579f25",
+  "ledger_sha256": "98140e3eae821aad764447168ff61744c55d5bd2411fb91c8bbfee095f019094",
   "model_calls": 0,
   "new_model_tokens": 0,
   "passed": true,
-  "probe_script_sha256": "51f68b66673662972f3a89371ed0d14f7d305cc81c447ee527a05ecd3fc74f37",
+  "probe_script_sha256": "f3b0b956090cad68d8ad7f899356b4b230ba897897792ebee7fc01dbabd936a0",
   "realreplica_candidate_runner_wired": true,
-  "runner_source_sha256": "d769f24e99dc38a52a7c9e7c7a0dc3bc1f4f240a488fe2f560f7a32c894cfd29",
+  "runner_source_sha256": "6efb03162905b785224653742d961038d3ced3c744bac165769933ee8d0b8c5f",
   "runtime_image": "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
   "runtime_image_id": "sha256:d2eed0f7ee25bf4561cd380996362a065617a77d554c21c5bf4c93fd837adde1",
   "scope": "RealReplica adaptive candidate runner wiring probe",

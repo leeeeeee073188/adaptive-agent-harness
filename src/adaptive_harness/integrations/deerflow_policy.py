@@ -144,6 +144,59 @@ class OutputFileCountObservationProvider:
         )
 
 
+class WorkbenchCalendarObservationProvider:
+    """Read the browser workbench's public materialized created-event state."""
+
+    def __init__(self, task_root: Path) -> None:
+        self.state_path = (
+            task_root.resolve() / "outputs/mock_state/workbench_final.json"
+        ).resolve()
+
+    def supports(self, criterion: Any) -> bool:
+        return (
+            criterion.kind is CriterionKind.OBSERVATION_EQUALS
+            and criterion.parameters.get("subject") == "calendar.event_created"
+            and bool(criterion.parameters.get("target_any"))
+        )
+
+    def observe(
+        self,
+        contract: TaskContract,
+        summary: DeerFlowReplaySummary,
+        *,
+        turn: int,
+    ) -> Sequence[Evidence]:
+        evidence = []
+        document = (
+            json.loads(self.state_path.read_text(encoding="utf-8"))
+            if self.state_path.is_file()
+            else {}
+        )
+        created = document.get("created_events") if isinstance(document, Mapping) else []
+        for criterion in contract.criteria:
+            if not self.supports(criterion):
+                continue
+            targets = [str(item).lower() for item in criterion.parameters["target_any"]]
+            matched = any(
+                isinstance(event, Mapping)
+                and any(target in str(event.get("title") or "").lower() for target in targets)
+                for event in created or ()
+            )
+            evidence.append(
+                Evidence(
+                    f"deerflow:t{turn}:workbench:calendar.event_created",
+                    EvidenceKind.OBSERVATION,
+                    "calendar.event_created",
+                    matched,
+                    EvidenceSource.RUNTIME_OBSERVATION,
+                    {
+                        "provider": "workbench-materialized-state",
+                        "target_any": list(criterion.parameters["target_any"]),
+                    },
+                )
+            )
+        return tuple(evidence)
+
 class StructuredDeerFlowObservationProvider:
     """Read explicit evidence attached by tools; never interpret result prose."""
 

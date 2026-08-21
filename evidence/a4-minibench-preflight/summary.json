@@ -482,8 +482,8 @@
       },
       {
         "block": 2,
-        "enforced_criterion_count": 1,
-        "observe_only_criterion_count": 1,
+        "enforced_criterion_count": 2,
+        "observe_only_criterion_count": 0,
         "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui"
       },
       {

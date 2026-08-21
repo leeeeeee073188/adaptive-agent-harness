@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 69 个零模型架构测试。
+- 70 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2237,7 +2237,7 @@ Dev20 20任务历史回放：
 
 下一步先寻找已有成功Browser运行作为只读对照或构造公开mock成功轨迹；误拦截门禁满足前不接入live middleware，也不继续付费扩跑。
 
-## P15：Conservative Exact-count Provider（已完成，零 Token）
+## P14：Conservative Exact-count Provider（已完成，零 Token）
 
 - 修复`exactly one entry per RFQ file`被错误解析为total=1，以及`exactly one of`被解析为subject=of的问题；
 - Parser遇到`per`或one-of stopword时不生成全局Count criterion；
@@ -2248,7 +2248,18 @@ Dev20 20任务历史回放：
 
 下一步继续寻找真实成功Browser controls；Guard部署门禁满足前保持disabled，付费MiniBench扩跑仍暂停。
 
-## P14：Resume-safe Evidence Index / Case Study（已完成）
+## P15：Browser Workbench Materialized-state Provider（已完成，零 Token）
+
+- 公开workbench服务将`created_events`写入`outputs/mock_state/workbench_final.json`；Provider只读该物化文件，不访问任务禁止的`/api/*`；
+- ContractBuilder从“标题里要带 `Solar Pump` 或 `RFQ`”提取`target_any`，不错误要求完整标题精确相等；
+- Provider验证created event title包含任一公开token，生成`calendar.event_created` Observation；
+- RealReplica candidate runner默认挂载该Provider；历史Completion counterfactual仍保持成功误拦截0/6；
+- MiniBench剩余observe-only criterion从2降为1，仅`mail.draft_saved`；
+- 证据：`evidence/a15-workbench-calendar-provider/summary.json`。
+
+下一步评估Gmail draft是否能通过新增公共read-only MCP tool解决；若需要修改Benchmark mock协议，必须保持Baseline/Candidate同时可用且不能暴露private expected state。
+
+## P16：Resume-safe Evidence Index / Case Study（已完成）
 
 - `scripts/build_evidence_index.py` 强制检查A1–A13机器证据存在性、SHA-256与secret marker；
 - `evidence/index.json` 将每个简历指标映射到证据，并验证MiniBench不是107任务、Provider task coverage=16、Completion成功误拦截=0、Practice关闭、Guard未部署、付费扩跑已停止；

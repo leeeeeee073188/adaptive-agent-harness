@@ -308,7 +308,7 @@ class RuleBasedTaskContractBuilder:
                     break
         return tuple(files)
 
-    def _state_target_parameters(self, subject: str, task_prompt: str) -> dict[str, str]:
+    def _state_target_parameters(self, subject: str, task_prompt: str) -> dict[str, Any]:
         patterns = {
             "mail.label_created": r"(?:顶层标签|label)\s*`([^`]+)`|`([^`]+)`\s*(?:标签|label)",
             "calendar.event_created": r"`([^`]+)`\s*(?:日历事件|calendar event)",
@@ -319,6 +319,14 @@ class RuleBasedTaskContractBuilder:
             return {}
         match = re.search(pattern, task_prompt, re.IGNORECASE)
         if match is None:
+            if subject == "calendar.event_created":
+                contains = re.search(
+                    r"标题里?要?带\s*`([^`]+)`\s*或\s*`([^`]+)`",
+                    task_prompt,
+                    re.IGNORECASE,
+                )
+                if contains:
+                    return {"target_any": list(contains.groups())}
             return {}
         target = next((group for group in match.groups() if group), "").strip()
         return {"target": target} if target else {}
