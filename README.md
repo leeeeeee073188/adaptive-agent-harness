@@ -190,3 +190,6 @@ gate remains closed.
 
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).
+
+Resume/interview case study: [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md).
+Machine-verifiable claim index: [`evidence/index.json`](evidence/index.json).

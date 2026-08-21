@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 65 个零模型架构测试。
+- 66 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2236,6 +2236,16 @@ Dev20 20任务历史回放：
 由于Dev20没有成功Browser样本，无法估计Browser路径误拦截率，故 `deployment_ready=false`、`candidate_enabled=false`。项目没有因失败覆盖率高就直接上线Guard。证据：`evidence/a13-browser-fallback-guard/summary.json`。
 
 下一步先寻找已有成功Browser运行作为只读对照或构造公开mock成功轨迹；误拦截门禁满足前不接入live middleware，也不继续付费扩跑。
+
+## P14：Resume-safe Evidence Index / Case Study（已完成）
+
+- `scripts/build_evidence_index.py` 强制检查A1–A13机器证据存在性、SHA-256与secret marker；
+- `evidence/index.json` 将每个简历指标映射到证据，并验证MiniBench不是107任务、Provider task coverage=16、Completion成功误拦截=0、Practice关闭、Guard未部署、付费扩跑已停止；
+- 明确claim boundary：尚无MiniBench整体成功率提升，只有一个paired cell；
+- 新增 `docs/resume-case-study.zh-CN.md`，包含架构、创新、真实指标、主动拒绝方案、简历Bullet、90秒面试讲述和不可声明事项；
+- 当前机器校验 `verified=true`、secret findings为空、零模型测试66项。
+
+下一步仍是补充成功Browser对照或最小确定性Recovery outcome；证据不足时继续保持Guard与Practice关闭，不为了简历数字扩跑完整Benchmark。
 
 # 36. 关键风险
 

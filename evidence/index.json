@@ -1,0 +1,110 @@
+{
+  "artifacts": [
+    {
+      "bytes": 2129,
+      "path": "a1-replay/summary.json",
+      "sha256": "fea52dab1351bcb35b694f43dfb10206f9382c9213f002acc5de215197b245ff"
+    },
+    {
+      "bytes": 526,
+      "path": "a2-projection/summary.json",
+      "sha256": "e027b3712117638459c37b9cc537b1cbaa59bc60fe26bbac9416b19d2f1e0efd"
+    },
+    {
+      "bytes": 550,
+      "path": "a3-reliability/summary.json",
+      "sha256": "c9f22e647af8e6386a19cbe353d2295a3cd0c9ec3482ef68a59aefbe0bd51f20"
+    },
+    {
+      "bytes": 15576,
+      "path": "a4-minibench-preflight/summary.json",
+      "sha256": "ed1a3433a3c1fcc739a4ff9d09a9f998bf41636100418e4e45eb08205de163ee"
+    },
+    {
+      "bytes": 1544,
+      "path": "a4-container-wiring/summary.json",
+      "sha256": "56240f38c9e41f2276d55f29087d1db3e3c7f7f9369b4548fbf9ef001c0016f1"
+    },
+    {
+      "bytes": 2937,
+      "path": "a5-minibench-canary/summary.json",
+      "sha256": "67f0969f1d3573f621b0372e035df4ca69b48e89c82fd5ef231d0621123afddd"
+    },
+    {
+      "bytes": 5209,
+      "path": "a6-completion-counterfactual/summary.json",
+      "sha256": "24d2c54261f6a91f8d66ec4877cd8da04d711ae55313e8482b9d60bf477b39f6"
+    },
+    {
+      "bytes": 583,
+      "path": "a7-mcp-providers/summary.json",
+      "sha256": "024d0a3fbc4386c88b9ff74d0dd3428559f57d344f256b1b7912d45268605993"
+    },
+    {
+      "bytes": 9205,
+      "path": "a8-failure-recovery/summary.json",
+      "sha256": "ca8f6665eee351fd90a981caa5aea8d8e5baff5cc7d6abb1a0f0e11d1186cb68"
+    },
+    {
+      "bytes": 632,
+      "path": "a9-durable-recovery/summary.json",
+      "sha256": "26a3178235074b70f470d9b69a2bb914b2ce09aeb4196809f34cee23e163baad"
+    },
+    {
+      "bytes": 460,
+      "path": "a10-progress-detector/summary.json",
+      "sha256": "beb2ba3f29c0bdc2150d5cd572e0d72384e9d791db1f6965fae8828e142c9703"
+    },
+    {
+      "bytes": 449,
+      "path": "a11-recovery-outcomes/summary.json",
+      "sha256": "543a02b9863ade39254cfdadbea44debf386bacdef612b5f13da102aaa646b37"
+    },
+    {
+      "bytes": 409,
+      "path": "a12-recovery-practice/summary.json",
+      "sha256": "35ac2abae91e09485431776e8b49c7ea9a6cb5d5fa88f391a6d93acd3b1c767b"
+    },
+    {
+      "bytes": 7128,
+      "path": "a13-browser-fallback-guard/summary.json",
+      "sha256": "56ad2cee055b34c87f4c2886ababab639e0eff514cff4e92a2a029341aff73b9"
+    }
+  ],
+  "claim_boundary": "No measured MiniBench success-rate uplift; only one paired cell was run and expansion stopped.",
+  "claims": {
+    "blind_retry_recommendations": 0,
+    "browser_guard_deployed": false,
+    "completion_failures_blocked": 5,
+    "completion_successes_falsely_blocked": 0,
+    "contract_coverage": 16,
+    "historical_replay_exact": "4/4",
+    "minibench_task_count": 16,
+    "paid_expansion_continued": false,
+    "paired_canary_attributable_harness_token_delta": 0,
+    "paired_canary_observed_token_delta_fraction": 0.6560269927190692,
+    "paired_canary_quality": {
+      "baseline": 1.0,
+      "candidate": 1.0
+    },
+    "provider_enforced_task_coverage": 16,
+    "recovery_category_mapping": "12/12",
+    "recovery_practice_enabled": false,
+    "zero_model_unit_tests": 66
+  },
+  "git_head": "c9e615dda9bd5aad467d808b25868b683d3ab0fd",
+  "invariants": {
+    "all_evidence_present": true,
+    "minibench_not_full_107": true,
+    "no_completion_false_blocks": true,
+    "no_secret_findings": true,
+    "paid_expansion_stopped": true,
+    "practice_fail_closed": true,
+    "provider_task_coverage_16": true,
+    "unvalidated_guard_disabled": true
+  },
+  "missing": [],
+  "schema_version": 1,
+  "secret_findings": [],
+  "verified": true
+}
