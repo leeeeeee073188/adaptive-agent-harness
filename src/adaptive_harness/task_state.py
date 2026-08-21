@@ -9,7 +9,13 @@ from typing import Any, Protocol
 
 from adaptive_harness.capabilities import ToolResult
 from adaptive_harness.ledger import SessionEvent, SessionLedger
-from adaptive_harness.recovery import TaskFailureCategory, TaskRecoveryAction, TaskRecoveryDecision
+from adaptive_harness.recovery import (
+    RecoveryActionEffect,
+    RecoveryExecution,
+    TaskFailureCategory,
+    TaskRecoveryAction,
+    TaskRecoveryDecision,
+)
 from adaptive_harness.task_contract import Criterion, CriterionKind, TaskContract
 
 TASK_CONTRACT_CREATED = "task/contract-created"
@@ -18,6 +24,7 @@ EVIDENCE_ADDED = "evidence/added"
 FAILURE_CLASSIFIED = "failure/classified"
 COMPLETION_CHECKED = "completion/checked"
 RECOVERY_DECIDED = "recovery/decided"
+RECOVERY_EXECUTED = "recovery/executed"
 
 
 class EvidenceKind(StrEnum):
@@ -179,6 +186,31 @@ class RecoveryRecord:
 
 
 @dataclass(frozen=True)
+class RecoveryExecutionRecord:
+    execution: RecoveryExecution
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "effects": [effect.to_payload() for effect in self.execution.effects],
+            "state_delta": self.execution.state_delta,
+            "directives": list(self.execution.directives),
+        }
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> RecoveryExecutionRecord:
+        effects = tuple(
+            RecoveryActionEffect(
+                TaskRecoveryAction(item["action"]),
+                str(item["status"]),
+                dict(item.get("state_delta") or {}),
+                str(item.get("directive") or ""),
+            )
+            for item in payload.get("effects") or ()
+        )
+        return cls(RecoveryExecution(effects))
+
+
+@dataclass(frozen=True)
 class TaskState:
     contract: TaskContract | None = None
     values: Mapping[str, Any] = field(default_factory=dict)
@@ -186,6 +218,7 @@ class TaskState:
     failures: tuple[Failure, ...] = ()
     completion_checks: tuple[ContractCompletionResult, ...] = ()
     recoveries: tuple[RecoveryRecord, ...] = ()
+    recovery_executions: tuple[RecoveryExecutionRecord, ...] = ()
 
     @property
     def latest_completion(self) -> ContractCompletionResult | None:
@@ -220,6 +253,9 @@ class TaskState:
             ],
             "latest_completion": self.latest_completion.to_payload() if self.latest_completion else None,
             "recent_recoveries": [item.to_payload() for item in self.recoveries[-5:]],
+            "recent_recovery_executions": [
+                item.to_payload() for item in self.recovery_executions[-5:]
+            ],
         }
 
 
@@ -235,6 +271,7 @@ class TaskStateProjector:
         failure_ids: set[str] = set()
         completion_checks: list[ContractCompletionResult] = []
         recoveries: list[RecoveryRecord] = []
+        recovery_executions: list[RecoveryExecutionRecord] = []
 
         for event in events:
             if event.type == TASK_CONTRACT_CREATED:
@@ -262,6 +299,8 @@ class TaskStateProjector:
                 completion_checks.append(ContractCompletionResult.from_payload(event.payload))
             elif event.type == RECOVERY_DECIDED:
                 recoveries.append(RecoveryRecord.from_payload(event.payload))
+            elif event.type == RECOVERY_EXECUTED:
+                recovery_executions.append(RecoveryExecutionRecord.from_payload(event.payload))
 
         return TaskState(
             contract,
@@ -270,6 +309,7 @@ class TaskStateProjector:
             tuple(failures),
             tuple(completion_checks),
             tuple(recoveries),
+            tuple(recovery_executions),
         )
 
 
@@ -453,6 +493,18 @@ class TaskEventWriter:
 
     def record_recovery(self, record: RecoveryRecord) -> SessionEvent:
         return self.ledger.append(RECOVERY_DECIDED, record.to_payload())
+
+    def record_recovery_execution(
+        self,
+        record: RecoveryExecutionRecord,
+    ) -> SessionEvent:
+        event = self.ledger.append(RECOVERY_EXECUTED, record.to_payload())
+        if record.execution.state_delta:
+            self.update_state(
+                record.execution.state_delta,
+                reason="recovery actions applied",
+            )
+        return event
 
 
 def evidence_from_tool_result(result: ToolResult) -> tuple[Evidence, ...]:

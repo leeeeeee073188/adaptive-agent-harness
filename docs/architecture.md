@@ -93,3 +93,8 @@ Every recovery decision is appended before continuation and later budgets are
 derived from the Ledger projection. No mutable retry counter is authoritative.
 When all proposed actions are exhausted, the bridge terminates before its
 maximum turn count rather than issuing another model call.
+
+Execution remains deliberately split: `RecoveryExecutor` applies auditable
+Harness control-state deltas and next-turn directives, while external browser,
+API, and file mutations remain ordinary tools. This prevents a control policy
+from fabricating world-state success.

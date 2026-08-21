@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from adaptive_harness.recovery import (
+    RuleBasedTaskRecoveryExecutor,
     RuleBasedTaskRecoveryPolicy,
     TaskFailureCategory,
     TaskFailureContext,
@@ -55,6 +56,21 @@ class TaskRecoveryTests(unittest.TestCase):
 
         self.assertFalse(decision.should_continue)
         self.assertEqual(decision.actions, (TaskRecoveryAction.STOP,))
+
+    def test_executor_applies_control_state_and_directives(self) -> None:
+        execution = RuleBasedTaskRecoveryExecutor().execute(
+            RuleBasedTaskRecoveryPolicy().decide(
+                TaskFailureContext(TaskFailureCategory.ARTIFACT_ERROR)
+            ),
+            missing=("Missing artifact evidence: outputs/report.csv",),
+        )
+
+        self.assertEqual(
+            execution.state_delta["recovery.missing_requirements"],
+            ["Missing artifact evidence: outputs/report.csv"],
+        )
+        self.assertTrue(execution.state_delta["recovery.partial_delivery_requested"])
+        self.assertEqual(len(execution.directives), 2)
 
 
 if __name__ == "__main__":

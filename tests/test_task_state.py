@@ -7,6 +7,7 @@ from pathlib import Path
 from adaptive_harness.capabilities import ToolResult
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.recovery import (
+    RuleBasedTaskRecoveryExecutor,
     TaskFailureCategory,
     TaskRecoveryAction,
     TaskRecoveryDecision,
@@ -23,6 +24,7 @@ from adaptive_harness.task_state import (
     EvidenceKind,
     EvidenceSource,
     Failure,
+    RecoveryExecutionRecord,
     RecoveryRecord,
     TaskEventWriter,
     TaskStateProjector,
@@ -150,8 +152,7 @@ class TaskContractStateTests(unittest.TestCase):
                     {"recovered": True},
                 )
             )
-            writer.record_recovery(
-                RecoveryRecord(
+            recovery = RecoveryRecord(
                     TaskFailureCategory.ARTIFACT_ERROR,
                     (TaskFailureCategory.PREMATURE_FINISH,),
                     TaskRecoveryDecision(
@@ -162,6 +163,14 @@ class TaskContractStateTests(unittest.TestCase):
                         True,
                         "bounded recovery",
                     ),
+                )
+            writer.record_recovery(recovery)
+            writer.record_recovery_execution(
+                RecoveryExecutionRecord(
+                    RuleBasedTaskRecoveryExecutor().execute(
+                        recovery.decision,
+                        missing=("artifact",),
+                    )
                 )
             )
             writer.check_completion()
@@ -180,6 +189,11 @@ class TaskContractStateTests(unittest.TestCase):
                 TaskRecoveryAction.VALIDATE_CONTRACT,
                 TaskRecoveryAction.WRITE_PARTIAL,
             ),
+        )
+        self.assertEqual(len(after.recovery_executions), 1)
+        self.assertEqual(
+            after.values["recovery.missing_requirements"],
+            ["artifact"],
         )
         self.assertTrue(after.latest_completion and after.latest_completion.passed)
 

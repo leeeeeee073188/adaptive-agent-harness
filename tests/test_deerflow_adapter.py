@@ -21,7 +21,11 @@ from adaptive_harness.integrations.deerflow_policy import (
     StructuredDeerFlowObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
-from adaptive_harness.recovery import RuleBasedTaskRecoveryPolicy, TaskRecoveryAction
+from adaptive_harness.recovery import (
+    RuleBasedTaskRecoveryExecutor,
+    RuleBasedTaskRecoveryPolicy,
+    TaskRecoveryAction,
+)
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder
 from adaptive_harness.task_state import TaskStateProjector
 
@@ -528,6 +532,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         bridge = DeerFlowPolicyBridge(
             observation_providers=(FileArtifactObservationProvider(Path("/tmp")),),
             recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
             max_completion_turns=3,
         )
         result = await DeerFlowRuntimeAdapter(
@@ -545,6 +550,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.turns, 2)
         self.assertEqual(len(client.calls), 2)
         self.assertEqual(len(state.recoveries), 2)
+        self.assertEqual(len(state.recovery_executions), 2)
         self.assertEqual(
             state.recoveries[0].decision.actions,
             (
@@ -557,6 +563,13 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
             (TaskRecoveryAction.STOP,),
         )
         self.assertIn("recent_recoveries", str(headers[1].payload["context"]["task"]))
+        self.assertIn(
+            "recovery.missing_requirements",
+            headers[1].payload["context"]["task"]["values"],
+        )
+        self.assertTrue(
+            state.values["recovery.stop_requested"],
+        )
 
 
 if __name__ == "__main__":

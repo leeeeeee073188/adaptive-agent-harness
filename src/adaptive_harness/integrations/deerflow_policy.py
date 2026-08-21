@@ -18,6 +18,7 @@ from adaptive_harness.recovery import (
     TaskFailureContext,
     TaskRecoveryAction,
     TaskRecoveryDecision,
+    TaskRecoveryExecutor,
     TaskRecoveryPolicy,
 )
 from adaptive_harness.task_contract import (
@@ -33,6 +34,7 @@ from adaptive_harness.task_state import (
     EvidenceKind,
     EvidenceSource,
     Failure,
+    RecoveryExecutionRecord,
     RecoveryRecord,
     TaskCompletionGate,
     TaskEventWriter,
@@ -345,6 +347,7 @@ class DeerFlowPolicyBridge:
         max_completion_turns: int = 2,
         unsupported_criteria: str = "reject",
         recovery_policy: TaskRecoveryPolicy | None = None,
+        recovery_executor: TaskRecoveryExecutor | None = None,
     ) -> None:
         if max_completion_turns < 1:
             raise ValueError("max_completion_turns must be at least one")
@@ -356,6 +359,7 @@ class DeerFlowPolicyBridge:
         self.max_completion_turns = max_completion_turns
         self.unsupported_criteria = unsupported_criteria
         self.recovery_policy = recovery_policy
+        self.recovery_executor = recovery_executor
 
     def start(
         self,
@@ -465,6 +469,16 @@ class DeerFlowPolicyBridge:
             )
             actions = ", ".join(action.value for action in recovery.actions)
             feedback = f"{feedback}\nRecovery actions: {actions}."
+            if self.recovery_executor is not None:
+                execution = self.recovery_executor.execute(
+                    recovery,
+                    missing=result.missing,
+                )
+                TaskEventWriter(ledger).record_recovery_execution(
+                    RecoveryExecutionRecord(execution)
+                )
+                if execution.directives:
+                    feedback = f"{feedback}\n" + "\n".join(execution.directives)
         return result, feedback, recovery
 
     def _criterion_supported(self, criterion: Any) -> bool:

@@ -3,6 +3,8 @@
   "checks": {
     "budget_exhaustion_stops_early": true,
     "candidate_runner_composes_recovery": true,
+    "executor_control_state_applied": true,
+    "executor_directives_in_next_turn": true,
     "next_turn_contains_recovery_context": true,
     "recovery_decision_ledger_backed": true,
     "recovery_projection_replay_exact": true,
@@ -12,7 +14,7 @@
   "model_calls": 0,
   "new_model_tokens": 0,
   "observed_stop_turn": 2,
-  "pinned_runner_probe_event_count": 22,
+  "pinned_runner_probe_event_count": 24,
   "scope": "Durable bounded recovery integration",
-  "test_count": 52
+  "test_count": 53
 }

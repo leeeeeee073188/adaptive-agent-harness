@@ -152,5 +152,12 @@ with permanently missing evidence stopped after turn two because its
 reconstructed the same decisions. The RealReplica candidate runner composes
 this service by default.
 
+The recovery executor now turns decisions into durable control effects and
+directives: refresh invalidates stale state, switch selects a first-class tool
+strategy, validation carries the exact missing criteria, replanning narrows to
+remaining work, and partial delivery is requested before risky continuation.
+These effects update TaskState; they do not claim the external action already
+succeeded.
+
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

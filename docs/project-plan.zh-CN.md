@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 52 个零模型架构测试。
+- 53 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -2162,10 +2162,20 @@ MiniBench16 当前 provider-enforced task coverage：16/16，四个 block 均至
 - Recovery budget 完全从 Ledger 中已执行 action 计数推导，不维护第二份 mutable counter；
 - CompletionAssessment 自动映射 ARTIFACT_ERROR / CONSTRAINT_MISS / STATE_INCONSISTENCY / PREMATURE_FINISH；
 - 同一缺失 artifact：Turn 1 生成 validate_contract + write_partial，Turn 2 因预算耗尽生成 STOP，并在 max_turns=3 前提前终止；
-- RealReplica candidate runner 默认组合 `RuleBasedTaskRecoveryPolicy`；pinned generated-runner probe 产生22条 Ledger events并通过；
+- RealReplica candidate runner 默认组合 `RuleBasedTaskRecoveryPolicy`；pinned generated-runner probe 产生24条 Ledger events并通过；
 - 证据：`evidence/a9-durable-recovery/summary.json`。
 
-下一步是为 RecoveryAction 定义实际 executor（refresh/switch/validate/replan）与执行结果 event；在只有“建议”没有“动作执行”前，不宣称 Recovery 能提升成功率，也不继续付费扩跑。
+## P9：RecoveryAction Executor（已完成，零 Token）
+
+- 新增 `TaskRecoveryExecutor` ServiceKey 与 `recovery/executed` durable event；
+- 每个 action 生成 `status/state_delta/directive`，合并 delta 后通过 `state/updated` 落 Ledger；
+- refresh/switch/validate/replan/repair/write-partial/stop-repeated/stop 均有明确控制状态键；
+- 下一 Turn 同时看到 `recent_recovery_executions` 与 `TaskState.values` 中的控制 delta；
+- Executor 只执行 Harness 控制状态和指令，不伪造外部页面/API/文件已经成功；外部状态变更仍必须由工具完成并产生 Evidence；
+- 合成缺失 artifact 场景验证 action event → state delta → next request → budget STOP 的完整顺序；
+- 证据继续归档于 `evidence/a9-durable-recovery/summary.json`。
+
+下一步需要为 refresh/switch等directive增加执行后 Progress/Evidence 对比，验证Recovery是否真的产生状态增量；没有结果证据前仍不宣称成功率提升，也不继续付费扩跑。
 
 # 36. 关键风险
 

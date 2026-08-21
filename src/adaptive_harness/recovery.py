@@ -71,8 +71,49 @@ class TaskRecoveryDecision:
     rationale: str
 
 
+@dataclass(frozen=True)
+class RecoveryActionEffect:
+    action: TaskRecoveryAction
+    status: str
+    state_delta: Mapping[str, object]
+    directive: str
+
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "action": self.action.value,
+            "status": self.status,
+            "state_delta": dict(self.state_delta),
+            "directive": self.directive,
+        }
+
+
+@dataclass(frozen=True)
+class RecoveryExecution:
+    effects: tuple[RecoveryActionEffect, ...]
+
+    @property
+    def state_delta(self) -> dict[str, object]:
+        combined: dict[str, object] = {}
+        for effect in self.effects:
+            combined.update(effect.state_delta)
+        return combined
+
+    @property
+    def directives(self) -> tuple[str, ...]:
+        return tuple(effect.directive for effect in self.effects if effect.directive)
+
+
 class TaskRecoveryPolicy(Protocol):
     def decide(self, context: TaskFailureContext) -> TaskRecoveryDecision: ...
+
+
+class TaskRecoveryExecutor(Protocol):
+    def execute(
+        self,
+        decision: TaskRecoveryDecision,
+        *,
+        missing: Sequence[str] = (),
+    ) -> RecoveryExecution: ...
 
 
 class RuleBasedTaskRecoveryPolicy:
@@ -139,6 +180,61 @@ class RuleBasedTaskRecoveryPolicy:
             True,
             "Apply bounded state/plan/contract recovery; low-level retries remain separate.",
         )
+
+
+class RuleBasedTaskRecoveryExecutor:
+    """Apply Harness control effects; external work remains a next-turn tool action."""
+
+    def execute(
+        self,
+        decision: TaskRecoveryDecision,
+        *,
+        missing: Sequence[str] = (),
+    ) -> RecoveryExecution:
+        effects = tuple(self._effect(action, missing) for action in decision.actions)
+        return RecoveryExecution(effects)
+
+    def _effect(
+        self,
+        action: TaskRecoveryAction,
+        missing: Sequence[str],
+    ) -> RecoveryActionEffect:
+        mapping: dict[TaskRecoveryAction, tuple[dict[str, object], str]] = {
+            TaskRecoveryAction.REFRESH_STATE: (
+                {"recovery.refresh_state_requested": True},
+                "Refresh observable environment state; discard stale selectors and snapshots.",
+            ),
+            TaskRecoveryAction.REPAIR_ARGUMENT: (
+                {"recovery.argument_repair_requested": True},
+                "Repair tool arguments from the public schema before one bounded retry.",
+            ),
+            TaskRecoveryAction.SWITCH_TOOL: (
+                {"recovery.tool_strategy": "first_class_alternative"},
+                "Switch from the failed fallback to a first-class task tool.",
+            ),
+            TaskRecoveryAction.VALIDATE_CONTRACT: (
+                {"recovery.missing_requirements": list(missing)},
+                "Validate each missing contract criterion against fresh evidence.",
+            ),
+            TaskRecoveryAction.REPLAN: (
+                {"recovery.replan_requested": True},
+                "Replan only the remaining unsatisfied criteria.",
+            ),
+            TaskRecoveryAction.WRITE_PARTIAL: (
+                {"recovery.partial_delivery_requested": True},
+                "Persist valid partial artifacts before further risky work.",
+            ),
+            TaskRecoveryAction.STOP_REPEATED_ACTION: (
+                {"recovery.repeated_action_blocked": True},
+                "Do not repeat the previous no-progress action signature.",
+            ),
+            TaskRecoveryAction.STOP: (
+                {"recovery.stop_requested": True},
+                "Stop: no safe recovery remains within budget.",
+            ),
+        }
+        delta, directive = mapping[action]
+        return RecoveryActionEffect(action, "applied", delta, directive)
 
 
 def parse_failure_categories(values: Sequence[str]) -> tuple[TaskFailureCategory, ...]:
