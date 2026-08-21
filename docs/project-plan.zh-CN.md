@@ -6,7 +6,7 @@
 > 设计基线：DeerFlow 2.0 + DeepSeek Harness + Youtu-Agent（借鉴但不限于以上项目）
 > 文档版本：v0.2（Architecture-First）
 > 日期：2026-08-19
-> 状态：A0–A2 已实现，下一阶段为 A3 Tool Reliability + Completion Policy
+> 状态：A0–A3 已实现，下一阶段为 A4 MiniBench Evaluation Adapter
 
 ---
 
@@ -556,7 +556,7 @@ DeerFlow Adapter 负责把 `StreamEvent` 转成 canonical ledger events；它不
 - Profile/Bundle/Overlay canonical fingerprint；
 - DeerFlow StreamEvent adapter；
 - Rollout/Judge/Experience records 与 leakage admissibility filter；
-- 21 个零模型架构测试。
+- 29 个零模型架构测试。
 
 这部分才是“Agent 架构优化”的主工程。RealReplicaBench 测试管线继续作为外部 Evaluation Adapter，不能替代架构本身。
 
@@ -1732,18 +1732,33 @@ Profile 组成后输出 SHA-256 fingerprint；Runtime image、Model route、Prom
 - 全量 21 个零模型测试通过，A1 四个历史回放的 canonical SHA-256 保持不变；
 - 证据位于 `evidence/a2-projection/summary.json`。
 
-## A3：Tool Reliability + Completion Policy
+## A3：Tool Reliability + Completion Policy（已完成）
 
 - pre/execute/post/result pipeline；
 - FailureClassifier 与有限 Recovery；
 - Completion Gate 读取 Contract + Projection + Evidence；
 - 每个模块单开关消融。
 
+实现证据：
+
+- `ToolRuntime` 输出完整 `ToolExecutionTrace`，保留每次 attempt、分类 failure 与 recovery decision；
+- `RuleBasedFailureClassifier` 在零模型成本下区分 TIMEOUT、TRANSIENT、NOT_FOUND、INVALID_ARGUMENT、AUTHORIZATION、EXECUTION_ERROR；
+- `BoundedRecoveryPolicy` 只重试 transient failure，严格受 `max_attempts` 限制，永久错误不重试；
+- `ToolReliabilityConfig.enabled` 单独控制工具可靠性，关闭时保持单次执行 baseline；
+- Tool provider 可返回结构化 `metadata.evidence`，Driver 将其写成 `evidence/added`；普通 Tool prose 永不自动视为完成证据；
+- `TASK_COMPLETION_GATE` 为 opt-in ServiceKey：挂载时模型的 finish proposal 必须通过 Contract + Projection + Evidence，未挂载即为 clean ablation baseline；
+- missing artifact 场景中，首次“done”被拒绝，结构化 artifact evidence 写入后第三步才允许完成；
+- failure/recovery 在 `tool/result` 前按因果顺序写入 Ledger，异常 evidence schema fail closed；
+- 全量 29 个零模型测试和 4 个 A1 历史 replay hash 兼容检查通过，新增模型调用及 Token 为 0；
+- 证据位于 `evidence/a3-reliability/summary.json`。
+
 ## A4：Evaluation Adapter
 
 - RealReplicaBench Dataset/Rollout/Judgement/Stats；
 - Baseline/Candidate paired runner；
 - Failure Dataset 与 cost report。
+- 最终付费测试只使用已冻结的 `RealReplicaBench/splits/minibench16.*`，不运行完整 107 任务；
+- 先做 MiniBench16 contract coverage 与历史轨迹 offline preflight，再按 block 分批运行，任何 gate 失败立即停止后续 block。
 
 ## A5：Practice（V2）
 
@@ -2009,6 +2024,14 @@ CompletionChecked
 - 不读取 verifier/ground truth。
 
 未通过前不做付费 Candidate。
+
+## P3：MiniBench16 Evaluation Adapter（下一步）
+
+- authoritative subset：`RealReplicaBench/splits/minibench16.collection.json`、`minibench16.selection.json`、`minibench16.blocks.json`；
+- 不重新从 107 任务中采样，不运行 full benchmark；
+- 先离线统计 task type、difficulty、criterion coverage、历史 failure 与 stable-pass；
+- 再生成 baseline/candidate paired manifest，确保 model、seed、runtime image、task block 一致；
+- 付费运行按既有 block 顺序逐块放行，先验证 A3 能否捕获目标 premature-completion / artifact / transient-tool failure，未通过即停止。
 
 # 36. 关键风险
 

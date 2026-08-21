@@ -1,0 +1,20 @@
+{
+  "all_passed": true,
+  "a1_historical_replay_compatibility": {
+    "passed_count": 4,
+    "run_count": 4
+  },
+  "checks": {
+    "completion_gate_ablation": true,
+    "invalid_evidence_fails_closed": true,
+    "permanent_failure_not_retried": true,
+    "premature_completion_rejected": true,
+    "structured_tool_evidence": true,
+    "transient_failure_bounded_retry": true,
+    "typed_failure_ledger_event": true
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "scope": "A3 tool reliability and evidence completion gate",
+  "test_count": 29
+}

@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from adaptive_harness.capabilities import ModelRequest
+from adaptive_harness.capabilities import CompletionDecision, ModelRequest
 from adaptive_harness.kernel import Kernel
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.lifecycle import AGENT_PRE_STEP, AGENT_REQUEST, AGENT_TURN_STOPPING, RUN_STARTED, RUN_STOPPED
@@ -16,10 +16,17 @@ from adaptive_harness.services import (
     CONTEXT_MANAGER,
     ENVIRONMENT,
     MODEL,
+    TASK_COMPLETION_GATE,
     TASK_CONTRACT_BUILDER,
     TOOL_RUNTIME,
 )
-from adaptive_harness.task_state import TaskEventWriter, TaskStateProjector
+from adaptive_harness.task_state import (
+    EvidenceSource,
+    Failure,
+    TaskEventWriter,
+    TaskStateProjector,
+    evidence_from_tool_result,
+)
 
 
 @dataclass(frozen=True)
@@ -107,25 +114,79 @@ class AgentDriver:
                             turn=1,
                             step=step,
                         )
-                        result = await tool_runtime.execute(call)
+                        trace = await tool_runtime.execute_with_trace(call)
+                        result = trace.result
+                        task_writer = TaskEventWriter(ledger)
+                        for attempt in trace.attempts:
+                            if attempt.failure is not None:
+                                task_writer.classify_failure(
+                                    Failure(
+                                        id=f"{call.id}:attempt:{attempt.number}",
+                                        error_type=attempt.failure.failure_type.value,
+                                        message=attempt.failure.message,
+                                        source=EvidenceSource.TOOL_RESULT,
+                                        metadata={
+                                            "attempt": attempt.number,
+                                            "retryable": attempt.failure.retryable,
+                                            "recovery": (
+                                                attempt.recovery.action.value
+                                                if attempt.recovery is not None
+                                                else None
+                                            ),
+                                        },
+                                    )
+                                )
                         ledger.append(
                             "tool/result",
                             {
                                 "call_id": result.call_id,
                                 "content": result.content,
                                 "error_type": result.error_type,
-                                "metadata": dict(result.metadata),
+                                "metadata": {
+                                    **dict(result.metadata),
+                                    "attempts": len(trace.attempts),
+                                },
                             },
                             turn=1,
                             step=step,
                         )
+                        try:
+                            for evidence in evidence_from_tool_result(result):
+                                task_writer.add_evidence(evidence)
+                        except (KeyError, TypeError, ValueError) as error:
+                            task_writer.classify_failure(
+                                Failure(
+                                    id=f"{call.id}:evidence",
+                                    error_type="INVALID_EVIDENCE",
+                                    message=str(error),
+                                    source=EvidenceSource.TOOL_RESULT,
+                                )
+                            )
                     ledger.append("step/end", {"reason": "tool_continuation"}, turn=1, step=step)
                     continue
                 decision = completion.check(task, response, ledger.project_state())
                 decision = await self.kernel.events.dispatch(AGENT_TURN_STOPPING, decision)
+                completion_payload: dict[str, object] = {
+                    "passed": decision.passed,
+                    "feedback": decision.feedback,
+                }
+                task_projection = TaskStateProjector().project(ledger.events)
+                if (
+                    decision.passed
+                    and task_projection.contract is not None
+                    and self.kernel.services.has(TASK_COMPLETION_GATE)
+                ):
+                    gate = self.kernel.services.get(TASK_COMPLETION_GATE)
+                    contract_result = gate.verify(task_projection)
+                    feedback = None if contract_result.passed else gate.feedback(contract_result)
+                    decision = CompletionDecision(contract_result.passed, feedback)
+                    completion_payload = {
+                        **contract_result.to_payload(),
+                        "feedback": feedback,
+                    }
                 ledger.append(
                     "completion/checked",
-                    {"passed": decision.passed, "feedback": decision.feedback},
+                    completion_payload,
                     turn=1,
                     step=step,
                 )

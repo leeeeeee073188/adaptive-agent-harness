@@ -13,7 +13,7 @@ The project is intentionally **not** another monolithic agent loop. It combines:
 - DeerFlow as the first runtime adapter rather than the architectural core;
 - RealReplicaBench as an external evaluation adapter rather than runtime logic.
 
-Implemented architecture core (A0–A2):
+Implemented architecture core (A0–A3):
 
 ```text
 Profile / Bundle
@@ -32,6 +32,10 @@ DeerFlow RuntimeAdapter:
 TaskContract / TaskState:
     public prompt/schema -> typed criteria -> durable task facts
     Ledger -> disposable TaskState projection -> bounded model working set
+
+Tool Reliability / Completion Gate:
+    pre -> execute -> post -> classify -> bounded recovery -> durable result
+    proposed finish -> contract projection -> runtime evidence -> accept/reject
 ```
 
 The DeerFlow bridge reconciles incremental `messages-tuple` events with
@@ -45,6 +49,11 @@ Artifact, exact-count, observation, and dependency criteria are checked only
 against runtime evidence. Evaluation-only fields such as verifier, rubric,
 ground truth, and expected answers are rejected at the contract boundary.
 Projection context is bounded, while the ledger retains complete evidence.
+
+Tool reliability is deterministic and opt-in: only transient failures are
+retried within a profile budget. The completion gate is also an optional
+service, enabling clean baseline/candidate ablations. Tool prose is never
+treated as proof; only explicit structured evidence can satisfy a criterion.
 
 Run the zero-model verification suite:
 
@@ -65,6 +74,8 @@ replays across file, browser, API/MCP, and browser-vision tasks. All response,
 tool-count, and token-usage checks pass with zero new model calls.
 `evidence/a2-projection/summary.json` records the zero-model A2 contract/state
 checks and confirms all four A1 historical replay hashes remain unchanged.
+`evidence/a3-reliability/summary.json` records bounded-retry, failure-ledger,
+premature-completion, structured-evidence, and ablation checks.
 
 Design references: [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/architecture.md)
 and [Tencent Youtu-Agent](https://github.com/Tencent/Youtu-agent).

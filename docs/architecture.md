@@ -46,7 +46,7 @@ flowchart TD
    environment lifecycle, and recovers partial streams (implemented).
 3. TaskContract/TaskState are typed ledger facts and disposable projections;
    runtime request context is derived from a bounded projection (implemented).
-4. Tool reliability and completion policies attach through event/service seams
-   (next).
-5. Evaluation compares rollouts offline; Experience remains disabled until the
+4. Tool reliability and evidence completion policies attach through
+   independently switchable config/service seams (implemented).
+5. Evaluation compares MiniBench rollouts offline; Experience remains disabled until the
    leakage/admissibility gate passes.

@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, Protocol
 
+from adaptive_harness.capabilities import ToolResult
 from adaptive_harness.ledger import SessionEvent, SessionLedger
 from adaptive_harness.task_contract import Criterion, CriterionKind, TaskContract
 
@@ -350,6 +351,27 @@ class RuleBasedContractChecker:
         raise AssertionError(f"unhandled criterion kind: {criterion.kind}")
 
 
+class TaskCompletionGate(Protocol):
+    def verify(self, state: TaskState) -> ContractCompletionResult: ...
+
+    def feedback(self, result: ContractCompletionResult, *, limit: int = 3) -> str: ...
+
+
+class EvidenceCompletionGate:
+    """Opt-in A3 gate; replacing or removing its service gives a clean ablation."""
+
+    def __init__(self, checker: RuleBasedContractChecker | None = None) -> None:
+        self.checker = checker or RuleBasedContractChecker()
+
+    def verify(self, state: TaskState) -> ContractCompletionResult:
+        return self.checker.check(state)
+
+    def feedback(self, result: ContractCompletionResult, *, limit: int = 3) -> str:
+        missing = "; ".join(result.missing[:limit])
+        suffix = "" if len(result.missing) <= limit else f"; +{len(result.missing) - limit} more"
+        return f"Completion rejected by task evidence: {missing}{suffix}"
+
+
 class TaskEventWriter:
     """Typed append-only commands; every state change remains replayable."""
 
@@ -386,6 +408,37 @@ class TaskEventWriter:
         result = (checker or RuleBasedContractChecker()).check(state)
         self.ledger.append(COMPLETION_CHECKED, result.to_payload())
         return result
+
+
+def evidence_from_tool_result(result: ToolResult) -> tuple[Evidence, ...]:
+    """Accept only explicit structured evidence; never infer success from prose."""
+
+    raw_evidence = result.metadata.get("evidence")
+    if raw_evidence is None:
+        return ()
+    if not isinstance(raw_evidence, list):
+        raise ValueError("ToolResult metadata.evidence must be a list")
+    evidence: list[Evidence] = []
+    for index, raw in enumerate(raw_evidence):
+        if not isinstance(raw, Mapping):
+            raise ValueError("ToolResult evidence entries must be objects")
+        kind = EvidenceKind(raw["kind"])
+        source = (
+            EvidenceSource.ARTIFACT_INSPECTION
+            if kind is EvidenceKind.ARTIFACT
+            else EvidenceSource.TOOL_RESULT
+        )
+        evidence.append(
+            Evidence(
+                id=str(raw.get("id") or f"{result.call_id}:evidence:{index + 1}"),
+                kind=kind,
+                subject=str(raw["subject"]),
+                value=raw.get("value"),
+                source=source,
+                metadata=dict(raw.get("metadata") or {}),
+            )
+        )
+    return tuple(evidence)
 
 
 def _normalize_subject(value: str) -> str:

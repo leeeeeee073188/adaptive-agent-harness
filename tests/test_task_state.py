@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from adaptive_harness.capabilities import ToolResult
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.task_contract import (
     CriterionKind,
@@ -19,6 +20,7 @@ from adaptive_harness.task_state import (
     Failure,
     TaskEventWriter,
     TaskStateProjector,
+    evidence_from_tool_result,
 )
 
 
@@ -209,6 +211,12 @@ class TaskContractStateTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "cycle"):
             builder.build("task-5", "Do the task.", schema)
+
+    def test_invalid_tool_evidence_schema_fails_closed(self) -> None:
+        result = ToolResult("call-1", "claimed success", metadata={"evidence": "not-structured"})
+
+        with self.assertRaisesRegex(ValueError, "must be a list"):
+            evidence_from_tool_result(result)
 
 
 if __name__ == "__main__":
