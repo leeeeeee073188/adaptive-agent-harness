@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "scope": "Runtime Conformance and Offline Evolution v2 final review",
+  "passed": true,
+  "reviews": [
+    {
+      "role": "code-reviewer",
+      "verdict": "no_high_or_medium_blockers",
+      "high_findings": 0,
+      "medium_findings": 0,
+      "reviewed_paths": 44
+    },
+    {
+      "role": "verifier",
+      "verdict": "s1_to_s5_pass_zero_model_stage",
+      "requirements": {
+        "s1_runtime_conformance": "pass",
+        "s2_policy_session": "pass",
+        "s3_ledger_rollout": "pass",
+        "s4_distiller": "pass",
+        "s5_minibench_gate": "pass_paid_candidate_disabled"
+      }
+    }
+  ],
+  "verification": {
+    "adaptive_unit_tests": 173,
+    "realreplica_unit_tests": 67,
+    "zero_model_gate_tests": 50,
+    "adaptive_ruff_passed": true,
+    "compileall_passed": true,
+    "container_wiring_passed": true,
+    "model_calls": 0,
+    "new_model_tokens": 0
+  },
+  "known_caveats": [
+    "Paid Candidate remains disabled until a fresh primary-model Development baseline and Stable-pass Controls exist.",
+    "RealReplicaBench full-repository Ruff has unrelated pre-existing findings; changed files and unit suites pass.",
+    "No project mypy/pyright configuration is installed, so compileall and Ruff are the available static checks."
+  ]
+}

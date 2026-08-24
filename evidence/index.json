@@ -99,9 +99,24 @@
       "bytes": 4786,
       "path": "a19-tool-advice/summary.json",
       "sha256": "8c4690e364b1b07e596f0d9a6ea6924d5146510226a2e1521553656133216d4c"
+    },
+    {
+      "bytes": 3576,
+      "path": "a20-runtime-evolution/summary.json",
+      "sha256": "54ed6916ceb5bd8ac06642c454a8e1860672d6fa89eb2303c91dc9d86d781eb2"
+    },
+    {
+      "bytes": 2048,
+      "path": "a20-runtime-evolution/container-wiring.json",
+      "sha256": "6d92885e65d686e2c360ea9e4f057a7d46ded15ef5167c1207e347b086a10527"
+    },
+    {
+      "bytes": 1289,
+      "path": "a20-runtime-evolution/review.json",
+      "sha256": "ce311923d41741ae77f949b5c910381d7ba11d5eeb9b37e4095711be48535bdc"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim task-success uplift: the paid Candidate remains disabled until a fresh primary-model Development baseline and Stable-pass Controls exist.",
   "claims": {
     "action_ledger_classified_fraction": 0.8049999999999999,
     "action_ledger_enforcement_ready": false,
@@ -140,6 +155,20 @@
     "provider_enforced_task_coverage": 16,
     "recovery_category_mapping": "12/12",
     "recovery_practice_enabled": false,
+    "runtime_conformance_passed": true,
+    "runtime_conformance_test_count": 50,
+    "runtime_evolution_baseline_bootstrap_allowed": true,
+    "runtime_evolution_model_calls": 0,
+    "runtime_evolution_paid_candidate_allowed": false,
+    "runtime_evolution_review_passed": true,
+    "runtime_evolution_role_counts": {
+      "development": 8,
+      "heldout": 4,
+      "transfer": 4
+    },
+    "runtime_evolution_single_canary_default": true,
+    "runtime_evolution_wiring_passed": true,
+    "runtime_evolution_zero_model_passed": true,
     "tool_advice_gate_eligible": true,
     "tool_advice_second_task_started": false,
     "tool_advice_v1_4_promoted": false,
@@ -151,7 +180,7 @@
     "tool_enforcement_gate_eligible": false,
     "zero_model_unit_tests": 93
   },
-  "git_head": "b89afafc622f9a95c3ce35a604b2893420aee77f",
+  "git_head": "4c08c91478251005f61d3c7b6e8c3057eb99f77c",
   "invariants": {
     "action_ledger_observe_only": true,
     "action_ledger_stable_controls_unwarned": true,
@@ -168,6 +197,13 @@
     "paid_expansion_stopped": true,
     "practice_fail_closed": true,
     "provider_task_coverage_16": true,
+    "runtime_conformance_verified": true,
+    "runtime_evolution_candidate_stays_disabled": true,
+    "runtime_evolution_partition_isolated": true,
+    "runtime_evolution_review_cleared": true,
+    "runtime_evolution_single_canary_default": true,
+    "runtime_evolution_wiring_refreshed": true,
+    "runtime_evolution_zero_model_only": true,
     "tool_advice_cost_regression_not_promoted": true,
     "tool_advice_did_not_expand": true,
     "tool_advice_not_enforcement": true,
