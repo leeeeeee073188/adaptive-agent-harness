@@ -61,6 +61,7 @@ External adapters
 | `assembly.py` | Profile → Plugin Factory → Kernel 的可执行、失败回收装配 |
 | `resource_guardrail.py` | No-progress 的记录、重规划与 Action Scope 阻断决策 |
 | `evolution.py` | Profile 版本、Shadow 评估、晋升/拒绝/回滚治理 |
+| `experience_evolution.py` | Development Rollout 分组、轨迹去泄漏与组间相对 Candidate 蒸馏 |
 | `experience_store.py` | Candidate Experience、Transfer Validation、晋升/隔离/退休、检索与结果归因 |
 | `integrations/deerflow*.py` | DeerFlow stream/event/runtime 桥接 |
 | `integrations/realreplica*.py` | Bench 专属 Contract 语义、Observation Provider 与评测适配 |

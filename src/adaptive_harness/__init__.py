@@ -11,6 +11,12 @@ from adaptive_harness.evolution import (
     EvolutionManager,
     ShadowEvaluation,
 )
+from adaptive_harness.experience_evolution import (
+    DevelopmentRollout,
+    ExperienceDraft,
+    OfflineExperienceEvolution,
+    RolloutPartition,
+)
 from adaptive_harness.experience_store import (
     Experience,
     ExperienceStatus,
@@ -47,12 +53,14 @@ __all__ = [
     "AgentDriver",
     "Bundle",
     "ContextBudget",
+    "DevelopmentRollout",
     "EvidenceCompletionGate",
     "EvolutionCandidate",
     "EvolutionGate",
     "EvolutionGateConfig",
     "EvolutionManager",
     "Experience",
+    "ExperienceDraft",
     "ExperienceStatus",
     "ExperienceStore",
     "GuardrailObservation",
@@ -62,7 +70,9 @@ __all__ = [
     "PluginSpec",
     "Profile",
     "NoProgressDisposition",
+    "OfflineExperienceEvolution",
     "RuleBasedTaskRecoveryPolicy",
+    "RolloutPartition",
     "RetrievalQuery",
     "RetrievalOutcome",
     "RuleBasedTaskRecoveryExecutor",

@@ -61,7 +61,7 @@
 
 完成条件：Candidate 至少来自 3 个不同 Development Task，并在至少 2 个未参与蒸馏的 Transfer Task 上通过验证后才可晋升。
 
-当前进展：结构化 Experience、去泄漏、精确内容去重、Transfer Gate 和 append-only 生命周期已实现；从 Rollout Group 自动比较并蒸馏 Candidate 的生成器仍待实现。
+当前进展：结构化 Experience、Development-only Rollout Group、评测字段去泄漏、组间相对 Candidate 蒸馏、精确内容去重、Transfer Gate 和 append-only 生命周期已实现；把历史 Ledger 转换为 Development Rollout 以及接入实际 Distiller 模型的 Adapter 仍待实现。
 
 ### P4：Experience Retrieval 与结果归因（基础已完成）
 
