@@ -119,8 +119,6 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
 
     def _blocked_result(self, request: ToolCallRequest) -> ToolMessage | Command | None:
         session = current_policy_session()
-        if session is None:
-            return None
         raw = request.tool_call
         call = ToolCall(
             str(raw.get("id") or "missing-id"),
@@ -150,7 +148,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                 },
                 goto=END,
             )
-        if not session.is_action_blocked(call):
+        if session is None or not session.is_action_blocked(call):
             threshold = (
                 self._config.max_same_scope_reads
                 if semantics.intent is ToolIntent.READ
