@@ -19,6 +19,7 @@ Composition Plane
 Plugin Kernel ── Scoped Service Registry ── reversible lifecycle
         │
         ├── Capability Plane: Model / Environment / Toolkit / Context / Tools
+        │     └── Task-aware Working Set: Task / State / Evidence / Failure / Experience
         ├── Runtime Plane: Inbox / Turn / Step / RuntimeAdapter
         ├── State Plane: append-only SessionLedger → disposable projections
         └── Policy Plane: Contract / Evidence / Progress / Recovery / Completion
@@ -45,6 +46,7 @@ External adapters
 5. **Recovery execution is not recovery success**：只有后续语义进展或完成证据才能记为有效。
 6. **Evolution is offline and governed**：运行中的生产 Profile 不会自主改写；候选必须先 Shadow、通过门禁并可回滚。
 7. **Evaluation stays external**：verifier、rubric、ground truth、expected answer 不进入在线 Runtime。
+8. **Context is a decision working set**：不是无限对话回放；任务、工具协议和高价值事实必须在预算内保持可审计。
 
 ## 模块边界
 
@@ -55,6 +57,7 @@ External adapters
 | `task_contract.py` | 通用 artifact/count/schema 解析与 `CriterionExtractor` 扩展点 |
 | `tool_runtime.py` / `tool_reliability.py` | 工具生命周期、瞬态错误分类和有界重试 |
 | `progress.py` / `recovery.py` | 语义进展、结构化恢复决策、执行与结果归因 |
+| `context.py` | 五层上下文评分、Token预算、工具协议原子性、紧凑工具事实和泄漏过滤 |
 | `evolution.py` | Profile 版本、Shadow 评估、晋升/拒绝/回滚治理 |
 | `integrations/deerflow*.py` | DeerFlow stream/event/runtime 桥接 |
 | `integrations/realreplica*.py` | Bench 专属 Contract 语义、Observation Provider 与评测适配 |
@@ -71,6 +74,12 @@ External adapters
 
 样本或成本估计不足时只保持 Shadow；泄漏、完整性、质量、成本或回归失败时直接 Reject。该模块不挂接在线 Runtime 的写路径，因此模型无法在一次任务中修改生产 Profile。
 
+## Task-aware Context Working Set
+
+上下文被拆为 Immutable Task、Active State、Evidence、Failure、Experience 五层，并按可配置比例与相关性/新近性/状态重要度/失败重要度/证据价值评分。首个任务和工具调用/结果组保持原子；被淘汰的大结果留下脱敏的参数、结果哈希、有限预览和重复次数。动态工具数据保持 user authority，静态防注入规则保持 system authority；每次选择以 `context/selected` 写入 Ledger，但审计事件不复制敏感正文。
+
+该模块的 Shadow 迭代也展示了 Evolution 门禁的作用：`v1` 因过度压缩导致重复读取并失败；`v1.1` 恢复到 1.0，但相对探索性 Vanilla 对照 Token +111.1%、工具调用 +23，因此仍 Reject。`v1.2` 修复“不同 description 被误判为不同调用”，只完成零模型反事实和容器接线，尚未付费执行、保持 Shadow。
+
 ## 验证
 
 ```bash
@@ -79,8 +88,8 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 PYTHONPATH=src python3 -m compileall -q src tests scripts
 ```
 
-当前 76 项零模型测试覆盖 Core/integration 边界、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Progress/Recovery，以及 Evolution 的 Shadow/Promote/Reject/Rollback 与 JSONL replay。
+当前 83 项零模型测试覆盖 Core/integration 边界、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Task-aware Context、Progress/Recovery，以及 Evolution 的 Shadow/Promote/Reject/Rollback 与 JSONL replay。
 
-RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能力与难度，未运行完整 107 任务；仅有一个 fresh paired cell，尚不能声称总体通过率提升。历史证据、成本停止规则和可声明边界见 [`evidence/index.json`](evidence/index.json)。
+RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能力与难度，未运行完整 107 任务。本阶段只执行同一 Development 任务的两个探索性 Context Shadow，不能声称总体通过率提升。历史证据、成本停止规则和可声明边界见 [`evidence/index.json`](evidence/index.json)。
 
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，重构决策见 [`docs/architecture-refactor-plan.zh-CN.md`](docs/architecture-refactor-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

@@ -2261,11 +2261,11 @@ Dev20 20任务历史回放：
 
 ## P16：Resume-safe Evidence Index / Case Study（已完成）
 
-- `scripts/build_evidence_index.py` 强制检查A1–A16机器证据存在性、SHA-256与secret marker；
+- `scripts/build_evidence_index.py` 强制检查A1–A17机器证据存在性、SHA-256与secret marker；
 - `evidence/index.json` 将每个简历指标映射到证据，并验证MiniBench不是107任务、Provider task coverage=16、Completion成功误拦截=0、Practice关闭、Guard未部署、付费扩跑已停止；
 - 明确claim boundary：尚无MiniBench整体成功率提升，只有一个paired cell；
 - 新增 `docs/resume-case-study.zh-CN.md`，包含架构、创新、真实指标、主动拒绝方案、简历Bullet、90秒面试讲述和不可声明事项；
-- 当前机器校验 `verified=true`、secret findings为空、零模型测试76项。
+- 当前机器校验 `verified=true`、secret findings为空、零模型测试83项。
 
 下一步仍是补充成功Browser对照或最小确定性Recovery outcome；证据不足时继续保持Guard与Practice关闭，不为了简历数字扩跑完整Benchmark。
 
@@ -2296,6 +2296,21 @@ Bench任务特例 → Core条件分支 → 表面覆盖率
 - 当前零模型测试76项，Evolution晋升/拒绝/回滚可从JSONL确定性重建；证据：`evidence/a16-architecture-evolution/summary.json`。
 
 后续优先构建与Bench无关的通用能力候选（Context策略、Tool routing、Recovery policy、Memory retrieval），每项都必须以独立Profile和消融验证；RealReplica仅作为其中一个外部评测适配器。
+
+## P18：Task-aware Context Working Set（进行中，已完成两次单题Shadow）
+
+- 实现五层Context：Immutable Task / Active State / Evidence / Failure-Recovery / Admissible Experience；
+- 采用可配置总预算与20/30/25/15/10层配额，结合Goal relevance、Recency、State/Failure importance、Evidence value评分；
+- 原始任务永不静默截断，工具调用与ToolResult按协议原子选择；动态工作集使用Human role，静态authority contract使用System role；
+- 大ToolResult被淘汰后保留脱敏执行参数、attempts、result SHA/size、有限preview；`context/selected`只记录ID、预算和surface hash，不复制正文；
+- DeerFlow configured middleware只在Candidate Profile加载，Vanilla保持不变；Profile v1/v1.1/v1.2分别拥有独立fingerprint；
+- 4条历史轨迹99个完整快照反事实：消息面估算压缩中位数49.95%，但该指标不等于实际Provider Token；
+- v1单题Shadow：0.0、143,570 Token、26 tool calls、0产物；因工具事实丢失导致重复读取，Reject；
+- v1.1修复工具事实后：同题1.0、2,120 rows，但320,936 Token、32 tool calls；相对较早同题Vanilla探索性对照Token +111.1%、tool +23，成本门禁Reject；
+- v1.2按执行参数（忽略description/reason/label）+结果哈希识别`repeated_unchanged`，在v1.1末态反事实中将61条历史编译为7条消息/4,090估算Token，保留8条工具事实并给出3个no-progress signal；尚未付费运行，保持Shadow；
+- 本阶段只执行MiniBench16中的1个Development任务，没有运行完整107；证据：`evidence/a17-task-aware-context/summary.json`。
+
+下一步先用零模型轨迹继续降低重复Bash/验证调用；只有v1.2或后续Profile在单题成本和质量同时过门禁后，才允许进入MiniBench下一任务。
 
 # 36. 关键风险
 

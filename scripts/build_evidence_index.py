@@ -31,6 +31,7 @@ REQUIRED = tuple(
         (14, "exact-count-provider"),
         (15, "workbench-calendar-provider"),
         (16, "architecture-evolution"),
+        (17, "task-aware-context"),
     )
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
@@ -82,8 +83,9 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     practice = doc("a12-recovery-practice/summary.json") if not missing else {}
     guard = doc("a13-browser-fallback-guard/summary.json") if not missing else {}
     architecture = doc("a16-architecture-evolution/summary.json") if not missing else {}
+    context = doc("a17-task-aware-context/summary.json") if not missing else {}
     claims = {
-        "zero_model_unit_tests": architecture.get("test_count"),
+        "zero_model_unit_tests": context.get("test_count"),
         "core_business_vocabulary_findings": architecture.get(
             "core_business_vocabulary_findings"
         ),
@@ -114,6 +116,22 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "paid_expansion_continued": canary.get("continue_block"),
         "recovery_practice_enabled": practice.get("practice_enabled"),
         "browser_guard_deployed": guard.get("candidate_enabled"),
+        "context_historical_snapshot_count": (
+            context.get("historical_counterfactual") or {}
+        ).get("snapshot_count"),
+        "context_median_estimated_surface_reduction_fraction": (
+            context.get("historical_counterfactual") or {}
+        ).get("median_run_estimated_surface_reduction_fraction"),
+        "context_v1_1_quality": (context.get("context_v1_1") or {}).get("capacity_score"),
+        "context_v1_1_token_delta_fraction": (
+            context.get("context_v1_1") or {}
+        ).get("token_delta_fraction_vs_exploratory_control"),
+        "context_v1_1_promoted": (context.get("context_v1_1") or {}).get("decision")
+        == "promote",
+        "context_v1_2_status": (context.get("context_v1_2") or {}).get("status"),
+        "context_stage_minibench_tasks_executed": (context.get("gates") or {}).get(
+            "minibench_tasks_executed_this_stage"
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -126,6 +144,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "paid_expansion_stopped": claims["paid_expansion_continued"] is False,
         "core_business_semantics_decoupled": claims["core_business_vocabulary_findings"] == 0,
         "evolution_is_offline_governed": claims["evolution_online_mutation_enabled"] is False,
+        "context_cost_regression_not_promoted": claims["context_v1_1_promoted"] is False,
+        "context_next_candidate_stays_shadow": claims["context_v1_2_status"]
+        == "shadow_unexecuted",
+        "context_stage_not_full_benchmark": claims["context_stage_minibench_tasks_executed"] == 1,
     }
     return {
         "schema_version": 1,
@@ -137,7 +159,9 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "missing": missing,
         "secret_findings": secret_findings,
         "claim_boundary": (
-            "No measured MiniBench success-rate uplift; only one paired cell was run and expansion stopped."
+            "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development "
+            "task as exploratory Shadows; v1.1 recovered quality but was rejected for cost, and v1.2 "
+            "remains unexecuted Shadow. No full 107-task run was performed."
         ),
     }
 

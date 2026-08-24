@@ -19,6 +19,9 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertEqual(index["claims"]["completion_successes_falsely_blocked"], 0)
         self.assertFalse(index["claims"]["recovery_practice_enabled"])
         self.assertFalse(index["claims"]["browser_guard_deployed"])
+        self.assertEqual(index["claims"]["context_historical_snapshot_count"], 99)
+        self.assertFalse(index["claims"]["context_v1_1_promoted"])
+        self.assertEqual(index["claims"]["context_v1_2_status"], "shadow_unexecuted")
         self.assertEqual(index["secret_findings"], [])
 
 

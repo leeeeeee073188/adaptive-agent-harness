@@ -84,14 +84,26 @@
       "bytes": 661,
       "path": "a16-architecture-evolution/summary.json",
       "sha256": "9f7afc3818431ef901f8b42a8f0b1873316e241946441d1c3001848b843d52a6"
+    },
+    {
+      "bytes": 3159,
+      "path": "a17-task-aware-context/summary.json",
+      "sha256": "6f7b72f89cd4fb9fbab525432fc54b3dbb255444d9fb0b3a8cb240a2946d7827"
     }
   ],
-  "claim_boundary": "No measured MiniBench success-rate uplift; only one paired cell was run and expansion stopped.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost, and v1.2 remains unexecuted Shadow. No full 107-task run was performed.",
   "claims": {
     "blind_retry_recommendations": 0,
     "browser_guard_deployed": false,
     "completion_failures_blocked": 5,
     "completion_successes_falsely_blocked": 0,
+    "context_historical_snapshot_count": 99,
+    "context_median_estimated_surface_reduction_fraction": 0.4995057438839628,
+    "context_stage_minibench_tasks_executed": 1,
+    "context_v1_1_promoted": false,
+    "context_v1_1_quality": 1.0,
+    "context_v1_1_token_delta_fraction": 1.110851678165758,
+    "context_v1_2_status": "shadow_unexecuted",
     "contract_coverage": 16,
     "core_business_vocabulary_findings": 0,
     "evolution_online_mutation_enabled": false,
@@ -107,11 +119,14 @@
     "provider_enforced_task_coverage": 16,
     "recovery_category_mapping": "12/12",
     "recovery_practice_enabled": false,
-    "zero_model_unit_tests": 76
+    "zero_model_unit_tests": 83
   },
-  "git_head": "a94b95304910f461e288ce66137d568c95b62333",
+  "git_head": "74ac56f9512fff929259a12896cd4e642582e783",
   "invariants": {
     "all_evidence_present": true,
+    "context_cost_regression_not_promoted": true,
+    "context_next_candidate_stays_shadow": true,
+    "context_stage_not_full_benchmark": true,
     "core_business_semantics_decoupled": true,
     "evolution_is_offline_governed": true,
     "minibench_not_full_107": true,

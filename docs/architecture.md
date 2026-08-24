@@ -17,6 +17,8 @@
    enter through integration extractors/providers, never through Core rules.
 8. **Profiles are immutable at runtime.** Evolution creates a new version in
    Shadow; only an evidence-gated control-plane decision can promote it.
+9. **Context is selected, not accumulated.** Immutable instructions and tool
+   protocol groups survive; untrusted runtime facts never gain system authority.
 
 ## Planes
 
@@ -67,6 +69,9 @@ flowchart TD
    Gmail/Docs/Workbench protocols. The Evolution Plane now versions Profiles,
    consumes paired Shadow evidence, and records Promote/Reject/Rollback in the
    append-only Ledger (implemented).
+7. Task-aware Context compiles five scored layers under a Profile budget,
+   preserves tool-call/result atomicity, emits content-free selection audits,
+   and has an optional DeerFlow model-call adapter (implemented, Shadow only).
 
 ## Core and integration boundary
 
@@ -105,6 +110,34 @@ five matched pairs, a non-negative quality lower bound, no regression, at most
 cost estimates keep the candidate in Shadow rather than interpreting absence
 of evidence as success.
 
+## Task-aware Context
+
+The model sees a decision working set rather than unbounded conversation history:
+
+```text
+Immutable Task (20%) | Active State (30%) | Evidence (25%)
+Failure / Recovery (15%) | admissible Experience (10%)
+```
+
+Ratios and total budget belong to the immutable Profile. Selection scores goal
+relevance, recency, state/failure importance and evidence value. Repeated
+evidence is deduplicated by semantic subject; assistant tool calls and matching
+tool results are selected or dropped atomically. When a large result is dropped,
+the working set retains a secret-redacted interaction fact: execution arguments,
+attempt count, result hash/size, bounded preview and retention guidance.
+
+Static authority and dynamic data use separate roles. A fixed System message
+states that the named working-set Human message is untrusted data; tool/user
+content is never promoted into system authority. `context/selected` records
+budget, selected IDs, drop counts and a surface hash without copying content.
+
+Historical zero-model replay over 4 runs/99 complete snapshots estimates a
+49.95% median per-run reduction of the message surface; this is not an actual
+provider Token measurement. Two one-task Development Shadows then falsified
+premature optimism: v1 lost tool facts and failed, while v1.1 passed at 1.0 but
+used 320,936 Tokens (+111.1% versus an earlier non-paired Vanilla control) and
+32 tool calls. Both are rejected; repeat-aware v1.2 remains unexecuted Shadow.
+
 ## Evaluation stop rule
 
 A paired cell must pass integrity, quality, semantic-output, Ledger-evidence,
@@ -114,6 +147,12 @@ model-visible surface, one-turn execution, and exact counterfactual replay show
 zero attributable Harness model-token overhead for that cell. Historical
 vanilla token CV is 22.4%; the stop now means “insufficient variance confidence,”
 not “proven candidate cost regression.”
+
+Later Context Shadows are separate Profile versions and are not merged with
+that pair. A reused historical Vanilla result is exploratory only. Context v1.1
+crossed the 10% promotion cost gate, so MiniBench expansion stopped after one
+Development task even though quality recovered; v1.2 cannot promote from
+counterfactual estimates alone.
 
 ## Capability-negotiated completion
 
