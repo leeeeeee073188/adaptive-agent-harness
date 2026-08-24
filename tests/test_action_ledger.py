@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import json
 import unittest
+from pathlib import Path
 
 from adaptive_harness.action_ledger import (
+    AdviceControlEvidence,
+    AdviceEligibilityGate,
     ToolActionLedger,
     ToolIntent,
     VerificationDisposition,
@@ -134,6 +138,76 @@ class ToolActionLedgerTests(unittest.TestCase):
         self.assertIsNotNone(last)
         self.assertEqual(last.disposition, VerificationDisposition.WARN)
         self.assertEqual(last.total_since_mutation, 5)
+
+    def test_deterministic_browser_success_controls_have_no_warnings(self) -> None:
+        fixture = Path(__file__).parent / "fixtures/browser_guard_success_controls.json"
+        controls = json.loads(fixture.read_text())["controls"]
+        for control in controls:
+            with self.subTest(control=control["id"]):
+                ledger = ToolActionLedger()
+                for index, raw in enumerate(control["tool_calls"], 1):
+                    call = ToolCall(
+                        f"{control['id']}:{index}",
+                        raw["name"],
+                        raw.get("args") or {},
+                    )
+                    ledger.observe(call, ToolResult(call.id, f"result-{index}"))
+                self.assertNotIn(ToolIntent.UNKNOWN, {r.semantics.intent for r in ledger.records})
+                self.assertTrue(
+                    all(
+                        decision.disposition is VerificationDisposition.ALLOW
+                        for decision in ledger.decisions
+                    )
+                )
+
+    def test_repeated_observation_warns_until_browser_interaction_resets(self) -> None:
+        ledger = ToolActionLedger()
+        for index in range(1, 6):
+            _, decision = ledger.observe(
+                ToolCall(f"view-{index}", "view_image", {"path": "/task/frame.png"}),
+                ToolResult(f"view-{index}", "same-frame"),
+            )
+        self.assertEqual(decision.disposition, VerificationDisposition.WARN)
+
+        ledger.observe(
+            ToolCall("click", "browser_click", {"ref": 4}),
+            ToolResult("click", "clicked"),
+        )
+        _, after_click = ledger.observe(
+            ToolCall("view-new", "view_image", {"path": "/task/frame-2.png"}),
+            ToolResult("view-new", "new-frame"),
+        )
+        self.assertEqual(after_click.disposition, VerificationDisposition.ALLOW)
+
+    def test_advice_gate_uses_classification_and_wilson_control_bounds(self) -> None:
+        eligible = AdviceEligibilityGate().evaluate(
+            AdviceControlEvidence(
+                classified_actions=200,
+                total_actions=200,
+                success_controls=7,
+                success_controls_warned=0,
+                failure_controls=2,
+                failure_controls_signaled=2,
+                mutation_blocks=0,
+            )
+        )
+        underpowered = AdviceEligibilityGate().evaluate(
+            AdviceControlEvidence(
+                classified_actions=80,
+                total_actions=100,
+                success_controls=2,
+                success_controls_warned=0,
+                failure_controls=1,
+                failure_controls_signaled=1,
+                mutation_blocks=0,
+            )
+        )
+
+        self.assertTrue(eligible.eligible)
+        self.assertLess(eligible.false_warning_wilson_upper, 0.40)
+        self.assertGreater(eligible.failure_signal_wilson_lower, 0.30)
+        self.assertFalse(underpowered.eligible)
+        self.assertGreaterEqual(len(underpowered.reasons), 2)
 
 
 if __name__ == "__main__":

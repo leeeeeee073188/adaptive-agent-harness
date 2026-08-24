@@ -13,6 +13,7 @@ from adaptive_harness.action_ledger import (
     ToolActionLedger,
     VerificationDisposition,
 )
+from adaptive_harness.capabilities import ToolCall, ToolResult
 
 if __package__:
     from scripts.analyze_context_working_set import _normalize_message, _tool_protocol_complete
@@ -23,17 +24,23 @@ else:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("run_dirs", nargs="+", type=Path)
+    parser.add_argument("--control-fixture", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    report = analyze_runs(args.run_dirs)
+    report = analyze_runs(args.run_dirs, control_fixture=args.control_fixture)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
     return 0 if report["all_invariants_passed"] else 1
 
 
-def analyze_runs(run_dirs: list[Path]) -> dict[str, Any]:
+def analyze_runs(
+    run_dirs: list[Path],
+    *,
+    control_fixture: Path | None = None,
+) -> dict[str, Any]:
     rows = [analyze_run(path) for path in run_dirs]
+    deterministic_controls = analyze_controls(control_fixture) if control_fixture else None
     totals = Counter()
     for row in rows:
         totals.update(row["intent_counts"])
@@ -42,6 +49,10 @@ def analyze_runs(run_dirs: list[Path]) -> dict[str, Any]:
         "all_mutations_remain_allowed": all(row["mutation_blocks"] == 0 for row in rows),
         "observe_mode_blocks_nothing": all(row["enforced_blocks"] == 0 for row in rows),
         "audit_contains_no_raw_arguments": all(row["raw_arguments_recorded"] is False for row in rows),
+        "deterministic_controls_unwarned": (
+            deterministic_controls is None
+            or deterministic_controls["warned_controls"] == 0
+        ),
     }
     return {
         "scope": "Tool Action Ledger historical counterfactual",
@@ -55,6 +66,7 @@ def analyze_runs(run_dirs: list[Path]) -> dict[str, Any]:
         "invariants": invariants,
         "all_invariants_passed": all(invariants.values()),
         "runs": rows,
+        "deterministic_controls": deterministic_controls,
     }
 
 
@@ -97,6 +109,40 @@ def _last_complete_messages(events_path: Path) -> tuple[dict[str, Any], ...]:
         if messages and _tool_protocol_complete(messages):
             latest = messages
     return latest
+
+
+def analyze_controls(path: Path) -> dict[str, Any]:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    rows = []
+    for control in document.get("controls") or ():
+        ledger = ToolActionLedger()
+        for index, raw in enumerate(control.get("tool_calls") or (), 1):
+            call_id = f"{control['id']}:{index}"
+            ledger.observe(
+                ToolCall(call_id, str(raw["name"]), dict(raw.get("args") or {})),
+                ToolResult(call_id, f"deterministic-result-{index}"),
+            )
+        warnings = sum(
+            decision.disposition is VerificationDisposition.WARN
+            for decision in ledger.decisions
+        )
+        rows.append(
+            {
+                "id": str(control["id"]),
+                "actions": len(ledger.records),
+                "warnings": warnings,
+                "unknown_actions": sum(
+                    record.semantics.intent.value == "unknown" for record in ledger.records
+                ),
+            }
+        )
+    return {
+        "control_count": len(rows),
+        "warned_controls": sum(row["warnings"] > 0 for row in rows),
+        "warning_count": sum(row["warnings"] for row in rows),
+        "unknown_actions": sum(row["unknown_actions"] for row in rows),
+        "rows": rows,
+    }
 
 
 if __name__ == "__main__":

@@ -26,7 +26,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         seed,
     )
     candidate = VariantSpec(
-        "adaptive_harness_context_v1_3",
+        "adaptive_harness_context_v1_4",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -41,16 +41,23 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                 ],
                 "tool_reliability": {"max_attempts": 2},
                 "task_aware_context": {
-                    "policy": "task-aware-v1.3",
+                    "policy": "task-aware-v1.4",
                     "max_input_tokens": 4096,
                     "history_fraction": 0.20,
                     "authority_separated": True,
                 },
                 "verification_budget": {
                     "policy": "tool-action-ledger-v1",
-                    "mode": "observe",
+                    "mode": "advise",
                     "max_same_scope": 2,
                     "max_total_since_mutation": 4,
+                },
+                "advice_gate": {
+                    "classified_fraction": 1.0,
+                    "success_controls": 7,
+                    "success_controls_warned": 0,
+                    "failure_controls": 2,
+                    "failure_controls_signaled": 2,
                 },
             }
         ),

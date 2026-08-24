@@ -18,7 +18,7 @@ from adaptive_harness.evaluation import (
 )
 
 CONTEXT_SELECTED = "context/selected"
-CONTEXT_POLICY_VERSION = "task-aware-v1.3"
+CONTEXT_POLICY_VERSION = "task-aware-v1.4"
 
 
 class ContextLayer(StrEnum):
@@ -428,7 +428,7 @@ class TaskAwareContextManager:
         for cluster in ledger.clusters():
             latest = records[cluster.record_sequences[-1]]
             over_verification = (
-                cluster.intent is ToolIntent.VERIFY
+                cluster.intent in {ToolIntent.VERIFY, ToolIntent.OBSERVE}
                 and any(
                     decisions[sequence].disposition.value == "warn"
                     for sequence in cluster.record_sequences

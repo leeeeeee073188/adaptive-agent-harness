@@ -11,14 +11,18 @@ from enum import StrEnum
 from typing import Any
 
 from adaptive_harness.capabilities import ToolCall, ToolResult
+from adaptive_harness.recovery_practice import wilson_interval
 
 
 class ToolIntent(StrEnum):
     DISCOVER = "discover"
+    NAVIGATE = "navigate"
     READ = "read"
+    OBSERVE = "observe"
     SEARCH = "search"
     TRANSFORM = "transform"
     WRITE = "write"
+    INTERACT = "interact"
     VERIFY = "verify"
     PRESENT = "present"
     UNKNOWN = "unknown"
@@ -45,7 +49,12 @@ class ActionSemantics:
 
     @property
     def mutating(self) -> bool:
-        return self.intent in {ToolIntent.TRANSFORM, ToolIntent.WRITE}
+        return self.intent in {
+            ToolIntent.NAVIGATE,
+            ToolIntent.TRANSFORM,
+            ToolIntent.WRITE,
+            ToolIntent.INTERACT,
+        }
 
     @property
     def scope_key(self) -> str:
@@ -144,6 +153,84 @@ class VerificationDecision:
         }
 
 
+@dataclass(frozen=True)
+class AdviceControlEvidence:
+    classified_actions: int
+    total_actions: int
+    success_controls: int
+    success_controls_warned: int
+    failure_controls: int
+    failure_controls_signaled: int
+    mutation_blocks: int
+
+
+@dataclass(frozen=True)
+class AdviceEligibilityConfig:
+    min_classified_fraction: float = 0.95
+    min_success_controls: int = 7
+    max_false_warning_wilson_upper: float = 0.40
+    min_failure_controls: int = 2
+    min_failure_signal_wilson_lower: float = 0.30
+
+
+@dataclass(frozen=True)
+class AdviceEligibilityDecision:
+    eligible: bool
+    classified_fraction: float
+    false_warning_wilson_upper: float | None
+    failure_signal_wilson_lower: float | None
+    reasons: tuple[str, ...]
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "eligible": self.eligible,
+            "classified_fraction": self.classified_fraction,
+            "false_warning_wilson_upper": self.false_warning_wilson_upper,
+            "failure_signal_wilson_lower": self.failure_signal_wilson_lower,
+            "reasons": list(self.reasons),
+        }
+
+
+class AdviceEligibilityGate:
+    """Permit non-blocking advice only after bounded control evidence."""
+
+    def __init__(self, config: AdviceEligibilityConfig | None = None) -> None:
+        self.config = config or AdviceEligibilityConfig()
+
+    def evaluate(self, evidence: AdviceControlEvidence) -> AdviceEligibilityDecision:
+        classified_fraction = (
+            evidence.classified_actions / evidence.total_actions if evidence.total_actions else 0.0
+        )
+        _, false_upper = wilson_interval(
+            evidence.success_controls_warned,
+            evidence.success_controls,
+        )
+        failure_lower, _ = wilson_interval(
+            evidence.failure_controls_signaled,
+            evidence.failure_controls,
+        )
+        reasons = []
+        if classified_fraction < self.config.min_classified_fraction:
+            reasons.append("Intent classification coverage is below the Advice threshold.")
+        if evidence.success_controls < self.config.min_success_controls:
+            reasons.append("Too few successful controls for Advice.")
+        if false_upper is None or false_upper > self.config.max_false_warning_wilson_upper:
+            reasons.append("False-warning confidence upper bound is too high.")
+        if evidence.failure_controls < self.config.min_failure_controls:
+            reasons.append("Too few failure controls for Advice.")
+        if failure_lower is None or failure_lower < self.config.min_failure_signal_wilson_lower:
+            reasons.append("Failure-signal confidence lower bound is too low.")
+        if evidence.mutation_blocks:
+            reasons.append("Mutation controls were blocked.")
+        return AdviceEligibilityDecision(
+            not reasons,
+            classified_fraction,
+            false_upper,
+            failure_lower,
+            tuple(reasons) if reasons else ("Observe-only evidence qualifies for non-blocking Advice.",),
+        )
+
+
 class ToolActionLedger:
     """Run-local command side; the records themselves are replayable facts."""
 
@@ -182,12 +269,12 @@ class ToolActionLedger:
             mutation_epoch=self._mutation_epoch,
         )
         self._records.append(record)
-        if semantics.intent is not ToolIntent.VERIFY:
+        if semantics.intent not in {ToolIntent.VERIFY, ToolIntent.OBSERVE}:
             decision = VerificationDecision(
                 VerificationDisposition.ALLOW,
                 0,
                 self._verification_total,
-                "Action is not a verification call.",
+                "Action is not an observation or verification call.",
             )
             self._decisions.append(decision)
             return record, decision
@@ -272,13 +359,23 @@ def classify_tool_action(tool_name: str, arguments: Mapping[str, Any]) -> Action
     command = str(arguments.get("command") or arguments.get("cmd") or "")
     if name in {"bash", "shell", "exec", "run_command"}:
         intent = _bash_intent(command, description)
-    elif any(token in name for token in ("present", "deliver", "submit")):
+    elif name in {"browser_navigate", "browser_back", "browser_close"}:
+        intent = ToolIntent.NAVIGATE
+    elif name in {"browser_snapshot", "browser_screenshot", "browser_get_text", "view_image"}:
+        intent = ToolIntent.OBSERVE
+    elif name in {"browser_click", "browser_type"} or any(
+        token in name for token in ("submit", "send", "publish")
+    ):
+        intent = ToolIntent.INTERACT
+    elif any(token in name for token in ("present", "deliver")):
         intent = ToolIntent.PRESENT
-    elif any(token in name for token in ("write", "edit", "replace", "patch", "delete", "remove", "create")):
+    elif any(token in name for token in ("write", "edit", "replace", "patch")):
         intent = ToolIntent.WRITE
+    elif any(token in name for token in ("delete", "remove", "create", "update")):
+        intent = ToolIntent.INTERACT
     elif any(token in name for token in ("verify", "validate", "check", "test")):
         intent = ToolIntent.VERIFY
-    elif name in {"ls", "list", "glob"} or name.startswith("list_"):
+    elif name in {"ls", "list", "glob"} or name.startswith("list_") or ".list" in name:
         intent = ToolIntent.DISCOVER
     elif any(token in name for token in ("grep", "search", "find")):
         intent = ToolIntent.SEARCH
@@ -314,6 +411,8 @@ _SEARCH_COMMAND = re.compile(r"\b(?:grep|rg)\b", re.I)
 def _bash_intent(command: str, description: str) -> ToolIntent:
     if _MUTATION.search(command):
         return ToolIntent.WRITE
+    if re.search(r"\bcurl\b[^\n]*(?:-X|--request)\s*(?:POST|PUT|PATCH|DELETE)\b", command, re.I):
+        return ToolIntent.INTERACT
     if _VERIFY_HINT.search(description) or _VERIFY_COMMAND.search(command):
         return ToolIntent.VERIFY
     if _SEARCH_COMMAND.search(command):
