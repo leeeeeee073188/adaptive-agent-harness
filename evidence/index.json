@@ -89,10 +89,22 @@
       "bytes": 4607,
       "path": "a17-task-aware-context/summary.json",
       "sha256": "f1cae516cdc8b047b34df3fe6fa03c3117917174a5c616674d9ec1813d06b8b2"
+    },
+    {
+      "bytes": 2242,
+      "path": "a18-tool-action-ledger/summary.json",
+      "sha256": "a0213ea73fa2d09293a6d533ba3e670ffa76b77729690d8cd3fa64da3c527079"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls.",
   "claims": {
+    "action_ledger_classified_fraction": 0.8049999999999999,
+    "action_ledger_enforcement_ready": false,
+    "action_ledger_records": 200,
+    "action_ledger_stable_control_warnings": 0,
+    "action_ledger_v1_3_paid_runs": 0,
+    "action_ledger_v1_3_status": "shadow_unexecuted",
+    "action_ledger_verification_warnings": 22,
     "blind_retry_recommendations": 0,
     "browser_guard_deployed": false,
     "completion_failures_blocked": 5,
@@ -123,10 +135,13 @@
     "provider_enforced_task_coverage": 16,
     "recovery_category_mapping": "12/12",
     "recovery_practice_enabled": false,
-    "zero_model_unit_tests": 83
+    "zero_model_unit_tests": 89
   },
-  "git_head": "c7b2b3291d9cf28d146f664c6f17c3d1859c76d8",
+  "git_head": "e5e771c846fe85c3b805add4c5d8f1b9c4fa4e16",
   "invariants": {
+    "action_ledger_observe_only": true,
+    "action_ledger_stable_controls_unwarned": true,
+    "action_ledger_v1_3_unexecuted": true,
     "all_evidence_present": true,
     "context_cost_regression_not_promoted": true,
     "context_next_candidate_stays_shadow": true,

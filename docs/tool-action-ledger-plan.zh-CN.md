@@ -1,6 +1,6 @@
 # P19 Tool Action Ledger / Verification Budget 实施计划
 
-状态：执行中。
+状态：P19零模型/observe-only阶段已完成；v1.3尚未付费执行。
 
 ## 目标
 
@@ -27,4 +27,3 @@
 - 现有83项测试不回归并新增Intent、Resource、预算重置、并发隔离、审计重放测试。
 - v1.2轨迹能聚合重复partial-data检查，但生成CSV与最终验证保持允许。
 - 不运行MiniBench第二题或完整107；只有Advisory候选通过零模型控制后才创建新付费Profile。
-

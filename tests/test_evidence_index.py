@@ -23,6 +23,9 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertFalse(index["claims"]["context_v1_1_promoted"])
         self.assertEqual(index["claims"]["context_v1_2_status"], "shadow_observed")
         self.assertEqual(index["claims"]["context_v1_2_decision"], "keep_shadow")
+        self.assertEqual(index["claims"]["action_ledger_records"], 200)
+        self.assertFalse(index["claims"]["action_ledger_enforcement_ready"])
+        self.assertEqual(index["claims"]["action_ledger_v1_3_status"], "shadow_unexecuted")
         self.assertEqual(index["secret_findings"], [])
 
 

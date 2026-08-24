@@ -84,11 +84,15 @@ Context不是无限历史，而是五层决策工作集：Immutable Task、Activ
 
 这项能力经历了可审计的失败迭代：v1过度压缩后反复read并触发loop guard；v1.1通过同一Development任务，但Token 320,936、工具32次，相对较早的同题Vanilla探索性对照分别+111.1%和+23，成本门禁Reject；v1.2使用执行参数+结果哈希识别无进展重复，同题保持1.0且产物SHA一致，Token降到166,070（方向性+9.23%），但Tool仍+7、耗时+76.8%，单样本不足以晋升。
 
+### 3.7 Tool Action Ledger / Verification Budget
+
+把每次工具执行投影为Intent、Resource、Data field、结果哈希和Mutation epoch；成功写入后重置验证窗口，同范围重复验证或连续验证超预算只生成可回放Warn。中间件当前仅observe，不拦截工具。7条轨迹200个Action聚合为145个cluster，分类覆盖80.5%，产生22个验证告警；2条stable-pass控制为0告警，2条历史失败控制为16个。由于仍有39个Unknown且成功对照太少，v1.3没有付费运行或上线。
+
 ## 4. 已验证结果
 
 | 项目 | 证据 |
 |---|---:|
-| 零模型单元测试 | 83 |
+| 零模型单元测试 | 89 |
 | Core中的RealReplica业务词汇 | 0（边界测试） |
 | Evolution在线修改Profile | disabled |
 | Evolution Shadow/Promote/Reject/Rollback | deterministic + replayable |
@@ -96,6 +100,8 @@ Context不是无限历史，而是五层决策工作集：Immutable Task、Activ
 | Context v1 | 0.0；143,570 Token；Reject |
 | Context v1.1 | 1.0；320,936 Token；成本门禁Reject |
 | Context v1.2 | 1.0；166,070 Token；产物SHA一致；Keep Shadow |
+| Tool Action Ledger | 7 runs / 200 actions / 145 clusters / 22 warnings |
+| v1.3 | observe-only容器与MiniBench预检通过；0 paid runs |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |
@@ -115,12 +121,14 @@ Context不是无限历史，而是五层决策工作集：Immutable Task、Activ
 - Browser shell/CDP fallback guard：失败覆盖6/7，但成功Browser对照为0，保持disabled；
 - Recovery在线学习：真实Outcome为0，Practice保持disabled；
 - Context v1/v1.1：分别因质量和成本回归Reject，未因单题通过而上线；
+- Tool Action Ledger enforcement：分类覆盖和成功控制不足，保持observe-only；
 - 完整107任务：未运行，只使用冻结MiniBench16和历史轨迹。
 
 ## 6. 简历Bullet（建议版本）
 
-- 设计并实现事件溯源Agent Harness：自研Plugin Kernel、typed ServiceKey、Turn/Step lifecycle、append-only Ledger及可重建TaskState，参考DeepSeek Harness与Youtu-Agent实现Runtime/Policy/Evaluation/Evolution解耦，累计83项零模型测试与4/4历史轨迹精确回放。
+- 设计并实现事件溯源Agent Harness：自研Plugin Kernel、typed ServiceKey、Turn/Step lifecycle、append-only Ledger及可重建TaskState，参考DeepSeek Harness与Youtu-Agent实现Runtime/Policy/Evaluation/Evolution解耦，累计89项零模型测试与4/4历史轨迹精确回放。
 - 实现五层Task-aware Context Working Set与DeerFlow模型调用中间件：在4条历史轨迹99个完整快照上估算消息面压缩中位数49.95%，并用不可变Profile记录v1质量失败、v1.1成本失败、v1.2继续Shadow，避免把单题1.0包装成架构收益。
+- 构建Tool Action Ledger与Verification Budget，将7条轨迹200次调用按Intent/Resource/Mutation epoch压缩为145个cluster；observe-only反事实在2条stable-pass控制上0告警、2条失败控制上16告警，因80.5%分类覆盖不足而拒绝直接拦截。
 - 构建离线受控Evolution Plane：不可变Profile版本经paired Shadow及integrity/leakage/质量置信区间/Token成本/回归门禁后才能晋升，决策全量Ledger化且支持确定性Rollback；Core与RealReplica业务语义通过Extractor/Provider接口解耦。
 - 构建Capability-negotiated Completion与Durable Recovery链路，在冻结MiniBench16上实现Contract/Provider任务覆盖16/16；历史counterfactual捕获5/10 missing-state/artifact类失败且成功任务误拦截0/6，12条人工失败标签Recovery映射覆盖12/12、blind retry为0。
 - 建立成本敏感paired evaluation与Wilson置信门禁：固定model/image/seed/Profile fingerprint，发现首个Candidate虽保持1.0质量但单次Token观测+65.6%，通过surface fingerprint和counterfactual replay判定不可归因于Harness，并停止后续付费扩跑，避免用单次成功掩盖成本不确定性。

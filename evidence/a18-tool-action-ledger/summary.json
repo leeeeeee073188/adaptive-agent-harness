@@ -1,0 +1,76 @@
+{
+  "all_passed": true,
+  "claim_boundary": "The Action Ledger is validated only by zero-model replay and an observe-only container probe. It has no paid quality, Token, Tool, or latency result and must not be described as reducing calls yet.",
+  "gates": {
+    "all_mutations_allowed": true,
+    "classification_coverage_sufficient_for_enforcement": false,
+    "new_minibench_tasks_executed": 0,
+    "no_full_107_run": true,
+    "observe_mode_blocks_nothing": true,
+    "raw_arguments_absent_from_audit": true,
+    "stable_pass_warning_controls_zero": true,
+    "v1_3_not_promoted": true
+  },
+  "historical_counterfactual": {
+    "action_clusters": 145,
+    "action_records": 200,
+    "all_invariants_passed": true,
+    "classified_fraction": 0.8049999999999999,
+    "cluster_reduction_fraction": 0.275,
+    "context_profiles": {
+      "v1": {
+        "records": 20,
+        "warnings": 0
+      },
+      "v1_1": {
+        "records": 32,
+        "warnings": 4
+      },
+      "v1_2": {
+        "records": 16,
+        "warnings": 2
+      }
+    },
+    "historical_failure_controls": {
+      "count": 2,
+      "warnings": 16
+    },
+    "intent_counts": {
+      "discover": 11,
+      "present": 2,
+      "read": 86,
+      "unknown": 39,
+      "verify": 53,
+      "write": 9
+    },
+    "run_count": 7,
+    "stable_pass_controls": {
+      "count": 2,
+      "warnings": 0
+    },
+    "verification_warnings": 22
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "scope": "P19 Tool Intent/Resource Ledger and observe-only Verification Budget",
+  "test_count": 89,
+  "v1_3": {
+    "container_probe_passed": true,
+    "enforcement_ready": false,
+    "minibench16_preflight_ready": true,
+    "paid_runs": 0,
+    "profile_fingerprint": "88459ff68a30d9d55a9b6ab4e105907b817b53b79022bff97d5f0e657edd4d1d",
+    "status": "shadow_unexecuted",
+    "v1_2_terminal_counterfactual": {
+      "estimated_message_surface_tokens": 4037,
+      "messages_after": 9,
+      "messages_before": 32,
+      "repeated_unchanged_clusters_in_surface": 1,
+      "selected_action_clusters": 8,
+      "verification_budget_warnings_in_surface": 2,
+      "write_cluster_retained": true
+    },
+    "variant": "adaptive_harness_context_v1_3",
+    "verification_mode": "observe"
+  }
+}

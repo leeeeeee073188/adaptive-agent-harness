@@ -2261,11 +2261,11 @@ Dev20 20任务历史回放：
 
 ## P16：Resume-safe Evidence Index / Case Study（已完成）
 
-- `scripts/build_evidence_index.py` 强制检查A1–A17机器证据存在性、SHA-256与secret marker；
+- `scripts/build_evidence_index.py` 强制检查A1–A18机器证据存在性、SHA-256与secret marker；
 - `evidence/index.json` 将每个简历指标映射到证据，并验证MiniBench不是107任务、Provider task coverage=16、Completion成功误拦截=0、Practice关闭、Guard未部署、付费扩跑已停止；
 - 明确claim boundary：尚无MiniBench整体成功率提升，只有一个paired cell；
 - 新增 `docs/resume-case-study.zh-CN.md`，包含架构、创新、真实指标、主动拒绝方案、简历Bullet、90秒面试讲述和不可声明事项；
-- 当前机器校验 `verified=true`、secret findings为空、零模型测试83项。
+- 当前机器校验 `verified=true`、secret findings为空、零模型测试89项。
 
 下一步仍是补充成功Browser对照或最小确定性Recovery outcome；证据不足时继续保持Guard与Practice关闭，不为了简历数字扩跑完整Benchmark。
 
@@ -2297,7 +2297,7 @@ Bench任务特例 → Core条件分支 → 表面覆盖率
 
 后续优先构建与Bench无关的通用能力候选（Context策略、Tool routing、Recovery policy、Memory retrieval），每项都必须以独立Profile和消融验证；RealReplica仅作为其中一个外部评测适配器。
 
-## P18：Task-aware Context Working Set（进行中，已完成两次单题Shadow）
+## P18：Task-aware Context Working Set（阶段完成，已完成三次同题Shadow）
 
 - 实现五层Context：Immutable Task / Active State / Evidence / Failure-Recovery / Admissible Experience；
 - 采用可配置总预算与20/30/25/15/10层配额，结合Goal relevance、Recency、State/Failure importance、Evidence value评分；
@@ -2311,6 +2311,21 @@ Bench任务特例 → Core条件分支 → 表面覆盖率
 - 本阶段只执行MiniBench16中的1个Development任务，没有运行完整107；证据：`evidence/a17-task-aware-context/summary.json`。
 
 下一步从Tool routing与Verification Budget降低12次Bash中的重复partial-data验证；只有后续Profile在质量、Token、Tool和Latency门禁同时通过后，才允许进入MiniBench下一任务。
+
+## P19：Tool Action Ledger / Verification Budget（零模型阶段已完成）
+
+- 将工具执行投影为`Intent + Resources + Data fields + argument fingerprint + result hash + mutation epoch`；
+- Intent保持通用：Discover / Read / Search / Transform / Write / Verify / Present / Unknown，不使用task id或Bench答案；
+- `description/reason/label`不参与执行指纹；敏感参数只记录已脱敏key，不把原始arguments写入审计；
+- 成功Mutation重置验证窗口；同scope超过2次或单epoch超过4次Verify产生Warn，但observe模式不修改ToolResult、不阻断Write；
+- Task-aware Context改为消费ActionLedger投影，删除原有第二套工具指纹实现；
+- 7条历史/候选轨迹共200个Action，聚合为145个cluster，分类覆盖80.5%，识别22个验证预算告警；
+- 2条stable-pass控制告警0，2条历史失败控制告警16；v1.1为4、v1.2为2；所有Mutation保持允许、实际block=0；
+- 仍有39个Unknown且成功控制仅2条，因此`enforcement_ready=false`，DeerFlow middleware保持observe-only；
+- v1.3固定独立Profile fingerprint，通过固定容器request-shape probe与MiniBench16全门禁，但paid runs=0、保持Shadow；
+- 本阶段没有运行新的MiniBench任务，更没有运行完整107；证据：`evidence/a18-tool-action-ledger/summary.json`。
+
+下一步优先扩展通用Browser/API Intent分类和成功控制，而不是立即把Warn升级为Advice或Block；分类/误报门禁满足后才考虑同题单Candidate Shadow。
 
 # 36. 关键风险
 

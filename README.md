@@ -58,6 +58,7 @@ External adapters
 | `tool_runtime.py` / `tool_reliability.py` | 工具生命周期、瞬态错误分类和有界重试 |
 | `progress.py` / `recovery.py` | 语义进展、结构化恢复决策、执行与结果归因 |
 | `context.py` | 五层上下文评分、Token预算、工具协议原子性、紧凑工具事实和泄漏过滤 |
+| `action_ledger.py` | Tool Intent/Resource投影、Mutation epoch、重复验证预算与可回放决策 |
 | `evolution.py` | Profile 版本、Shadow 评估、晋升/拒绝/回滚治理 |
 | `integrations/deerflow*.py` | DeerFlow stream/event/runtime 桥接 |
 | `integrations/realreplica*.py` | Bench 专属 Contract 语义、Observation Provider 与评测适配 |
@@ -80,6 +81,12 @@ External adapters
 
 该模块的 Shadow 迭代也展示了 Evolution 门禁的作用：`v1` 因过度压缩导致重复读取并失败；`v1.1` 恢复到 1.0，但相对探索性 Vanilla 对照 Token +111.1%、工具调用 +23，因此 Reject。`v1.2` 修复“不同 description 被误判为不同调用”后，同题保持1.0和字节级相同产物，Token降至166,070（方向性+9.23%），但工具调用仍+7、耗时+76.8%，且只有一个非fresh-pair样本，因此继续Shadow。
 
+## Tool Action Ledger / Verification Budget
+
+P19把工具轨迹投影为可回放的Intent、Resource、Data field、Mutation epoch和结果哈希，而不是只统计Tool call数量。Verification Budget在成功写入后重置；同范围或连续验证超预算时生成Warn事实。DeerFlow中间件默认`observe`，不会阻断或改写工具结果。
+
+7条轨迹的零模型反事实覆盖200条Action：80.5%被分类，聚合为145个cluster并产生22个验证告警；2条stable-pass控制告警为0，2条历史失败控制产生16个告警。当前39条Unknown和成功控制数量仍不足，因此`v1.3`保持未付费Shadow，不能声称已经减少工具调用。
+
 ## 验证
 
 ```bash
@@ -88,7 +95,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 PYTHONPATH=src python3 -m compileall -q src tests scripts
 ```
 
-当前 83 项零模型测试覆盖 Core/integration 边界、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Task-aware Context、Progress/Recovery，以及 Evolution 的 Shadow/Promote/Reject/Rollback 与 JSONL replay。
+当前 89 项零模型测试覆盖 Core/integration 边界、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Task-aware Context、Tool Action Ledger、Progress/Recovery，以及 Evolution 的 Shadow/Promote/Reject/Rollback 与 JSONL replay。
 
 RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能力与难度，未运行完整 107 任务。本阶段只执行同一 Development 任务的两个探索性 Context Shadow，不能声称总体通过率提升。历史证据、成本停止规则和可声明边界见 [`evidence/index.json`](evidence/index.json)。
 

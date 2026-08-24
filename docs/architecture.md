@@ -140,6 +140,31 @@ used 320,936 Tokens (+111.1% versus an earlier non-paired Vanilla control) and
 output with 166,070 Tokens (+9.23%) and 16 tool calls, but remains Shadow:
 there is only one non-fresh-pair sample, and tool/latency costs remain high.
 
+## Tool Action Ledger and Verification Budget
+
+Raw call count cannot distinguish useful work from repeated observation. The
+Action Ledger projects each completed call into:
+
+```text
+Intent + Resources + Data fields + argument fingerprint
+Result identity + mutation epoch + verification decision
+```
+
+Intent is generic (`discover/read/search/transform/write/verify/present/unknown`)
+and never keyed by benchmark task id. Natural-language `description/reason`
+does not alter execution identity; credential-shaped argument keys are recorded
+only as redacted key names. A successful mutation starts a new epoch and resets
+the verification window. Repeated same-scope verification or more than four
+checks without mutation emits a warning fact, while writes remain allowed.
+
+The DeerFlow adapter binds action audits into the SessionLedger. Its middleware
+is currently `observe` only: no ToolMessage is modified and no call is blocked.
+Across 7 historical/candidate runs it projected 200 actions into 145 clusters,
+classified 80.5%, and found 22 budget warnings. Two stable-pass controls had
+zero warnings; two historical failures had 16. With 39 unknown actions and only
+two success controls, enforcement is explicitly not ready. Profile v1.3 has a
+network-disabled container probe and MiniBench preflight but zero paid runs.
+
 ## Evaluation stop rule
 
 A paired cell must pass integrity, quality, semantic-output, Ledger-evidence,

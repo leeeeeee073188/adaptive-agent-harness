@@ -32,6 +32,7 @@ REQUIRED = tuple(
         (15, "workbench-calendar-provider"),
         (16, "architecture-evolution"),
         (17, "task-aware-context"),
+        (18, "tool-action-ledger"),
     )
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
@@ -84,8 +85,9 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     guard = doc("a13-browser-fallback-guard/summary.json") if not missing else {}
     architecture = doc("a16-architecture-evolution/summary.json") if not missing else {}
     context = doc("a17-task-aware-context/summary.json") if not missing else {}
+    actions = doc("a18-tool-action-ledger/summary.json") if not missing else {}
     claims = {
-        "zero_model_unit_tests": context.get("test_count"),
+        "zero_model_unit_tests": actions.get("test_count"),
         "core_business_vocabulary_findings": architecture.get(
             "core_business_vocabulary_findings"
         ),
@@ -140,6 +142,24 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "context_stage_minibench_tasks_executed": (context.get("gates") or {}).get(
             "minibench_tasks_executed_this_stage"
         ),
+        "action_ledger_records": (actions.get("historical_counterfactual") or {}).get(
+            "action_records"
+        ),
+        "action_ledger_classified_fraction": (
+            actions.get("historical_counterfactual") or {}
+        ).get("classified_fraction"),
+        "action_ledger_verification_warnings": (
+            actions.get("historical_counterfactual") or {}
+        ).get("verification_warnings"),
+        "action_ledger_stable_control_warnings": (
+            (actions.get("historical_counterfactual") or {}).get("stable_pass_controls")
+            or {}
+        ).get("warnings"),
+        "action_ledger_enforcement_ready": (actions.get("v1_3") or {}).get(
+            "enforcement_ready"
+        ),
+        "action_ledger_v1_3_status": (actions.get("v1_3") or {}).get("status"),
+        "action_ledger_v1_3_paid_runs": (actions.get("v1_3") or {}).get("paid_runs"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -157,6 +177,14 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         == "shadow_observed"
         and claims["context_v1_2_decision"] == "keep_shadow",
         "context_stage_not_full_benchmark": claims["context_stage_minibench_tasks_executed"] == 1,
+        "action_ledger_observe_only": claims["action_ledger_enforcement_ready"] is False,
+        "action_ledger_stable_controls_unwarned": claims[
+            "action_ledger_stable_control_warnings"
+        ]
+        == 0,
+        "action_ledger_v1_3_unexecuted": claims["action_ledger_v1_3_status"]
+        == "shadow_unexecuted"
+        and claims["action_ledger_v1_3_paid_runs"] == 0,
     }
     return {
         "schema_version": 1,
@@ -172,7 +200,8 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 "
             "recovered the exact output at +9.23% directional Token cost, but remains Shadow because "
             "tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full "
-            "107-task run was performed."
+            "107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only "
+            "evidence and is not claimed to reduce calls."
         ),
     }
 
