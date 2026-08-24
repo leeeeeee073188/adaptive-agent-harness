@@ -190,6 +190,53 @@ class FileArtifactJsonShapeObservationTests(unittest.TestCase):
 
         self.assertTrue(shape.value)
 
+    def test_all_completeness_scoped_collections_empty_fails_non_vacuity(self) -> None:
+        contract = _contract(
+            """Write outputs/audit.json and report all matching records.
+
+```json
+{
+  "items": [{"id": "sample", "score": 1, "passed": true}],
+  "warnings": ["sample"]
+}
+```
+"""
+        )
+        evidence = self._observe_payload(
+            {"items": [], "warnings": []},
+            contract=contract,
+        )
+        shape = next(item for item in evidence if item.subject == "artifact.json_shape:outputs/audit.json")
+
+        self.assertFalse(shape.value)
+        self.assertIn(
+            "all completeness-scoped collections are empty: $.items, $.warnings",
+            shape.metadata["diagnostics"],
+        )
+
+    def test_one_non_empty_completeness_scoped_collection_satisfies_non_vacuity(self) -> None:
+        contract = _contract(
+            """Write outputs/audit.json and report all matching records.
+
+```json
+{
+  "items": [{"id": "sample", "score": 1, "passed": true}],
+  "warnings": ["sample"]
+}
+```
+"""
+        )
+        evidence = self._observe_payload(
+            {
+                "items": [{"id": "actual", "score": 2, "passed": False}],
+                "warnings": [],
+            },
+            contract=contract,
+        )
+        shape = next(item for item in evidence if item.subject == "artifact.json_shape:outputs/audit.json")
+
+        self.assertTrue(shape.value)
+
     def test_malformed_json_fails_shape_without_crashing(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -131,6 +131,64 @@ def _delivery_required_state() -> dict[str, Any]:
 
 
 class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
+    def test_delivery_gate_allows_direct_synthesis_script_before_artifact_write(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("computed", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="transform-1",
+                    name="bash",
+                    args={"command": "cd /task && python3 workspace/analysis/audit.py"},
+                    turn=2,
+                    state=_delivery_required_state(),
+                ),
+                handler,
+            )
+
+        self.assertTrue(called)
+        self.assertEqual(result.content, "computed")
+        self.assertIsNone(result.status)
+
+    def test_textual_tool_error_does_not_advance_mutation_epoch(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        audits: list[dict[str, Any]] = []
+
+        with bind_action_audit_sink(audits.append):
+            middleware.wrap_tool_call(
+                _request(
+                    call_id="write-error",
+                    name="bash",
+                    args={"command": "mkdir -p /task/workspace/probe"},
+                    turn=1,
+                ),
+                lambda request: ToolMessage(
+                    "Error: Unsafe absolute paths in command: /probe",
+                    tool_call_id=request.tool_call["id"],
+                ),
+            )
+            middleware.wrap_tool_call(
+                _request(
+                    call_id="read-after-error",
+                    name="read_file",
+                    args={"path": "/task/workspace/input.json"},
+                    turn=1,
+                ),
+                lambda request: ToolMessage("{}", tool_call_id=request.tool_call["id"]),
+            )
+
+        self.assertEqual(audits[0]["record"]["error_type"], "TOOL_ERROR")
+        self.assertEqual(
+            [audit["record"]["mutation_epoch"] for audit in audits],
+            [0, 0],
+        )
+
     def test_delivery_write_satisfies_next_turn_delivery_gate_for_same_run(self) -> None:
         middleware = DeerFlowToolActionLedgerMiddleware()
         session = KernelPolicySession()

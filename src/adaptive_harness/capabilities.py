@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol
@@ -108,8 +109,23 @@ class PassthroughContextManager:
 
 
 class AcceptFinalCompletion:
+    _RUNTIME_CONTROL_RESPONSE = re.compile(
+        r"^\s*(?:tool\s+call\s+limit\s+(?:reached|exceeded)\b"
+        r"|harness\s+ended\s+(?:this|the)\s+turn\b"
+        r"|(?:agent|runtime)\s+(?:execution\s+)?(?:failed|error)\b)",
+        re.IGNORECASE,
+    )
+
     def check(self, task: str, response: ModelResponse, state: Mapping[str, Any]) -> CompletionDecision:
+        content = response.content.strip()
+        if not content:
+            return CompletionDecision(False, "A non-empty final response is required.")
+        if self._RUNTIME_CONTROL_RESPONSE.search(content):
+            return CompletionDecision(
+                False,
+                "A runtime control or error message is not an acceptable final response.",
+            )
         return CompletionDecision(
-            passed=bool(response.content.strip()),
-            feedback="A non-empty final response is required.",
+            passed=True,
+            feedback=None,
         )

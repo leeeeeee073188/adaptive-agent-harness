@@ -211,6 +211,22 @@ def main() -> int:
                 "delivery_first_gate_enforced"
             )
             is True,
+            "delivery_synthesis_transform_allowed": adaptive.get(
+                "delivery_synthesis_transform_allowed"
+            )
+            is True,
+            "textual_tool_errors_fail_closed": adaptive.get(
+                "textual_tool_errors_fail_closed"
+            )
+            is True,
+            "runtime_limit_response_rejected": adaptive.get(
+                "runtime_limit_response_rejected"
+            )
+            is True,
+            "public_non_vacuity_gate_enforced": adaptive.get(
+                "public_non_vacuity_gate_enforced"
+            )
+            is True,
             "context_middleware_request_shape_valid": (
                 adaptive.get("context_middleware_request_shape_valid") is True
             ),

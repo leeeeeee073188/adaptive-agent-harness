@@ -227,8 +227,9 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         if delivery_required and not semantics.mutating:
             return ToolMessage(
                 content=(
-                    "[HARNESS DELIVERY REQUIRED] Read-only action blocked. Write a required "
-                    "artifact before further inspection."
+                    "[HARNESS DELIVERY REQUIRED] Plain read blocked. Write a required artifact or "
+                    "run a direct task-provided synthesis script. Do not create an empty placeholder "
+                    "solely to unlock inspection."
                 ),
                 tool_call_id=call.id,
                 status="error",
@@ -349,8 +350,13 @@ def _turn_key(request: ToolCallRequest) -> str:
 
 def _tool_result(call_id: str, result: ToolMessage | Command) -> ToolResult:
     if isinstance(result, ToolMessage):
-        error_type = "TOOL_ERROR" if getattr(result, "status", None) == "error" else None
-        return ToolResult(call_id, _content_text(result.content), error_type=error_type)
+        content = _content_text(result.content)
+        error_type = (
+            "TOOL_ERROR"
+            if getattr(result, "status", None) == "error" or _looks_like_textual_tool_error(content)
+            else None
+        )
+        return ToolResult(call_id, content, error_type=error_type)
     update = getattr(result, "update", None)
     error_type = "TOOL_ERROR" if _command_contains_error_message(update) else None
     return ToolResult(
@@ -373,6 +379,19 @@ def _content_text(content: Any) -> str:
     if isinstance(content, str):
         return content
     return json.dumps(content, ensure_ascii=False, default=str)
+
+
+_TEXTUAL_TOOL_ERROR = re.compile(
+    r"^\s*(?:Error:|Traceback\s+\(most\s+recent\s+call\s+last\):|Permission\s+denied\b|"
+    r"(?:bash|sh):\s+[^\n]+:\s+(?:command\s+not\s+found|No\s+such\s+file\s+or\s+directory)\b)",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_textual_tool_error(content: str) -> bool:
+    """Recognize stable tool-runtime envelopes, not arbitrary task prose mentioning errors."""
+
+    return bool(_TEXTUAL_TOOL_ERROR.search(content))
 
 
 def _delivery_required(state: Any) -> bool:

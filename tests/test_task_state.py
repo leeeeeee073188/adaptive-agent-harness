@@ -434,6 +434,61 @@ class TaskContractStateTests(unittest.TestCase):
         self.assertNotIn('"a"', encoded)
         self.assertNotIn('"short text"', encoded)
 
+    def test_public_json_completeness_marks_example_collections_as_non_vacuous(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "json-completeness",
+            """Write outputs/audit.json. Report all matching records from the source.
+
+```json
+{
+  "partial_matches": [{"id": "sample", "score": 1}],
+  "other_matches": ["sample"],
+  "notes": []
+}
+```
+""",
+        )
+
+        shape = next(
+            item
+            for item in contract.criteria
+            if item.parameters.get("subject") == "artifact.json_shape:outputs/audit.json"
+        )
+        self.assertEqual(
+            shape.parameters["non_vacuous_collection_paths"],
+            ["$.partial_matches", "$.other_matches"],
+        )
+        encoded = json.dumps(shape.parameters, ensure_ascii=False)
+        self.assertNotIn('"sample"', encoded)
+
+    def test_json_collection_non_vacuity_requires_strong_completeness_language(self) -> None:
+        ordinary = RuleBasedTaskContractBuilder().build(
+            "ordinary-empty",
+            """Write outputs/result.json using this format.
+
+```json
+{"items": [{"id": "sample"}]}
+```
+""",
+        )
+        explicitly_empty = RuleBasedTaskContractBuilder().build(
+            "explicit-empty",
+            """Write outputs/result.json with all matching records. The list may be empty.
+
+```json
+{"items": [{"id": "sample"}]}
+```
+""",
+        )
+
+        for contract in (ordinary, explicitly_empty):
+            shape = next(
+                item
+                for item in contract.criteria
+                if item.parameters.get("subject") == "artifact.json_shape:outputs/result.json"
+            )
+            self.assertNotIn("non_vacuous_collection_paths", shape.parameters)
+
     def test_json_shape_contract_skips_ambiguous_or_missing_examples(self) -> None:
         no_example = RuleBasedTaskContractBuilder().build(
             "no-example",

@@ -442,6 +442,12 @@ _VERIFY_COMMAND = re.compile(
 )
 _DISCOVER_COMMAND = re.compile(r"^\s*(?:ls|find|tree)\b", re.I)
 _SEARCH_COMMAND = re.compile(r"\b(?:grep|rg)\b", re.I)
+_DIRECT_PYTHON_SCRIPT = re.compile(
+    r"(?:^|[;&|]{1,2})\s*(?:(?:uv|poetry)\s+run\s+)?python(?:3(?:\.\d+)?)?\s+"
+    r"(?!-(?:c|m)\b)(?:['\"])?(?:/task/)?(?:workspace|outputs|tmp)/"
+    r"[A-Za-z0-9_.\-/]+\.py(?:['\"])?(?:\s|$)",
+    re.I,
+)
 
 
 def _bash_intent(command: str, description: str) -> ToolIntent:
@@ -449,6 +455,8 @@ def _bash_intent(command: str, description: str) -> ToolIntent:
         return ToolIntent.WRITE
     if re.search(r"\bcurl\b[^\n]*(?:-X|--request)\s*(?:POST|PUT|PATCH|DELETE)\b", command, re.I):
         return ToolIntent.INTERACT
+    if _DIRECT_PYTHON_SCRIPT.search(command):
+        return ToolIntent.TRANSFORM
     if _VERIFY_HINT.search(description) or _VERIFY_COMMAND.search(command):
         return ToolIntent.VERIFY
     if _SEARCH_COMMAND.search(command):

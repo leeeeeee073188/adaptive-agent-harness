@@ -46,6 +46,9 @@ REQUIRED = tuple(
         (29, "v3-1-live-canary"),
         (30, "v3-2-gate"),
         (31, "v3-2-container-conformance"),
+        (32, "v3-2-live-canary"),
+        (33, "v3-3-gate"),
+        (34, "v3-3-container-conformance"),
     )
 )
 OPTIONAL = (
@@ -60,6 +63,12 @@ OPTIONAL = (
     "a29-v3-1-live-canary/pair.json",
     "a29-v3-1-live-canary/diagnosis.json",
     "a31-v3-2-container-conformance/container-wiring.json",
+    "a32-v3-2-live-canary/pair.json",
+    "a32-v3-2-live-canary/diagnosis.json",
+    "a34-v3-3-container-conformance/container-wiring.json",
+    "a34-v3-3-container-conformance/review.json",
+    "a34-v3-3-container-conformance/verification.json",
+    "a34-v3-3-container-conformance/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -129,6 +138,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_2_gate = doc("a30-v3-2-gate/summary.json") if not missing else {}
     v3_2_conformance = doc("a31-v3-2-container-conformance/summary.json") if not missing else {}
     v3_2_wiring = documents.get("a31-v3-2-container-conformance/container-wiring.json", {})
+    v3_2_live = doc("a32-v3-2-live-canary/summary.json") if not missing else {}
+    v3_3_gate = doc("a33-v3-3-gate/summary.json") if not missing else {}
+    v3_3_conformance = doc("a34-v3-3-container-conformance/summary.json") if not missing else {}
+    v3_3_wiring = documents.get("a34-v3-3-container-conformance/container-wiring.json", {})
     selected_live_row = next(
         (
             row
@@ -395,6 +408,47 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         )
         and v3_2_gate.get("executable_policy_profile_fingerprint")
         == v3_2_wiring.get("executable_policy_profile_fingerprint"),
+        "v3_2_live_selected_candidate": v3_2_live.get("selected_candidate_variant"),
+        "v3_2_live_paid_expansion_allowed": v3_2_live.get("paid_expansion_allowed"),
+        "v3_2_live_row": next(
+            (
+                row
+                for row in v3_2_live.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_evidence_workspace_v3_2"
+            ),
+            None,
+        ),
+        "v3_3_gate_passed": v3_3_gate.get("passed"),
+        "v3_3_single_canary_allowed": v3_3_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v3_3_paid_expansion_allowed": v3_3_gate.get("paid_expansion_allowed"),
+        "v3_3_non_vacuity_present": (
+            v3_3_gate.get("contract") or {}
+        ).get("artifact_non_vacuity_constraint_present"),
+        "v3_3_historical_artifact_diagnostics": (
+            v3_3_gate.get("historical_artifact") or {}
+        ).get("diagnostic_types"),
+        "v3_3_runtime_limit_response_rejected": (
+            v3_3_gate.get("runtime_semantics") or {}
+        ).get("runtime_limit_response_rejected"),
+        "v3_3_direct_script_transform": (
+            v3_3_gate.get("runtime_semantics") or {}
+        ).get("direct_public_script_is_transform"),
+        "v3_3_candidate_variant": (
+            (v3_3_conformance.get("profiles") or {}).get("candidate") or {}
+        ).get("name"),
+        "v3_3_paid_canary_allowed": (
+            v3_3_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v3_3_source_hash_matches": bool(v3_3_gate.get("adaptive_source_sha256"))
+        and v3_3_gate.get("adaptive_source_sha256")
+        == v3_3_wiring.get("adaptive_source_sha256"),
+        "v3_3_profile_fingerprint_matches": bool(
+            v3_3_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v3_3_gate.get("executable_policy_profile_fingerprint")
+        == v3_3_wiring.get("executable_policy_profile_fingerprint"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -525,6 +579,27 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v3_2_paid_canary_allowed"] is True
         and claims["v3_2_source_hash_matches"] is True
         and claims["v3_2_profile_fingerprint_matches"] is True,
+        "v3_2_regression_not_promoted": (
+            (claims["v3_2_live_row"] or {}).get("passed") is False
+            and (claims["v3_2_live_row"] or {}).get("capacity_score") == 0.2
+            and (claims["v3_2_live_row"] or {}).get("output_file_count") == 1
+            and claims["v3_2_live_selected_candidate"]
+            == "adaptive_harness_runtime_evolution_v2_6"
+            and claims["v3_2_live_paid_expansion_allowed"] is False
+        ),
+        "v3_3_gate_is_single_canary_only": claims["v3_3_gate_passed"] is True
+        and claims["v3_3_single_canary_allowed"] is True
+        and claims["v3_3_paid_expansion_allowed"] is False,
+        "v3_3_public_completion_regressions_closed": claims["v3_3_non_vacuity_present"]
+        is True
+        and claims["v3_3_historical_artifact_diagnostics"] == ["all_collections_empty"]
+        and claims["v3_3_runtime_limit_response_rejected"] is True
+        and claims["v3_3_direct_script_transform"] is True,
+        "v3_3_container_gate_cleared": claims["v3_3_candidate_variant"]
+        == "adaptive_harness_evidence_workspace_v3_3"
+        and claims["v3_3_paid_canary_allowed"] is True
+        and claims["v3_3_source_hash_matches"] is True
+        and claims["v3_3_profile_fingerprint_matches"] is True,
     }
     return {
         "schema_version": 1,
@@ -554,8 +629,12 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile "
             "to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and "
             "latency but still produced no artifact. A30/A31 bind the loopback public-source materializer "
-            "and early cache-block turn termination to one v3.2 canary. Transfer, Held-out, and further "
-            "task expansion remain disabled."
+            "and early cache-block turn termination to one v3.2 canary. A32 records that source access "
+            "and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only "
+            "reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error "
+            "completion rejection, direct synthesis transforms, and fail-closed textual tool errors to "
+            "one replacement Development canary. Transfer, Held-out, and further task expansion remain "
+            "disabled."
         ),
     }
 

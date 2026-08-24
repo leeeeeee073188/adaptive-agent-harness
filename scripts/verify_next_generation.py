@@ -25,6 +25,8 @@ _SRC_ROOT = _REPO_ROOT / "src"
 if str(_SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(_SRC_ROOT))
 
+from adaptive_harness.action_ledger import ToolIntent, classify_tool_action  # noqa: E402
+from adaptive_harness.capabilities import AcceptFinalCompletion, ModelResponse  # noqa: E402
 from adaptive_harness.context import ContextBudget, TaskAwareContextManager  # noqa: E402
 from adaptive_harness.integrations.deerflow import DeerFlowReplaySummary  # noqa: E402
 from adaptive_harness.integrations.deerflow_policy import FileArtifactObservationProvider  # noqa: E402
@@ -32,6 +34,8 @@ from adaptive_harness.profiles import candidate_policy_profile  # noqa: E402
 from adaptive_harness.task_contract import CriterionKind, RuleBasedTaskContractBuilder, TaskContract  # noqa: E402
 
 CORE_TEST_MODULES: tuple[str, ...] = (
+    "tests.test_task_state",
+    "tests.test_action_ledger",
     "tests.test_evidence_workspace",
     "tests.test_context",
     "tests.test_phase",
@@ -143,12 +147,22 @@ def run_gate(
             blockers.append("contract missing public artifact shape criterion")
         if not contract_report["source_access_criteria_present"]:
             blockers.append("contract missing public source-access criteria")
+        if not contract_report["artifact_non_vacuity_constraint_present"]:
+            blockers.append("contract missing public artifact non-vacuity constraint")
     else:
         report["contract"] = {
             "artifact_shape_criterion_present": False,
             "source_access_criteria_present": False,
+            "artifact_non_vacuity_constraint_present": False,
             "criterion_count": 0,
         }
+
+    runtime_semantics = _runtime_semantics_report()
+    report["runtime_semantics"] = runtime_semantics
+    if not runtime_semantics["runtime_limit_response_rejected"]:
+        blockers.append("runtime-limit response can still pass response completion")
+    if not runtime_semantics["direct_public_script_is_transform"]:
+        blockers.append("direct public synthesis script is not admitted as a transform")
 
     if contract is not None and not blockers:
         context_report = _context_replay_report(historical_run, contract=contract, task_prompt=task_prompt)
@@ -374,6 +388,28 @@ def _contract_report(contract: TaskContract) -> dict[str, Any]:
         "artifact_shape_criterion_present": bool(shape),
         "source_access_criteria_present": bool(sources),
         "source_access_criterion_count": len(sources),
+        "artifact_non_vacuity_constraint_present": any(
+            bool(item.parameters.get("non_vacuous_collection_paths")) for item in shape
+        ),
+        "non_vacuous_collection_path_count": sum(
+            len(item.parameters.get("non_vacuous_collection_paths") or ()) for item in shape
+        ),
+    }
+
+
+def _runtime_semantics_report() -> dict[str, bool]:
+    runtime_limit = AcceptFinalCompletion().check(
+        "Complete the public task.",
+        ModelResponse(content="Tool call limit reached: run limit exceeded (21/20 calls)."),
+        {},
+    )
+    transform = classify_tool_action(
+        "bash",
+        {"command": "cd /task && python3 workspace/analysis/audit.py"},
+    )
+    return {
+        "runtime_limit_response_rejected": not runtime_limit.passed,
+        "direct_public_script_is_transform": transform.intent is ToolIntent.TRANSFORM,
     }
 
 
@@ -411,6 +447,8 @@ def _diagnostic_type(diagnostic: str) -> str:
         return "invalid_json"
     if diagnostic.startswith("artifact missing"):
         return "artifact_missing"
+    if diagnostic.startswith("all completeness-scoped collections are empty"):
+        return "all_collections_empty"
     return "other"
 
 

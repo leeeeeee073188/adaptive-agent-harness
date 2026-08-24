@@ -1,0 +1,15 @@
+{
+  "scope": "independent v3.3 pre-canary verification",
+  "verdict": "pass_single_development_canary",
+  "adaptive_tests_passed": 291,
+  "realreplica_tests_passed": 69,
+  "adaptive_source_sha256": "5b26e07ff0d67b2bce56ba34a863fe218ac17fa594f627222e12444921188fe4",
+  "executable_policy_profile_fingerprint": "1d6ecca4685b3a93fb93297b14b1cb55db0f8687e7687f78c595c97057bed946",
+  "candidate_profile_fingerprint": "86f76d31ca346bbe19f154afa1f50d50a3d5df1759529c6745546d2c3a8fa4a6",
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false,
+  "execution_blocker": "Commit and clean the RealReplicaBench worktree before running the formal canary."
+}

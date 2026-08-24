@@ -47,6 +47,10 @@ class VerifyNextGenerationGateTests(unittest.TestCase):
             self.assertEqual(report["context_replay"]["secret_findings"], 0)
             self.assertTrue(report["contract"]["artifact_shape_criterion_present"])
             self.assertTrue(report["contract"]["source_access_criteria_present"])
+            self.assertTrue(report["contract"]["artifact_non_vacuity_constraint_present"])
+            self.assertGreater(report["contract"]["non_vacuous_collection_path_count"], 0)
+            self.assertTrue(report["runtime_semantics"]["runtime_limit_response_rejected"])
+            self.assertTrue(report["runtime_semantics"]["direct_public_script_is_transform"])
             self.assertTrue(report["historical_artifact"]["rejected"])
             self.assertGreater(report["historical_artifact"]["diagnostic_count"], 0)
             self.assertEqual(report["historical_artifact"]["diagnostic_types"], ["missing_required_key"])
@@ -139,7 +143,7 @@ def _write_fixture(root: Path, *, artifact_payload: object) -> tuple[Path, Path]
     (case_dir / "workspace").mkdir(parents=True)
     (case_dir / "workspace" / "README.md").write_text("audit workspace with dataset notes\n", encoding="utf-8")
     task_prompt = """Open https://public.example.test/api/help and write outputs/quality_audit.json.
-Use the workspace audit notes to produce the quality audit.
+Use the workspace audit notes to produce the quality audit. Report all matching records.
 
 ```json
 {

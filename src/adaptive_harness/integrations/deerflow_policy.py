@@ -201,6 +201,11 @@ class FileArtifactObservationProvider:
         identity_keys = parameters.get("list_identity_keys") or {}
         if isinstance(identity_keys, Mapping):
             _validate_json_identity_keys(payload, identity_keys, diagnostics)
+        non_vacuous_paths = parameters.get("non_vacuous_collection_paths") or ()
+        if isinstance(non_vacuous_paths, Sequence) and not isinstance(
+            non_vacuous_paths, (str, bytes)
+        ):
+            _validate_json_collection_non_vacuity(payload, non_vacuous_paths, diagnostics)
         return diagnostics
 
 
@@ -697,6 +702,26 @@ def _validate_json_identity_keys(
                     key_label = ",".join(keys)
                     diagnostics.append(f"duplicate identity {path} ({key_label})={identity!r}")
                 seen.add(identity)
+
+
+def _validate_json_collection_non_vacuity(
+    payload: Any,
+    raw_paths: Sequence[Any],
+    diagnostics: list[str],
+) -> None:
+    paths = tuple(dict.fromkeys(str(path) for path in raw_paths if str(path).startswith("$.")))
+    if not paths:
+        return
+    collections = [
+        value
+        for path in paths
+        for value in _values_at_json_path(payload, path)
+        if isinstance(value, list)
+    ]
+    if collections and all(not value for value in collections):
+        diagnostics.append(
+            "all completeness-scoped collections are empty: " + ", ".join(paths)
+        )
 
 
 def _is_scalar_identity(value: Any) -> bool:

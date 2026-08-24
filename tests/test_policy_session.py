@@ -24,6 +24,29 @@ from adaptive_harness.task_state import CriterionStatus, EvidenceCompletionGate,
 
 
 class PolicySessionTests(unittest.TestCase):
+    def test_response_policy_rejects_runtime_limit_text_as_completion(self) -> None:
+        policy = AcceptFinalCompletion()
+
+        decision = policy.check(
+            "Complete the task.",
+            ModelResponse(content="Tool call limit reached: run limit exceeded (21/20 calls)."),
+            {},
+        )
+
+        self.assertFalse(decision.passed)
+        self.assertIn("runtime control", decision.feedback or "")
+
+    def test_response_policy_accepts_legitimate_non_empty_final_response(self) -> None:
+        policy = AcceptFinalCompletion()
+
+        decision = policy.check(
+            "Complete the task.",
+            ModelResponse(content="Completed the requested artifact and validated its contents."),
+            {},
+        )
+
+        self.assertTrue(decision.passed)
+
     def test_response_and_evidence_completion_are_one_session_decision(self) -> None:
         ledger = SessionLedger("policy-response")
         session = KernelPolicySession(

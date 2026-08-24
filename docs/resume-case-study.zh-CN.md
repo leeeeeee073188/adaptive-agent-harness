@@ -98,7 +98,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 
 | 项目 | 证据 |
 |---|---:|
-| 零模型单元测试 | 93 |
+| 当前 Adaptive 零模型单元测试 | 291 |
 | Core中的RealReplica业务词汇 | 0（边界测试） |
 | Evolution在线修改Profile | disabled |
 | Evolution Shadow/Promote/Reject/Rollback | deterministic + replayable |
@@ -110,6 +110,11 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | v1.3 | observe-only容器与MiniBench预检通过；0 paid runs |
 | v1.4 Advice | 1.0；189,696 Token；23 Tool；Reject |
 | v1.5 Read Advice | 1.0；154,036 Token；0 Advice触发；Keep Shadow |
+| Runtime v2.6 | 2/5；236,570 Token；42 Tool；当前历史最优 Shadow |
+| Evidence Workspace v3 | 0/5；350,771 Token；46 Tool；Reject |
+| v3.1 source-first | 0/5；216,688 Token；42 Tool；无产物 |
+| v3.2 materializer | 1/5；231,897 Token；47 Tool；全空产物，不晋升 |
+| v3.3 | 135 项核心 gate + pinned-container probe；仅授权一次同题 canary，尚无真实成绩 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

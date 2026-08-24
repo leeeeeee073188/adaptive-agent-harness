@@ -36,7 +36,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_evidence_workspace_v3_2",
+        "adaptive_harness_evidence_workspace_v3_3",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -48,6 +48,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                 },
                 "contract": {
                     "public_json_shape": True,
+                    "public_json_completeness_non_vacuity": True,
                     "public_source_access": True,
                     "private_evaluator_data": False,
                 },
@@ -69,8 +70,14 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                     "max_reads_per_local_resource": 3,
                     "max_total_tool_calls_per_turn": 20,
                     "delivery_first_recovery": True,
+                    "direct_synthesis_transform_allowed": True,
+                    "empty_placeholder_discouraged": True,
                     "task_run_ledger_state": True,
                     "turn_scoped_admission_budget": True,
+                    "textual_tool_errors_fail_closed": True,
+                },
+                "response_completion": {
+                    "runtime_control_messages_rejected": True,
                 },
                 "advice_gate": {
                     "classified_fraction": 1.0,
@@ -228,11 +235,15 @@ def _bridge_evidence_valid(
         "context_profile_session_bound",
         "global_nonmutating_budget_enforced",
         "delivery_first_gate_enforced",
+        "delivery_synthesis_transform_allowed",
         "embedded_client_stream_exercised",
         "executable_policy_profile_assembled",
         "max_completion_turns_frozen",
         "local_resource_read_budget_frozen",
         "public_source_materializer_wired",
+        "public_non_vacuity_gate_enforced",
+        "runtime_limit_response_rejected",
+        "textual_tool_errors_fail_closed",
         "ledger_persisted",
         "policy_bridge_enabled",
         "policy_profile_fingerprint_matches",

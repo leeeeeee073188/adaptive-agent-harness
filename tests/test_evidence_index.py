@@ -115,6 +115,26 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertTrue(index["claims"]["v3_2_paid_canary_allowed"])
         self.assertTrue(index["claims"]["v3_2_source_hash_matches"])
         self.assertTrue(index["claims"]["v3_2_profile_fingerprint_matches"])
+        self.assertEqual(index["claims"]["v3_2_live_row"]["capacity_score"], 0.2)
+        self.assertEqual(index["claims"]["v3_2_live_row"]["output_file_count"], 1)
+        self.assertFalse(index["claims"]["v3_2_live_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["v3_3_gate_passed"])
+        self.assertTrue(index["claims"]["v3_3_single_canary_allowed"])
+        self.assertFalse(index["claims"]["v3_3_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["v3_3_non_vacuity_present"])
+        self.assertEqual(
+            index["claims"]["v3_3_historical_artifact_diagnostics"],
+            ["all_collections_empty"],
+        )
+        self.assertTrue(index["claims"]["v3_3_runtime_limit_response_rejected"])
+        self.assertTrue(index["claims"]["v3_3_direct_script_transform"])
+        self.assertEqual(
+            index["claims"]["v3_3_candidate_variant"],
+            "adaptive_harness_evidence_workspace_v3_3",
+        )
+        self.assertTrue(index["claims"]["v3_3_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["v3_3_source_hash_matches"])
+        self.assertTrue(index["claims"]["v3_3_profile_fingerprint_matches"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

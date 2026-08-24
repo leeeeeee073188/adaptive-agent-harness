@@ -50,6 +50,18 @@ class ToolActionLedgerTests(unittest.TestCase):
         )
         self.assertEqual(inspect.intent, ToolIntent.VERIFY)
 
+    def test_direct_python_script_execution_is_a_synthesis_transform(self) -> None:
+        transform = classify_tool_action(
+            "bash",
+            {
+                "description": "Run the public audit script",
+                "command": "cd /task && python3 workspace/analysis/audit.py",
+            },
+        )
+
+        self.assertEqual(transform.intent, ToolIntent.TRANSFORM)
+        self.assertTrue(transform.mutating)
+
 
     def test_local_path_aliases_are_casefolded_and_resolved_against_bash_cd(self) -> None:
         cd_read = classify_tool_action(

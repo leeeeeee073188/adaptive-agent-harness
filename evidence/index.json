@@ -161,6 +161,21 @@
       "sha256": "b5d264b99d2358cb9cb964d0cf98490d937ae6f87ab3355b75db3aa427cb430d"
     },
     {
+      "bytes": 5407,
+      "path": "a32-v3-2-live-canary/summary.json",
+      "sha256": "729f07c0078c306ac70b62373570007f5103a284ba8d89bc1b5207a409ec17c9"
+    },
+    {
+      "bytes": 3877,
+      "path": "a33-v3-3-gate/summary.json",
+      "sha256": "7fbf51e4109275d8cbc4297449c33c0da3b4d3ecd62c0f18c2ca14832cd1d2fb"
+    },
+    {
+      "bytes": 3627,
+      "path": "a34-v3-3-container-conformance/summary.json",
+      "sha256": "7692bbb723210543adfebaf3b623de3994e5cad53d41388991041e66ba949185"
+    },
+    {
       "bytes": 2236,
       "path": "a20-runtime-evolution/container-wiring.json",
       "sha256": "8d02498ecf0c47547b8fea221d73edf6f6c94690e16e4a8a42cdac98259e2171"
@@ -214,9 +229,39 @@
       "bytes": 2481,
       "path": "a31-v3-2-container-conformance/container-wiring.json",
       "sha256": "3d1f075843d35c159a0354c4cdc09948c631036f94dbc2b1bda36b854392cbcf"
+    },
+    {
+      "bytes": 3044,
+      "path": "a32-v3-2-live-canary/pair.json",
+      "sha256": "b4e70fe7ae07e0d5e400a124ae0c7fa23dabccd566c4fc22b703c2659371a2a9"
+    },
+    {
+      "bytes": 5620,
+      "path": "a32-v3-2-live-canary/diagnosis.json",
+      "sha256": "7956015ed8330eebbbd29a2e9f1fe6b7fefcafb240660e855ba026e1c28b9aee"
+    },
+    {
+      "bytes": 2667,
+      "path": "a34-v3-3-container-conformance/container-wiring.json",
+      "sha256": "26c4150fbc8616bfc4b6e2a761ac5d2806136310de576f0f3f4754b5199c8dea"
+    },
+    {
+      "bytes": 1138,
+      "path": "a34-v3-3-container-conformance/review.json",
+      "sha256": "797f2c7e1350d3f68f79b743fcdd0a9b7bfabbdc364d39aeabd8e5e2ea98dab8"
+    },
+    {
+      "bytes": 747,
+      "path": "a34-v3-3-container-conformance/verification.json",
+      "sha256": "8d70c73b2e86cf158074ca7495d932afbbae97fa21ded3e49964ffd0169280f7"
+    },
+    {
+      "bytes": 1719,
+      "path": "a34-v3-3-container-conformance/readiness.json",
+      "sha256": "a3b2d04a712c676f528515aacfca4568d9d8cbb4cea778fec96af64c340150bb"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and latency but still produced no artifact. A30/A31 bind the loopback public-source materializer and early cache-block turn termination to one v3.2 canary. Transfer, Held-out, and further task expansion remain disabled.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and latency but still produced no artifact. A30/A31 bind the loopback public-source materializer and early cache-block turn termination to one v3.2 canary. A32 records that source access and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error completion rejection, direct synthesis transforms, and fail-closed textual tool errors to one replacement Development canary. Transfer, Held-out, and further task expansion remain disabled.",
   "claims": {
     "action_ledger_classified_fraction": 0.8049999999999999,
     "action_ledger_enforcement_ready": false,
@@ -359,11 +404,59 @@
     "v3_1_source_hash_matches": true,
     "v3_2_candidate_variant": "adaptive_harness_evidence_workspace_v3_2",
     "v3_2_gate_passed": true,
+    "v3_2_live_paid_expansion_allowed": false,
+    "v3_2_live_row": {
+      "capacity_score": 0.2,
+      "checks_passed": 1,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.2,
+        "elapsed_sec": -25.316000000000017,
+        "token_fraction": -0.12876029890783675,
+        "tool_calls": 29,
+        "total_tokens": -34272
+      },
+      "elapsed_sec": 110.466,
+      "integrity_passed": true,
+      "ledger_event_count": 6561,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 1,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 5,
+        "check_count": 34,
+        "dispositions": {
+          "allow": 8,
+          "block_scope": 5,
+          "record": 15,
+          "replan": 6
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-2-development",
+      "tool_calls": 47,
+      "total_tokens": 231897,
+      "variant": "adaptive_harness_evidence_workspace_v3_2"
+    },
+    "v3_2_live_selected_candidate": "adaptive_harness_runtime_evolution_v2_6",
     "v3_2_paid_canary_allowed": true,
     "v3_2_paid_expansion_allowed": false,
     "v3_2_profile_fingerprint_matches": true,
     "v3_2_single_canary_allowed": true,
     "v3_2_source_hash_matches": true,
+    "v3_3_candidate_variant": "adaptive_harness_evidence_workspace_v3_3",
+    "v3_3_direct_script_transform": true,
+    "v3_3_gate_passed": true,
+    "v3_3_historical_artifact_diagnostics": [
+      "all_collections_empty"
+    ],
+    "v3_3_non_vacuity_present": true,
+    "v3_3_paid_canary_allowed": true,
+    "v3_3_paid_expansion_allowed": false,
+    "v3_3_profile_fingerprint_matches": true,
+    "v3_3_runtime_limit_response_rejected": true,
+    "v3_3_single_canary_allowed": true,
+    "v3_3_source_hash_matches": true,
     "v3_candidate_variant": "adaptive_harness_evidence_workspace_v3",
     "v3_live_paid_expansion_allowed": false,
     "v3_live_row": {
@@ -407,7 +500,7 @@
     "v3_zero_model_passed": true,
     "zero_model_unit_tests": 179
   },
-  "git_head": "ea3d52e5ff523baea314b58838fb12241b66dfde",
+  "git_head": "4bfef1fd19ebd2ead90aa3b21796bf7f0f6e5406",
   "invariants": {
     "action_ledger_observe_only": true,
     "action_ledger_stable_controls_unwarned": true,
@@ -453,6 +546,10 @@
     "v3_1_regression_not_promoted": true,
     "v3_2_container_gate_cleared": true,
     "v3_2_gate_is_single_canary_only": true,
+    "v3_2_regression_not_promoted": true,
+    "v3_3_container_gate_cleared": true,
+    "v3_3_gate_is_single_canary_only": true,
+    "v3_3_public_completion_regressions_closed": true,
     "v3_container_and_candidate_gate_cleared": true,
     "v3_evidence_bound_to_current_source": true,
     "v3_regression_not_promoted": true

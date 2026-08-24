@@ -1,0 +1,32 @@
+{
+  "scope": "v3.3 pre-canary code and security review",
+  "verdict": "approve_single_development_canary",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 2,
+  "model_calls": 0,
+  "paid_expansion_allowed": false,
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "findings": [
+    {
+      "severity": "low",
+      "area": "textual tool error envelope",
+      "risk": "A legitimate tool result beginning with Error: could be classified as a tool failure.",
+      "follow_up": "Inspect the single canary trajectory before any task expansion and narrow only if a false positive is observed."
+    },
+    {
+      "severity": "low",
+      "area": "public collection non-vacuity",
+      "risk": "A task with strong completeness wording and a genuinely empty result may fail closed unless the prompt explicitly allows emptiness.",
+      "follow_up": "Before cross-task expansion, audit the frozen subset for legitimate empty-result cases or add public source cardinality evidence."
+    }
+  ],
+  "prohibited": [
+    "additional Development tasks",
+    "Transfer",
+    "Held-out",
+    "full 107-task run"
+  ]
+}

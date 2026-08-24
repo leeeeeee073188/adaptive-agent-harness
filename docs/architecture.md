@@ -306,6 +306,28 @@ task-level provider coverage to 16/16. Unsupported Gmail draft verification
 remains observe-only; task coverage must never be presented as every-criterion
 coverage.
 
+Completion also distinguishes a structurally valid deliverable from a vacuous
+scaffold. When a public prompt uses strong completeness language (for example,
+“all matching”) and its single public JSON example contains non-empty
+collections, the contract stores only those collection paths—not example
+values—and rejects an artifact whose entire completeness-scoped collection set
+is empty. Explicit public language allowing an empty result disables this
+constraint. This is a conservative public-input heuristic, not a substitute
+for the benchmark verifier or hidden expected content.
+
+Response completion is a separate conjunct. A non-empty string is insufficient
+when it is a recognized runtime control envelope such as a tool-call limit or
+runtime failure. This prevents an otherwise shape-valid artifact from hiding a
+terminated model loop. Conversely, delivery recovery admits direct execution
+of a task-provided Python transform so the model can synthesize before writing;
+plain rereads remain blocked, and the directive explicitly forbids knowingly
+empty placeholders used only to unlock inspection.
+
+Tool result success follows the same rule. Stable text envelopes beginning with
+`Error:`, a traceback, permission denial, or shell launch failure are recorded
+as tool errors even when an upstream wrapper omitted a structured status. They
+cannot advance the mutation epoch or reset no-progress budgets.
+
 ## Recovery separation
 
 Transient provider failures belong to bounded ToolRuntime retries. Semantic or

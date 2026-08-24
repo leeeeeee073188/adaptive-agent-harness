@@ -144,6 +144,12 @@ v3 的真实回退记录在 `evidence/a26-v3-live-canary/`：0/5、无产物、3
 
 v3.1 的真实结果记录在 `evidence/a29-v3-1-live-canary/`：Token/耗时下降，但仍未访问公共 API、未生成产物。v3.2 使用安全 loopback GET materializer 在首轮前物化显式公共来源，并在第二次本地缓存阻断时提前结束 turn；对应 A30/A31 gate 仍禁止任何任务扩展。
 
+v3.2 的真实结果记录在 `evidence/a32-v3-2-live-canary/`：公共来源 materializer 生效，Agent 生成了 `quality_audit.json`，但四个集合全部为空；浅层 shape gate 接受了这个 scaffold，同时 `Tool call limit reached` 被非空文本策略接受。最终只有 1/5、Capacity 0.2、231,897 Token、47 Tool，v2.6 仍是历史最优 Shadow。
+
+v3.3 的 A33/A34 零模型门禁关闭上述两个伪完成路径，并允许任务提供的直接 Python synthesis transform 穿过 delivery recovery；文本形式的工具错误不会再推进 mutation epoch。A33 使用 v3.2 公共产物反事实证明全空集合被拒绝，A34 在 pinned DeerFlow 容器中验证接线与零模型行为。当前仍只允许同一 Development 任务的一次替代 canary。
+
+该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

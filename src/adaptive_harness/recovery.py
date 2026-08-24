@@ -262,8 +262,10 @@ class RuleBasedTaskRecoveryExecutor:
             TaskRecoveryAction.WRITE_PARTIAL: (
                 {"recovery.partial_delivery_requested": True},
                 (
-                    "[HARNESS DELIVERY REQUIRED] The next successful tool action must write "
-                    f"{missing_text}. Do not perform more reads until a required artifact exists."
+                    "[HARNESS DELIVERY REQUIRED] The next successful tool action must write or "
+                    f"directly synthesize {missing_text}. Run a task-provided transform script when "
+                    "available; do not perform more plain reads. Never create a knowingly empty "
+                    "placeholder solely to unlock inspection."
                 ),
             ),
             TaskRecoveryAction.STOP_REPEATED_ACTION: (

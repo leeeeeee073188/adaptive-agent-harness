@@ -140,6 +140,16 @@ class RuleBasedTaskContractBuilder:
     _SOURCE_ACTION = re.compile(
         r"(?i)\b(?:open|access|use|visit|read|verify)\b|(?:真值|访问|打开|使用|核验)"
     )
+    _STRONG_COMPLETENESS = re.compile(
+        r"(?is)(?:\b(?:all|every)\b.{0,80}"
+        r"\b(?:matching|qualifying|eligible|applicable|that\s+(?:match|meet)|which\s+(?:match|meet))\b"
+        r"|(?:所有|全部).{0,40}(?:符合|满足|命中))"
+    )
+    _EMPTY_COLLECTION_ALLOWED = re.compile(
+        r"(?is)(?:\b(?:may|can|could)\s+be\s+empty\b"
+        r"|\b(?:zero|no)\s+(?:matches|records|items)\s+(?:is|are)\s+(?:valid|allowed|acceptable)\b"
+        r"|(?:可以|允许|可)为空|(?:没有|无)(?:匹配|命中).{0,20}(?:为空|空列表))"
+    )
     _NUMBER_WORDS = {
         "one": 1,
         "two": 2,
@@ -304,20 +314,29 @@ class RuleBasedTaskContractBuilder:
         artifact = json_artifacts[0]
         path = str(artifact.parameters["path"])
         shape = _json_shape_from_example(examples[0])
+        parameters: dict[str, Any] = {
+            "subject": f"artifact.json_shape:{path}",
+            "expected": True,
+            "path": path,
+            "required_top_level_keys": list(examples[0].keys()),
+            "shape": shape,
+            "list_identity_keys": _json_list_identity_keys(shape),
+        }
+        normalized_prompt = re.sub(r"[*_`]", "", task_prompt)
+        non_vacuous_paths = _top_level_non_empty_collection_paths(examples[0])
+        if (
+            non_vacuous_paths
+            and self._STRONG_COMPLETENESS.search(normalized_prompt)
+            and not self._EMPTY_COLLECTION_ALLOWED.search(normalized_prompt)
+        ):
+            parameters["non_vacuous_collection_paths"] = non_vacuous_paths
         return [
             Criterion(
                 id=_unique_id("observation", f"artifact-json-shape-{path}", used_ids),
-                description=f"JSON artifact matches public example shape: {path}",
+                description=f"JSON artifact matches public example shape and completeness constraints: {path}",
                 kind=CriterionKind.OBSERVATION_EQUALS,
                 source=CriterionSource.TASK_PROMPT,
-                parameters={
-                    "subject": f"artifact.json_shape:{path}",
-                    "expected": True,
-                    "path": path,
-                    "required_top_level_keys": list(examples[0].keys()),
-                    "shape": shape,
-                    "list_identity_keys": _json_list_identity_keys(shape),
-                },
+                parameters=parameters,
                 depends_on=(artifact.id,),
             )
         ]
@@ -690,6 +709,12 @@ def _json_shape_from_example(value: Any) -> dict[str, Any]:
     if value is None:
         return {"type": "null"}
     return {"type": "unknown"}
+
+
+def _top_level_non_empty_collection_paths(example: Mapping[str, Any]) -> list[str]:
+    """Return only public collection paths, never example values or evaluator facts."""
+
+    return [f"$.{key}" for key, value in example.items() if isinstance(value, list) and value]
 
 
 def _merge_json_shapes(shapes: Sequence[Mapping[str, Any]]) -> dict[str, Any] | None:
