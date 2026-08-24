@@ -156,6 +156,8 @@ v3.4 的真实结果记录在 `evidence/a38-v3-4-thinking-max-live/`：思考模
 
 A39 离线定位并修复 mutation epoch：真实 ToolCallRequest 的 runtime context 为对象，原 `_run_key` 只识别 Mapping，跨 Turn 退化为不同 `id(runtime)`。修复后 PolicySession 从 SessionLedger 持有 durable run id，中间件优先使用该身份；单测和 pinned-container 对象 context 均验证 epoch `[1,1]`。A40/A41 将 v3.5 冻结为 `thinking.type=enabled + reasoning_effort=high`，同时确认 high request 与 epoch 单调，只授权同一 Development 任务一次运行。
 
+v3.5 的真实结果记录在 `evidence/a42-v3-5-thinking-high-live/`：mutation epoch 回退已消失，Capacity 回到 0.4（2/5），但 Token 765,768、Tool 62、耗时 298 秒；产物 SHA 与公开 `workspace/analysis/results.json` 相同，说明模型最终复制了任务明确要求复核而非照抄的中间结果。相同质量下 v2.6 仅用 236,570 Token 和 75.2 秒，因此 v3.5 保持 Shadow 并停止扩跑。
+
 该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
 
 ## 测试规格摘要

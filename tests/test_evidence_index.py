@@ -170,6 +170,15 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertEqual(index["claims"]["v3_5_thinking_effort"], "high")
         self.assertTrue(index["claims"]["v3_5_thinking_request_configured"])
         self.assertTrue(index["claims"]["v3_5_epoch_monotonic"])
+        self.assertEqual(index["claims"]["v3_5_live_row"]["capacity_score"], 0.4)
+        self.assertEqual(index["claims"]["v3_5_live_row"]["total_tokens"], 765768)
+        self.assertEqual(index["claims"]["v3_5_live_row"]["tool_calls"], 62)
+        self.assertFalse(
+            index["claims"]["v3_5_diagnosis_row"]["signals"][
+                "mutation_epoch_regression"
+            ]
+        )
+        self.assertFalse(index["claims"]["v3_5_live_paid_expansion_allowed"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

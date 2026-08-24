@@ -56,3 +56,9 @@ The v3.4 max-effort canary did not improve quality and materially increased
 cost, so the next frozen v3.5 candidate keeps thinking enabled but changes only
 the public effort field to `high`. Its pinned-container probe verifies
 `reasoning_effort == "high"` before the one-task Development rerun.
+
+The v3.5 live run recovered two deterministic checks and eliminated the
+mutation-epoch runtime error, but consumed more total Tokens than v3.4 and did
+not outperform the much cheaper v2.6 Shadow. The project therefore treats
+reasoning effort as a measured profile parameter, not an automatic capability
+upgrade.

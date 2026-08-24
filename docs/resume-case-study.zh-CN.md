@@ -117,7 +117,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | v3.3 pre-canary | 135 项核心 gate + pinned-container probe；仅授权一次同题 canary |
 | v3.3 live | 0/5；277,043 Token；46 Tool；Response Gate 覆盖 Evidence assessments |
 | v3.4 thinking=max | 1/5；719,574 Token；64 Tool；1,043.6秒；mutation-epoch失败，不晋升 |
-| v3.5 thinking=high | A39 离线修复 epoch；A40/A41 高强度 request/container gate 通过；等待同题 canary |
+| v3.5 thinking=high | 2/5；765,768 Token；62 Tool；epoch 已修复但复制公开中间结果，不晋升 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

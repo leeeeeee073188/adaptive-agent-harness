@@ -56,6 +56,7 @@ REQUIRED = tuple(
         (39, "mutation-epoch-offline"),
         (40, "v3-5-thinking-high-gate"),
         (41, "v3-5-thinking-high-container"),
+        (42, "v3-5-thinking-high-live"),
     )
 )
 OPTIONAL = (
@@ -92,6 +93,8 @@ OPTIONAL = (
     "a41-v3-5-thinking-high-container/verification.json",
     "a41-v3-5-thinking-high-container/lint-delta.json",
     "a41-v3-5-thinking-high-container/readiness.json",
+    "a42-v3-5-thinking-high-live/pair.json",
+    "a42-v3-5-thinking-high-live/diagnosis.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -175,6 +178,8 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_5_gate = doc("a40-v3-5-thinking-high-gate/summary.json") if not missing else {}
     v3_5_conformance = doc("a41-v3-5-thinking-high-container/summary.json") if not missing else {}
     v3_5_wiring = documents.get("a41-v3-5-thinking-high-container/container-wiring.json", {})
+    v3_5_live = doc("a42-v3-5-thinking-high-live/summary.json") if not missing else {}
+    v3_5_diagnosis = documents.get("a42-v3-5-thinking-high-live/diagnosis.json", {})
     selected_live_row = next(
         (
             row
@@ -557,6 +562,24 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "v3_5_epoch_monotonic": (
             v3_5_wiring.get("checks") or {}
         ).get("object_context_epoch_monotonic"),
+        "v3_5_live_selected_candidate": v3_5_live.get("selected_candidate_variant"),
+        "v3_5_live_paid_expansion_allowed": v3_5_live.get("paid_expansion_allowed"),
+        "v3_5_live_row": next(
+            (
+                row
+                for row in v3_5_live.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_evidence_workspace_v3_5"
+            ),
+            None,
+        ),
+        "v3_5_diagnosis_row": next(
+            (
+                row
+                for row in v3_5_diagnosis.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_evidence_workspace_v3_5"
+            ),
+            None,
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -751,6 +774,19 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v3_5_thinking_effort"] == "high"
         and claims["v3_5_thinking_request_configured"] is True
         and claims["v3_5_epoch_monotonic"] is True,
+        "v3_5_high_result_not_promoted": (
+            (claims["v3_5_live_row"] or {}).get("passed") is False
+            and (claims["v3_5_live_row"] or {}).get("capacity_score") == 0.4
+            and (claims["v3_5_live_row"] or {}).get("total_tokens") == 765768
+            and (claims["v3_5_live_row"] or {}).get("output_file_count") == 1
+            and ((claims["v3_5_diagnosis_row"] or {}).get("signals") or {}).get(
+                "mutation_epoch_regression"
+            )
+            is False
+            and claims["v3_5_live_selected_candidate"]
+            == "adaptive_harness_runtime_evolution_v2_6"
+            and claims["v3_5_live_paid_expansion_allowed"] is False
+        ),
     }
     return {
         "schema_version": 1,
@@ -791,8 +827,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "still reached only 1/5 while consuming 719,574 Tokens and ending on a mutation-epoch "
             "regression, so v2.6 remains selected. A39 binds the fix to a durable PolicySession run "
             "identity and proves object-shaped DeerFlow contexts keep epoch [1,1]. A40/A41 then freeze "
-            "v3.5 at thinking=enabled, reasoning_effort=high for one same-task canary only. Transfer, "
-            "Held-out, and further task expansion remain disabled."
+            "v3.5 at thinking=enabled, reasoning_effort=high for one same-task canary only. A42 records "
+            "that the lifecycle error disappeared and quality returned to 2/5, but the artifact copied a "
+            "known public draft result, Token use reached 765,768, and v2.6 remained the selected Shadow. "
+            "Transfer, Held-out, and further task expansion remain disabled."
         ),
     }
 
