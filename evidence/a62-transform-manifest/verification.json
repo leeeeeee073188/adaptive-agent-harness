@@ -1,0 +1,13 @@
+{
+  "scope": "P0 Transform Manifest integration verification",
+  "verdict": "pass_offline_standalone_only",
+  "adaptive_tests_passed": 345,
+  "ruff_passed": true,
+  "compile_passed": true,
+  "diff_check_passed": true,
+  "evidence_index_verified": true,
+  "model_calls": 0,
+  "execution_performed": false,
+  "runtime_integration_enabled": false,
+  "paid_expansion_allowed": false
+}

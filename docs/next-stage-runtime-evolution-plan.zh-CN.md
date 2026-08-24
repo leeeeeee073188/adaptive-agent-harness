@@ -174,6 +174,8 @@ v4 File/easy 复验（A58）仍为 0/5：Token 从 330,962 小幅升至 337,994�
 
 v4.1 File/easy 复验（A61）仍为 0/5、无产物，因此不晋升也不扩跑；但 Token 220,496（较 v4 -34.8%）、Tool 31（-14）、耗时 116.6 秒（-65.1%），并把 delivery batch 终止结果从 15 个降为 2 个。description repair 本次未触发，因为模型改走 Bash。当前失败转移到通用 Transform/Workspace seam：任务提供脚本按自身位置把 snapshots 解析为不存在的 `/task/snapshots`，模型随后尝试的 `/tmp` 与路径穿越被 Sandbox 正确阻止。下一阶段只做离线安全 Transform Capsule/Workspace Manifest 设计，不再继续付费试错。
 
+A62 完成 P0 Static Transform Manifest：零执行扫描公共 workspace 内最多 32 个、单个 256 KiB 的 Python 脚本，拒绝 hidden/symlink/outside-root，保守解析 `Path(__file__)`、parent、字面量 `/` 和 file read/write。对 A61 的离线回放准确输出一个 missing read `snapshots/manifest.json`、一个已存在 write target `workspace/analysis/results.json` 和一个 dynamic unresolved access；模型调用/新增 Token 为 0。P1 才考虑把 bounded manifest 接入 Evidence layer，P2 Capsule 默认关闭。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "scope": "zero-model public Python Transform Manifest",
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "manifests": [
+    {
+      "script_path": "workspace/analysis/audit.py",
+      "sha256": "9810a735a7261e1c7cad348855b8d06bb9f33372e111ee44308885b105bc41af",
+      "bytes": 3938,
+      "accesses": [
+        {
+          "kind": "read",
+          "path": "snapshots/manifest.json",
+          "exists": false,
+          "inside_workspace": false,
+          "safe": true,
+          "line": 28
+        },
+        {
+          "kind": "write",
+          "path": "workspace/analysis/results.json",
+          "exists": true,
+          "inside_workspace": true,
+          "safe": true,
+          "line": 113
+        }
+      ],
+      "unresolved_access_count": 1,
+      "unsafe_access_count": 0
+    }
+  ],
+  "scanned_scripts": 1,
+  "skipped_scripts": 0,
+  "visited_paths": 50,
+  "truncated": false,
+  "missing_read_count": 1,
+  "execution_performed": false,
+  "paid_expansion_allowed": false
+}

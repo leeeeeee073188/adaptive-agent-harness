@@ -1,5 +1,5 @@
 {
-  "adaptive_source_sha256": "179193d2365193b6572dd7ea30f73b7904621a701415db7c0fb188e993bc25eb",
+  "adaptive_source_sha256": "c2a434e1b73bbcf9233e3468758d15cb7bb8a30dd3eb636175c1ddb400bd1115",
   "blockers": [],
   "candidate_single_development_canary_allowed": true,
   "context_replay": {
@@ -27,7 +27,7 @@
   "core_leakage": {
     "finding_count": 0,
     "findings": [],
-    "guardrail_literal_count": 36,
+    "guardrail_literal_count": 38,
     "guardrail_literal_interpretation": "generic evaluator-leakage terms are allowed only as defensive denylist/validation vocabulary; direct benchmark task ids, reward files, and private verifier paths fail this gate",
     "passed": true
   },
@@ -41,7 +41,7 @@
     ],
     "passed": true,
     "returncode": 0,
-    "stderr_tail": "............................\n----------------------------------------------------------------------\nRan 28 tests in 0.028s\n\nOK\n",
+    "stderr_tail": "............................\n----------------------------------------------------------------------\nRan 28 tests in 0.022s\n\nOK\n",
     "stdout_tail": "",
     "test_count": 28,
     "test_modules": [
@@ -71,7 +71,7 @@
     "findings": [],
     "passed": true,
     "policy": "Public task/run identifiers are allowed in analysis documentation and aggregate evidence; credentials and evaluator-private file paths are forbidden.",
-    "public_task_reference_count": 304
+    "public_task_reference_count": 329
   },
   "runtime_conformance": {
     "command": [
@@ -92,7 +92,7 @@
     ],
     "passed": true,
     "returncode": 0,
-    "stderr_tail": ".................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 177 tests in 0.568s\n\nOK\n",
+    "stderr_tail": ".................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 177 tests in 0.571s\n\nOK\n",
     "stdout_tail": "",
     "test_count": 177,
     "test_modules": [

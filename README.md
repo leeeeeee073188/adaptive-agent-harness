@@ -133,4 +133,6 @@ A58 的单项 File/easy 复验显示 v4 仍为 0/5、337,994 Token、45 Tool：�
 
 A61 的 v4.1 File/easy 复验仍未通过且没有产物，因此不晋升；但 Token 从 337,994 降至 220,496（-34.8%）、Tool 从 45 降至 31、耗时从 334.2 秒降至 116.6 秒。batch guard 把原先 15 个冗余终止结果压到 2 个；description repair 未触发，因为本次模型改用 Bash。新的可公开失败面是任务提供的 transform 将 snapshots 解析到不存在的 `/task/snapshots`，随后模型的 `/tmp` 和路径穿越 workaround 被 Sandbox 正确拒绝。继续停止付费扩跑，下一步只做离线 Transform/Workspace 能力设计。
 
+A62 已实现第一阶段零模型 `PythonTransformManifestScanner`：在不执行脚本、不读取私有目录、不跟随 symlink 的前提下，有界扫描公共 Python transform，并从 AST 解析 `Path(__file__)`、`.parent`、字面量路径拼接和 read/write 调用。它在 A61 公共 workspace 上提前识别到 `workspace/analysis/audit.py` 会读取不存在的 `snapshots/manifest.json`，同时记录其输出 `workspace/analysis/results.json`；模型调用与新增 Token 均为 0。研究与后续 Capsule 设计见 [`docs/research/transform-workspace-aci-2026-08-25.md`](docs/research/transform-workspace-aci-2026-08-25.md)。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

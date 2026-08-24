@@ -78,6 +78,7 @@ REQUIRED = tuple(
         (59, "v4-1-tool-compat-gate"),
         (60, "v4-1-tool-compat-container"),
         (61, "v4-1-file-live"),
+        (62, "transform-manifest"),
     )
 )
 OPTIONAL = (
@@ -154,6 +155,8 @@ OPTIONAL = (
     "a60-v4-1-tool-compat-container/readiness.json",
     "a61-v4-1-file-live/pair.json",
     "a61-v4-1-file-live/diagnosis.json",
+    "a62-transform-manifest/review.json",
+    "a62-transform-manifest/verification.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -283,6 +286,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "a60-v4-1-tool-compat-container/readiness.json", {}
     )
     v4_1_live = doc("a61-v4-1-file-live/summary.json") if not missing else {}
+    transform_manifest = doc("a62-transform-manifest/summary.json") if not missing else {}
     selected_live_row = next(
         (
             row
@@ -966,6 +970,20 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "v4_1_live_paid_expansion_allowed": v4_1_live.get(
             "paid_expansion_allowed"
         ),
+        "transform_manifest_model_calls": transform_manifest.get("model_calls"),
+        "transform_manifest_execution_performed": transform_manifest.get(
+            "execution_performed"
+        ),
+        "transform_manifest_missing_read_count": transform_manifest.get(
+            "missing_read_count"
+        ),
+        "transform_manifest_row": next(
+            iter(transform_manifest.get("manifests") or ()),
+            None,
+        ),
+        "transform_manifest_paid_expansion_allowed": transform_manifest.get(
+            "paid_expansion_allowed"
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -1325,6 +1343,20 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             == "adaptive_harness_cross_type_artifact_v4_1"
             and claims["v4_1_live_paid_expansion_allowed"] is False
         ),
+        "transform_manifest_detects_a61_precondition_offline": (
+            claims["transform_manifest_model_calls"] == 0
+            and claims["transform_manifest_execution_performed"] is False
+            and claims["transform_manifest_missing_read_count"] == 1
+            and (claims["transform_manifest_row"] or {}).get("script_path")
+            == "workspace/analysis/audit.py"
+            and any(
+                access.get("kind") == "read"
+                and access.get("path") == "snapshots/manifest.json"
+                and access.get("exists") is False
+                for access in (claims["transform_manifest_row"] or {}).get("accesses") or ()
+            )
+            and claims["transform_manifest_paid_expansion_allowed"] is False
+        ),
     }
     return {
         "schema_version": 1,
@@ -1394,6 +1426,8 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "but observed Tokens fell 34.8%, Tool calls fell from 45 to 31, and latency fell 65.1%; "
             "the next public failure is the task transform resolving `/task/snapshots` plus blocked "
             "unsafe path workarounds. v4.1 remains Shadow and paid expansion stays disabled. "
+            "A62 adds a zero-execution Python Transform Manifest and detects the same missing "
+            "`snapshots/manifest.json` dependency from public AST/path semantics before model use. "
             "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),

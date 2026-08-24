@@ -320,6 +320,14 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertTrue(index["claims"]["v4_1_live_task_transform_missing_snapshot_error"])
         self.assertTrue(index["claims"]["v4_1_live_unsafe_path_attempt_blocked"])
         self.assertFalse(index["claims"]["v4_1_live_paid_expansion_allowed"])
+        self.assertEqual(index["claims"]["transform_manifest_model_calls"], 0)
+        self.assertFalse(index["claims"]["transform_manifest_execution_performed"])
+        self.assertEqual(index["claims"]["transform_manifest_missing_read_count"], 1)
+        self.assertEqual(
+            index["claims"]["transform_manifest_row"]["script_path"],
+            "workspace/analysis/audit.py",
+        )
+        self.assertFalse(index["claims"]["transform_manifest_paid_expansion_allowed"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

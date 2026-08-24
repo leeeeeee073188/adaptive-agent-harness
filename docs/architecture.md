@@ -400,6 +400,21 @@ The after-model delivery guard also terminates a multi-tool batch when none of
 its calls can advance the current required Artifact generation, avoiding many
 redundant blocked tool executions from one model response.
 
+## Workspace Affordance and Transform Manifest
+
+Before adding another execution tool, the Harness can statically describe
+task-provided transforms. `PythonTransformManifestScanner` scans only bounded,
+non-hidden, non-symlink Python files under the public workspace. Without
+executing code, it resolves a conservative subset of `Path(__file__)`, parent,
+literal path joins, and file read/write calls into task-relative dependencies,
+existence, workspace containment, hashes, and unresolved-access counts.
+
+Unsupported expressions remain unknown rather than being evaluated. The first
+A61 counterfactual detects the missing `snapshots/manifest.json` read before
+model use. This is the P0 input to a future Workspace Affordance Graph and
+ephemeral Transform Capsule; it does not auto-patch scripts, create symlinks,
+or claim execution success.
+
 Execution remains deliberately split: `RecoveryExecutor` applies auditable
 Harness control-state deltas and next-turn directives, while external browser,
 API, and file mutations remain ordinary tools. This prevents a control policy

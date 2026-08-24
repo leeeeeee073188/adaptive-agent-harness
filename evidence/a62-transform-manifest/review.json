@@ -1,0 +1,19 @@
+{
+  "scope": "P0 Static Transform Manifest review",
+  "verdict": "approve_offline_standalone_only",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "verified": {
+    "no_code_execution": true,
+    "public_workspace_only": true,
+    "symlink_and_private_access_redacted": true,
+    "hard_traversal_bound": true,
+    "dynamic_mode_is_unresolved": true,
+    "unsafe_reads_not_counted_as_missing_public_dependencies": true,
+    "a61_manifest_reproduced": true
+  },
+  "runtime_integration_enabled": false,
+  "paid_expansion_allowed": false
+}
