@@ -150,6 +150,16 @@ class RuleBasedTaskContractBuilder:
         r"|\b(?:zero|no)\s+(?:matches|records|items)\s+(?:is|are)\s+(?:valid|allowed|acceptable)\b"
         r"|(?:可以|允许|可)为空|(?:没有|无)(?:匹配|命中).{0,20}(?:为空|空列表))"
     )
+    _PROVISIONAL_WARNING = re.compile(
+        r"(?is)(?:\b(?:draft|intermediate|preliminary|starting\s+points?)\b.{0,100}"
+        r"(?:not\s+(?:the\s+)?truth|not\s+authoritative|must\s+be\s+(?:verified|rechecked))"
+        r"|(?:草稿|中间结果|起点).{0,80}(?:不是真值|并非真值|需要(?:核验|复核)|不是最终))"
+    )
+    _REVALIDATE_SOURCE = re.compile(
+        r"(?is)\b(?:verify|validate|recheck|re-check|cross-check)\b.{0,120}"
+        r"\b(?:raw|source|record|payload|catalog)\b"
+        r"|(?:核验|复核|再核|校验).{0,80}(?:原始|真值|来源|目录|payload|数据)"
+    )
     _NUMBER_WORDS = {
         "one": 1,
         "two": 2,
@@ -262,6 +272,7 @@ class RuleBasedTaskContractBuilder:
 
         criteria.extend(self._json_artifact_shape_criteria(task_prompt, criteria, used_ids))
         criteria.extend(self._public_source_access_criteria(task_prompt, used_ids))
+        criteria.extend(self._artifact_grounding_criteria(task_prompt, criteria, used_ids))
 
         for extractor in self.extractors:
             for draft in extractor.extract(task_prompt):
@@ -378,6 +389,54 @@ class RuleBasedTaskContractBuilder:
                 if declared_count is not None and len(files) >= declared_count:
                     break
         return tuple(files)
+
+    def _artifact_grounding_criteria(
+        self,
+        task_prompt: str,
+        criteria: Sequence[Criterion],
+        used_ids: set[str],
+    ) -> list[Criterion]:
+        normalized_prompt = re.sub(r"[*_`]", "", task_prompt)
+        if not (
+            self._PROVISIONAL_WARNING.search(normalized_prompt)
+            and self._REVALIDATE_SOURCE.search(normalized_prompt)
+        ):
+            return []
+        artifacts = [item for item in criteria if item.kind is CriterionKind.ARTIFACT_EXISTS]
+        if len(artifacts) != 1:
+            return []
+        target = str(artifacts[0].parameters["path"])
+        provisional_paths: list[str] = []
+        for match in self._CODE_FILE.finditer(task_prompt):
+            raw = match.group("path").replace("\\", "/")
+            if raw.startswith(("outputs/", "/")) or raw == target:
+                continue
+            path = raw if raw.startswith("workspace/") else f"workspace/{raw}"
+            path = _normalize_path(path)
+            if path not in provisional_paths:
+                provisional_paths.append(path)
+        if not provisional_paths:
+            return []
+        return [
+            Criterion(
+                id=_unique_id("observation", f"artifact-grounding-{target}", used_ids),
+                description=(
+                    "Artifact does not exactly copy a public provisional source that requires "
+                    f"independent validation: {target}"
+                ),
+                kind=CriterionKind.OBSERVATION_EQUALS,
+                source=CriterionSource.TASK_PROMPT,
+                parameters={
+                    "subject": f"artifact.grounding:{target}",
+                    "expected": True,
+                    "path": target,
+                    "provisional_source_paths": provisional_paths,
+                    "scan_public_workspace": True,
+                    "forbid_exact_copy": True,
+                },
+                depends_on=(artifacts[0].id,),
+            )
+        ]
 
     def _public_source_access_criteria(
         self,

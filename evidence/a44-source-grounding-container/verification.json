@@ -1,0 +1,18 @@
+{
+  "scope": "independent v3.6 source-grounding verification",
+  "verdict": "pass_single_canary_with_legacy_full_ruff_waiver",
+  "adaptive_tests_passed": 310,
+  "realreplica_tests_passed": 73,
+  "adaptive_ruff_passed": true,
+  "real_modified_python_ruff_passed": true,
+  "real_full_ruff_preexisting_error_count": 511,
+  "waiver": "Full RealReplicaBench lint debt predates and is outside the modified v3.6 files; every modified Python file passes scoped Ruff.",
+  "historical_copy_rejected": true,
+  "container_copy_guard_enforced": true,
+  "thinking_request_effort": "high",
+  "model_calls": 0,
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false,
+  "execution_blocker": "Commit and clean both worktrees before the formal canary."
+}

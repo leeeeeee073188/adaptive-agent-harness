@@ -328,6 +328,35 @@ Tool result success follows the same rule. Stable text envelopes beginning with
 as tool errors even when an upstream wrapper omitted a structured status. They
 cannot advance the mutation epoch or reset no-progress budgets.
 
+## Source-grounded synthesis and lineage
+
+Artifact validity and semantic provenance are separate decisions. The
+Source Grounding module represents public evidence as hash-only
+`SourceHandle`s with explicit roles (`authoritative`, `provisional`,
+`reference`, `model_prose`), decomposes output support into `ClaimAtom`s, and
+records an `ArtifactDerivation` in a replayable `LineageGraph`. Its gate rejects
+unknown handles, model prose used as authority, insufficient authoritative
+coverage, and direct copies whose source was not declared final-eligible.
+
+The first runtime integration is deliberately narrower than the full claim
+graph: when the public task says an intermediate/draft is not truth and must be
+revalidated against raw sources, the Contract derives an
+`artifact.grounding:*` obligation. The filesystem provider hashes a bounded
+public workspace (maximum 512 non-hidden, non-symlink files of at most 2 MiB)
+and rejects a byte-identical output copy. It never reads evaluator files,
+stores source contents, or assumes benchmark-specific field values. Explicit
+copy/conversion tasks without the revalidation warning do not receive this
+guard, preserving legitimate reuse.
+
+Grounding failures retain bounded public diagnostics in completion feedback
+and route to `SYNTHESIS_LINEAGE_GAP` recovery (`validate_contract + replan`),
+not another placeholder write. This follows the separation in WebGPT,
+Attributed QA, RARR, process supervision, and Chain-of-Verification: evidence
+collection, claim attribution, synthesis, and final verification are distinct
+runtime stages. The next extension is authoritative source-coverage handles;
+the current exact-copy guard must not be presented as complete factual
+verification.
+
 ## Recovery separation
 
 Transient provider failures belong to bounded ToolRuntime retries. Semantic or

@@ -121,13 +121,18 @@ class PublicSourceAccessObservationProvider:
 class FileArtifactObservationProvider:
     """Verify public artifact criteria against an isolated task root."""
 
+    MAX_GROUNDING_FILES = 512
+    MAX_GROUNDING_FILE_BYTES = 2 * 1024 * 1024
+
     def __init__(self, task_root: Path) -> None:
         self.task_root = task_root.resolve()
 
     def supports(self, criterion: Any) -> bool:
         return criterion.kind in {CriterionKind.ARTIFACT_EXISTS, CriterionKind.OBSERVATION_EQUALS} and (
             criterion.kind is CriterionKind.ARTIFACT_EXISTS
-            or str(criterion.parameters.get("subject") or "").startswith("artifact.json_shape:")
+            or str(criterion.parameters.get("subject") or "").startswith(
+                ("artifact.json_shape:", "artifact.grounding:")
+            )
         )
 
     def observe(
@@ -163,6 +168,24 @@ class FileArtifactObservationProvider:
                 continue
             relative = str(criterion.parameters["path"]).removeprefix("/task/")
             path = self._artifact_path(relative)
+            subject = str(criterion.parameters["subject"])
+            if subject.startswith("artifact.grounding:"):
+                grounding = self._grounding_diagnostics(path, criterion.parameters)
+                evidence.append(
+                    Evidence(
+                        id=f"deerflow:t{turn}:{criterion.id}",
+                        kind=EvidenceKind.OBSERVATION,
+                        subject=subject,
+                        value=not grounding["diagnostics"],
+                        source=EvidenceSource.ARTIFACT_INSPECTION,
+                        metadata={
+                            "provider": "filesystem-provisional-copy-guard",
+                            "path": relative,
+                            **grounding,
+                        },
+                    )
+                )
+                continue
             diagnostics = self._json_shape_diagnostics(path, criterion.parameters)
             evidence.append(
                 Evidence(
@@ -207,6 +230,102 @@ class FileArtifactObservationProvider:
         ):
             _validate_json_collection_non_vacuity(payload, non_vacuous_paths, diagnostics)
         return diagnostics
+
+    def _grounding_diagnostics(
+        self,
+        path: Path,
+        parameters: Mapping[str, Any],
+    ) -> dict[str, list[str]]:
+        diagnostics: list[str] = []
+        exact_copies: list[str] = []
+        checked: list[str] = []
+        missing: list[str] = []
+        skipped: list[str] = []
+        if not path.is_file():
+            diagnostics.append("artifact missing")
+            return {
+                "diagnostics": diagnostics,
+                "exact_provisional_copies": exact_copies,
+                "checked_provisional_sources": checked,
+                "missing_provisional_sources": missing,
+                "skipped_provisional_sources": skipped,
+            }
+        artifact_hash = _file_sha256(path)
+        raw_paths = parameters.get("provisional_source_paths") or ()
+        if not isinstance(raw_paths, Sequence) or isinstance(raw_paths, (str, bytes)):
+            diagnostics.append("invalid provisional source parameters")
+        else:
+            provisional_paths = [str(raw).removeprefix("/task/") for raw in raw_paths]
+            if parameters.get("scan_public_workspace") is True:
+                workspace = self._artifact_path("workspace")
+                if workspace.is_dir():
+                    discovered_count = 0
+                    for candidate in workspace.rglob("*"):
+                        relative_to_workspace = candidate.relative_to(workspace)
+                        if (
+                            not candidate.is_file()
+                            or candidate.is_symlink()
+                            or any(part.startswith(".") for part in relative_to_workspace.parts)
+                        ):
+                            continue
+                        if discovered_count >= self.MAX_GROUNDING_FILES:
+                            skipped.append("<workspace scan truncated>")
+                            if parameters.get("forbid_exact_copy") is True:
+                                diagnostics.append(
+                                    "workspace provisional scan truncated at "
+                                    f"{self.MAX_GROUNDING_FILES} files"
+                                )
+                            break
+                        provisional_paths.append(
+                            candidate.relative_to(self.task_root).as_posix()
+                        )
+                        discovered_count += 1
+            for relative in dict.fromkeys(provisional_paths):
+                source_path = self._artifact_path(relative)
+                if not source_path.is_file():
+                    missing.append(relative)
+                    continue
+                try:
+                    size = source_path.stat().st_size
+                except OSError as error:
+                    skipped.append(relative)
+                    if parameters.get("forbid_exact_copy") is True:
+                        diagnostics.append(
+                            f"provisional source could not be verified: {relative}: {error}"
+                        )
+                    continue
+                if size > self.MAX_GROUNDING_FILE_BYTES:
+                    skipped.append(relative)
+                    if parameters.get("forbid_exact_copy") is True:
+                        diagnostics.append(
+                            "provisional source not verified due to size limit: " + relative
+                        )
+                    continue
+                checked.append(relative)
+                try:
+                    source_hash = _file_sha256(source_path)
+                except OSError as error:
+                    checked.pop()
+                    skipped.append(relative)
+                    if parameters.get("forbid_exact_copy") is True:
+                        diagnostics.append(
+                            f"provisional source could not be verified: {relative}: {error}"
+                        )
+                    continue
+                if source_hash == artifact_hash:
+                    exact_copies.append(relative)
+            if parameters.get("forbid_exact_copy") is True and exact_copies:
+                diagnostics.append(
+                    "artifact exactly copies provisional source requiring validation: "
+                    + ", ".join(exact_copies)
+                )
+        return {
+            "diagnostics": diagnostics,
+            "exact_provisional_copies": exact_copies,
+            "checked_provisional_sources": checked,
+            "missing_provisional_sources": missing,
+            "skipped_provisional_sources": skipped,
+        }
 
 
 class OutputFileCountObservationProvider:

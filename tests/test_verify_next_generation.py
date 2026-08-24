@@ -48,12 +48,17 @@ class VerifyNextGenerationGateTests(unittest.TestCase):
             self.assertTrue(report["contract"]["artifact_shape_criterion_present"])
             self.assertTrue(report["contract"]["source_access_criteria_present"])
             self.assertTrue(report["contract"]["artifact_non_vacuity_constraint_present"])
+            self.assertTrue(report["contract"]["artifact_grounding_criterion_present"])
             self.assertGreater(report["contract"]["non_vacuous_collection_path_count"], 0)
             self.assertTrue(report["runtime_semantics"]["runtime_limit_response_rejected"])
             self.assertTrue(report["runtime_semantics"]["direct_public_script_is_transform"])
             self.assertTrue(report["historical_artifact"]["rejected"])
+            self.assertTrue(report["historical_artifact"]["grounding_rejected"])
             self.assertGreater(report["historical_artifact"]["diagnostic_count"], 0)
-            self.assertEqual(report["historical_artifact"]["diagnostic_types"], ["missing_required_key"])
+            self.assertEqual(
+                report["historical_artifact"]["diagnostic_types"],
+                ["exact_provisional_copy", "missing_required_key"],
+            )
             self.assertTrue(output.is_file())
             rendered = output.read_text(encoding="utf-8")
             self.assertNotIn('"summary": "ok"', rendered)
@@ -143,7 +148,8 @@ def _write_fixture(root: Path, *, artifact_payload: object) -> tuple[Path, Path]
     (case_dir / "workspace").mkdir(parents=True)
     (case_dir / "workspace" / "README.md").write_text("audit workspace with dataset notes\n", encoding="utf-8")
     task_prompt = """Open https://public.example.test/api/help and write outputs/quality_audit.json.
-Use the workspace audit notes to produce the quality audit. Report all matching records.
+The `workspace/analysis/results.json` intermediate is a starting point, not truth.
+Verify it against the raw source and report all matching records.
 
 ```json
 {
@@ -161,6 +167,9 @@ Use the workspace audit notes to produce the quality audit. Report all matching 
     output_dir = run_dir / "workspace" / "outputs"
     agent_dir.mkdir(parents=True)
     output_dir.mkdir(parents=True)
+    intermediate = run_dir / "workspace" / "workspace" / "analysis" / "results.json"
+    intermediate.parent.mkdir(parents=True)
+    intermediate.write_text(json.dumps(artifact_payload), encoding="utf-8")
     (output_dir / "quality_audit.json").write_text(json.dumps(artifact_payload), encoding="utf-8")
     messages = [
         {"type": "human", "content": task_prompt},

@@ -248,6 +248,10 @@ def main() -> int:
                 "public_non_vacuity_gate_enforced"
             )
             is True,
+            "provisional_copy_guard_enforced": adaptive.get(
+                "provisional_copy_guard_enforced"
+            )
+            is True,
             "context_middleware_request_shape_valid": (
                 adaptive.get("context_middleware_request_shape_valid") is True
             ),

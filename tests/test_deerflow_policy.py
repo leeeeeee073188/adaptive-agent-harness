@@ -111,6 +111,200 @@ def _summary() -> DeerFlowReplaySummary:
 
 
 class FileArtifactJsonShapeObservationTests(unittest.TestCase):
+    def test_exact_copy_of_public_provisional_file_fails_grounding(self) -> None:
+        prompt = """`workspace/analysis/results.json` is a starting point, not truth.
+Verify it against the raw source before writing outputs/audit.json.
+
+```json
+{"items": [{"id": "sample", "score": 1, "passed": true}]}
+```
+"""
+        contract = _contract(prompt)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            provisional = root / "workspace/analysis/results.json"
+            output = root / "outputs/audit.json"
+            provisional.parent.mkdir(parents=True)
+            output.parent.mkdir(parents=True)
+            payload = {"items": [{"id": "actual", "score": 2, "passed": True}]}
+            provisional.write_text(json.dumps(payload), encoding="utf-8")
+            output.write_text(json.dumps(payload), encoding="utf-8")
+            evidence = FileArtifactObservationProvider(root).observe(
+                contract,
+                _summary(),
+                turn=1,
+            )
+
+        grounding = next(
+            item for item in evidence if item.subject == "artifact.grounding:outputs/audit.json"
+        )
+        self.assertFalse(grounding.value)
+        self.assertEqual(
+            grounding.metadata["exact_provisional_copies"],
+            ["workspace/analysis/results.json"],
+        )
+
+        ledger = SessionLedger("grounding-copy-feedback")
+        writer = TaskEventWriter(ledger)
+        writer.create_contract(contract)
+        for item in evidence:
+            writer.add_evidence(item)
+        completion = writer.check_completion()
+        self.assertTrue(
+            any(
+                "artifact exactly copies provisional source requiring validation" in reason
+                for reason in completion.missing
+            )
+        )
+
+    def test_transformed_public_provisional_file_passes_copy_guard(self) -> None:
+        prompt = """`workspace/analysis/results.json` is a draft, not truth.
+Re-check it against raw records before writing outputs/audit.json.
+
+```json
+{"items": [{"id": "sample", "score": 1, "passed": true}]}
+```
+"""
+        contract = _contract(prompt)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            provisional = root / "workspace/analysis/results.json"
+            output = root / "outputs/audit.json"
+            provisional.parent.mkdir(parents=True)
+            output.parent.mkdir(parents=True)
+            provisional.write_text(
+                json.dumps({"items": [{"id": "old", "score": 1, "passed": False}]}),
+                encoding="utf-8",
+            )
+            output.write_text(
+                json.dumps({"items": [{"id": "new", "score": 2, "passed": True}]}),
+                encoding="utf-8",
+            )
+            evidence = FileArtifactObservationProvider(root).observe(
+                contract,
+                _summary(),
+                turn=1,
+            )
+
+        grounding = next(
+            item for item in evidence if item.subject == "artifact.grounding:outputs/audit.json"
+        )
+        self.assertTrue(grounding.value)
+
+    def test_workspace_scan_catches_unlisted_intermediate_copy(self) -> None:
+        prompt = """Read `workspace/README.md`; its intermediate result is a starting point,
+not truth. Verify it against the raw source before writing outputs/audit.json.
+
+```json
+{"items": [{"id": "sample", "score": 1, "passed": true}]}
+```
+"""
+        contract = _contract(prompt)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            readme = root / "workspace/README.md"
+            intermediate = root / "workspace/analysis/results.json"
+            output = root / "outputs/audit.json"
+            readme.parent.mkdir(parents=True)
+            intermediate.parent.mkdir(parents=True)
+            output.parent.mkdir(parents=True)
+            readme.write_text("See analysis/results.json", encoding="utf-8")
+            payload = {"items": [{"id": "actual", "score": 2, "passed": True}]}
+            intermediate.write_text(json.dumps(payload), encoding="utf-8")
+            output.write_text(json.dumps(payload), encoding="utf-8")
+            evidence = FileArtifactObservationProvider(root).observe(
+                contract,
+                _summary(),
+                turn=1,
+            )
+
+        grounding = next(
+            item for item in evidence if item.subject == "artifact.grounding:outputs/audit.json"
+        )
+        self.assertFalse(grounding.value)
+        self.assertIn(
+            "workspace/analysis/results.json",
+            grounding.metadata["exact_provisional_copies"],
+        )
+
+    def test_oversized_provisional_source_fails_closed(self) -> None:
+        prompt = """`workspace/results.json` is a draft, not truth.
+Verify it against raw records before writing outputs/audit.json.
+
+```json
+{"items": [{"id": "sample"}]}
+```
+"""
+        contract = _contract(prompt)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "workspace/results.json"
+            output = root / "outputs/audit.json"
+            source.parent.mkdir(parents=True)
+            output.parent.mkdir(parents=True)
+            oversized = b"x" * (FileArtifactObservationProvider.MAX_GROUNDING_FILE_BYTES + 1)
+            source.write_bytes(oversized)
+            output.write_bytes(oversized)
+            evidence = FileArtifactObservationProvider(root).observe(
+                contract,
+                _summary(),
+                turn=1,
+            )
+
+        grounding = next(
+            item for item in evidence if item.subject == "artifact.grounding:outputs/audit.json"
+        )
+        self.assertFalse(grounding.value)
+        self.assertIn(
+            "provisional source not verified due to size limit: workspace/results.json",
+            grounding.metadata["diagnostics"],
+        )
+
+    def test_workspace_scan_stops_at_file_limit_and_fails_closed(self) -> None:
+        prompt = """`workspace/README.md` describes an intermediate starting point,
+not truth. Verify it against raw records before writing outputs/audit.json.
+
+```json
+{"items": [{"id": "sample"}]}
+```
+"""
+        contract = _contract(prompt)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            workspace = root / "workspace"
+            output = root / "outputs/audit.json"
+            workspace.mkdir(parents=True)
+            output.parent.mkdir(parents=True)
+            (workspace / "README.md").write_text("draft", encoding="utf-8")
+            for index in range(FileArtifactObservationProvider.MAX_GROUNDING_FILES + 1):
+                (workspace / f"source-{index:04d}.txt").write_text(
+                    str(index),
+                    encoding="utf-8",
+                )
+            output.write_text('{"items": [{"id": "new"}]}', encoding="utf-8")
+            evidence = FileArtifactObservationProvider(root).observe(
+                contract,
+                _summary(),
+                turn=1,
+            )
+
+        grounding = next(
+            item for item in evidence if item.subject == "artifact.grounding:outputs/audit.json"
+        )
+        self.assertFalse(grounding.value)
+        self.assertLessEqual(
+            len(grounding.metadata["checked_provisional_sources"]),
+            FileArtifactObservationProvider.MAX_GROUNDING_FILES + 1,
+        )
+        self.assertEqual(
+            grounding.metadata["skipped_provisional_sources"],
+            ["<workspace scan truncated>"],
+        )
+        self.assertIn(
+            "workspace provisional scan truncated at 512 files",
+            grounding.metadata["diagnostics"],
+        )
+
     def test_valid_json_shape_emits_satisfied_consistency_evidence(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

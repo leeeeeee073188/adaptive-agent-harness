@@ -117,4 +117,8 @@ v3.4 将 Response 与 Evidence Completion 改为真正的合取，响应拒绝�
 
 A39 随后离线修复了该生命周期错误：真实 DeerFlow 的 `runtime.context` 是对象而非 Mapping，旧中间件按每个 Turn 的 runtime 对象地址新建 ToolActionLedger；现在统一使用已绑定到 SessionLedger 的 durable PolicySession run id。对象型 context 容器探针验证跨 Turn epoch 为 `[1,1]`。v3.5 再将官方 `reasoning_effort` 降为 `high`，A40/A41 验证实际模型工厂得到 high、thinking enabled 且 epoch 单调。真实 A42 canary 中 epoch 错误消失、质量回到 2/5，但 Token 仍达 765,768、Tool 62、耗时 298 秒，且最终产物逐字匹配任务明确警告“不是最终真值”的 `workspace/analysis/results.json`。其质量与 v2.6 相同而成本约 3.24 倍，因此仍不晋升、不扩跑。
 
+v3.6 不再继续调 Prompt，而是增加 Source Grounding 深模块：`SourceHandle → ClaimAtom → ArtifactDerivation → LineageGraph → SourceGroundingGate`，区分 authoritative/provisional/model-prose，允许显式 final-eligible copy，同时拒绝无权威来源或逐字复制待复核中间结果。公共 Contract 只在任务明确声明“中间结果不是真值且必须对原始来源复核”时启用 bounded workspace hash guard；A43 对 A42 做零模型反事实，A44 在 pinned container 中确认 copy guard 与 thinking=high。该阶段尚未运行新的付费 canary，也不能声称已完成 claim-level factual verification。
+
+所有后续 DeerFlow 测试默认 `thinking=enabled`、`reasoning_effort=high`；历史归档配置保持原值，只在明确标记的 ablation 中关闭或改变强度。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

@@ -489,6 +489,47 @@ class TaskContractStateTests(unittest.TestCase):
             )
             self.assertNotIn("non_vacuous_collection_paths", shape.parameters)
 
+    def test_public_revalidation_warning_derives_provisional_copy_guard(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "grounded-artifact",
+            """The existing `analysis/results.json` and `drafts/audit.md` are only starting
+points, not truth. Verify them against the raw source at
+http://127.0.0.1:4500/api/data before writing outputs/audit.json.
+
+```json
+{"items": [{"id": "sample"}]}
+```
+""",
+        )
+
+        grounding = next(
+            item
+            for item in contract.criteria
+            if str(item.parameters.get("subject") or "").startswith("artifact.grounding:")
+        )
+        self.assertEqual(grounding.depends_on, ("artifact:outputs-audit-json",))
+        self.assertEqual(
+            grounding.parameters["provisional_source_paths"],
+            ["workspace/analysis/results.json", "workspace/drafts/audit.md"],
+        )
+        self.assertTrue(grounding.parameters["forbid_exact_copy"])
+        self.assertTrue(grounding.parameters["scan_public_workspace"])
+        encoded = json.dumps(grounding.parameters)
+        self.assertNotIn("sample", encoded)
+
+    def test_copy_or_conversion_request_without_revalidation_warning_has_no_copy_guard(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "copy-artifact",
+            "Copy `input/result.json` to outputs/result.json without changing it.",
+        )
+
+        self.assertFalse(
+            any(
+                str(item.parameters.get("subject") or "").startswith("artifact.grounding:")
+                for item in contract.criteria
+            )
+        )
+
     def test_json_shape_contract_skips_ambiguous_or_missing_examples(self) -> None:
         no_example = RuleBasedTaskContractBuilder().build(
             "no-example",

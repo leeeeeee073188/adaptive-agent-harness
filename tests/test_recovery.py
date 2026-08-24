@@ -95,6 +95,20 @@ class TaskRecoveryTests(unittest.TestCase):
         )
         self.assertNotIn(TaskRecoveryAction.WRITE_PARTIAL, decision.actions)
 
+    def test_synthesis_lineage_gap_validates_and_replans_without_rewriting_placeholder(self) -> None:
+        decision = RuleBasedTaskRecoveryPolicy().decide(
+            TaskFailureContext(
+                TaskFailureCategory.SYNTHESIS_LINEAGE_GAP,
+                (TaskFailureCategory.PREMATURE_FINISH,),
+            )
+        )
+
+        self.assertEqual(
+            decision.actions,
+            (TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.REPLAN),
+        )
+        self.assertNotIn(TaskRecoveryAction.WRITE_PARTIAL, decision.actions)
+
     def test_executor_applies_control_state_and_directives(self) -> None:
         execution = RuleBasedTaskRecoveryExecutor().execute(
             RuleBasedTaskRecoveryPolicy().decide(

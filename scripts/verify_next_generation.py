@@ -35,6 +35,7 @@ from adaptive_harness.task_contract import CriterionKind, RuleBasedTaskContractB
 
 CORE_TEST_MODULES: tuple[str, ...] = (
     "tests.test_task_state",
+    "tests.test_source_grounding",
     "tests.test_action_ledger",
     "tests.test_evidence_workspace",
     "tests.test_context",
@@ -149,11 +150,14 @@ def run_gate(
             blockers.append("contract missing public source-access criteria")
         if not contract_report["artifact_non_vacuity_constraint_present"]:
             blockers.append("contract missing public artifact non-vacuity constraint")
+        if not contract_report["artifact_grounding_criterion_present"]:
+            blockers.append("contract missing public provisional-copy grounding criterion")
     else:
         report["contract"] = {
             "artifact_shape_criterion_present": False,
             "source_access_criteria_present": False,
             "artifact_non_vacuity_constraint_present": False,
+            "artifact_grounding_criterion_present": False,
             "criterion_count": 0,
         }
 
@@ -173,6 +177,8 @@ def run_gate(
         report["historical_artifact"] = artifact_report
         if not artifact_report["rejected"]:
             blockers.append("historical artifact was not rejected by public shape diagnostics")
+        if not artifact_report["grounding_rejected"]:
+            blockers.append("historical provisional copy was not rejected by grounding diagnostics")
     else:
         report.setdefault(
             "context_replay",
@@ -188,7 +194,12 @@ def run_gate(
         )
         report.setdefault(
             "historical_artifact",
-            {"rejected": False, "diagnostic_count": 0, "diagnostic_types": []},
+            {
+                "rejected": False,
+                "grounding_rejected": False,
+                "diagnostic_count": 0,
+                "diagnostic_types": [],
+            },
         )
 
     leakage = _core_leakage_report(core_root)
@@ -382,6 +393,12 @@ def _contract_report(contract: TaskContract) -> dict[str, Any]:
         and str(item.parameters.get("subject") or "").startswith("source.access")
     ]
     artifacts = [item for item in contract.criteria if item.kind is CriterionKind.ARTIFACT_EXISTS]
+    grounding = [
+        item
+        for item in contract.criteria
+        if item.kind is CriterionKind.OBSERVATION_EQUALS
+        and str(item.parameters.get("subject") or "").startswith("artifact.grounding:")
+    ]
     return {
         "criterion_count": len(contract.criteria),
         "artifact_criterion_count": len(artifacts),
@@ -393,6 +410,10 @@ def _contract_report(contract: TaskContract) -> dict[str, Any]:
         ),
         "non_vacuous_collection_path_count": sum(
             len(item.parameters.get("non_vacuous_collection_paths") or ()) for item in shape
+        ),
+        "artifact_grounding_criterion_present": bool(grounding),
+        "provisional_source_path_count": sum(
+            len(item.parameters.get("provisional_source_paths") or ()) for item in grounding
         ),
     }
 
@@ -420,17 +441,26 @@ def _historical_artifact_report(historical_run: Path, contract: TaskContract) ->
     diagnostic_count = 0
     shape_checked = False
     rejected = False
+    grounding_checked = False
+    grounding_rejected = False
     for evidence in provider.observe(contract, summary, turn=0):
-        if not str(evidence.subject).startswith("artifact.json_shape:"):
+        subject = str(evidence.subject)
+        if not subject.startswith(("artifact.json_shape:", "artifact.grounding:")):
             continue
-        shape_checked = True
+        shape_checked = shape_checked or subject.startswith("artifact.json_shape:")
+        grounding_checked = grounding_checked or subject.startswith("artifact.grounding:")
         diagnostics = evidence.metadata.get("diagnostics") or []
         diagnostic_count += len(diagnostics)
         diagnostic_types.update(_diagnostic_type(str(item)) for item in diagnostics)
-        rejected = rejected or not bool(evidence.value)
+        if subject.startswith("artifact.json_shape:"):
+            rejected = rejected or not bool(evidence.value)
+        else:
+            grounding_rejected = grounding_rejected or not bool(evidence.value)
     return {
         "shape_checked": shape_checked,
         "rejected": rejected,
+        "grounding_checked": grounding_checked,
+        "grounding_rejected": grounding_rejected,
         "diagnostic_count": diagnostic_count,
         "diagnostic_types": sorted(diagnostic_types),
     }
@@ -449,6 +479,8 @@ def _diagnostic_type(diagnostic: str) -> str:
         return "artifact_missing"
     if diagnostic.startswith("all completeness-scoped collections are empty"):
         return "all_collections_empty"
+    if diagnostic.startswith("artifact exactly copies provisional source"):
+        return "exact_provisional_copy"
     return "other"
 
 

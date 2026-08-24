@@ -63,6 +63,17 @@ from adaptive_harness.resource_guardrail import (
 )
 from adaptive_harness.runtime import AgentDriver, AgentDriverRuntimeAdapter, RunResult
 from adaptive_harness.runtime_contract import RuntimeAdapter, RuntimeRequest, RuntimeResult
+from adaptive_harness.source_grounding import (
+    ArtifactDerivation,
+    ClaimAtom,
+    DerivationKind,
+    GroundingDecision,
+    GroundingRequirements,
+    LineageGraph,
+    SourceGroundingGate,
+    SourceHandle,
+    SourceRole,
+)
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder, TaskContract
 from adaptive_harness.task_state import (
     EvidenceCompletionGate,
@@ -75,14 +86,17 @@ from adaptive_harness.tool_reliability import ToolReliabilityConfig
 __all__ = [
     "AgentDriver",
     "AgentDriverRuntimeAdapter",
+    "ArtifactDerivation",
     "Bundle",
     "ContextBudget",
+    "ClaimAtom",
     "DEFAULT_POLICY_PROFILE",
     "ConstrainedModelDistiller",
     "DevelopmentRollout",
     "DeterministicFakeDistiller",
     "DistillerConfig",
     "DistillerSchemaError",
+    "DerivationKind",
     "EvidenceCompletionGate",
     "EvidenceExcerpt",
     "EvidenceResource",
@@ -97,8 +111,11 @@ __all__ = [
     "ExperienceStatus",
     "ExperienceStore",
     "GuardrailObservation",
+    "GroundingDecision",
+    "GroundingRequirements",
     "Kernel",
     "KernelPolicySession",
+    "LineageGraph",
     "Plugin",
     "PluginRegistry",
     "Phase",
@@ -127,6 +144,9 @@ __all__ = [
     "RuntimeResult",
     "PolicySession",
     "ServiceKey",
+    "SourceGroundingGate",
+    "SourceHandle",
+    "SourceRole",
     "ShadowEvaluation",
     "TaskContract",
     "TaskAwareContextManager",

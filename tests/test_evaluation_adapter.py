@@ -147,6 +147,7 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "public_source_materializer_wired": True,
                 "realreplica_batch_thinking_effort_wired": True,
                 "public_non_vacuity_gate_enforced": True,
+                "provisional_copy_guard_enforced": True,
                 "runtime_limit_response_rejected": True,
                 "textual_tool_errors_fail_closed": True,
                 "ledger_persisted": True,

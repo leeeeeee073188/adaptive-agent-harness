@@ -20,10 +20,81 @@ from adaptive_harness.recovery import (
     TaskRecoveryAction,
 )
 from adaptive_harness.resource_guardrail import ResourceGuardrail
-from adaptive_harness.task_state import CriterionStatus, EvidenceCompletionGate, TaskStateProjector
+from adaptive_harness.task_state import (
+    CriterionStatus,
+    Evidence,
+    EvidenceCompletionGate,
+    EvidenceKind,
+    EvidenceSource,
+    TaskEventWriter,
+    TaskStateProjector,
+)
 
 
 class PolicySessionTests(unittest.TestCase):
+    def test_provisional_copy_routes_to_synthesis_lineage_recovery(self) -> None:
+        ledger = SessionLedger("policy-grounding-copy")
+        session = KernelPolicySession(
+            completion_gate=EvidenceCompletionGate(),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+        )
+        contract = session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt=(
+                "`workspace/results.json` is a draft, not truth. Re-check it against raw "
+                "records before writing outputs/report.json."
+            ),
+            public_schema=None,
+        )
+        grounding = next(
+            item
+            for item in contract.criteria
+            if str(item.parameters.get("subject") or "").startswith("artifact.grounding:")
+        )
+        writer = TaskEventWriter(ledger)
+        writer.add_evidence(
+            Evidence(
+                "artifact",
+                EvidenceKind.ARTIFACT,
+                "outputs/report.json",
+                {"exists": True, "sha256": "a" * 64},
+                EvidenceSource.ARTIFACT_INSPECTION,
+            )
+        )
+        writer.add_evidence(
+            Evidence(
+                "grounding",
+                EvidenceKind.OBSERVATION,
+                str(grounding.parameters["subject"]),
+                False,
+                EvidenceSource.ARTIFACT_INSPECTION,
+                {
+                    "diagnostics": [
+                        "artifact exactly copies provisional source requiring validation: "
+                        "workspace/results.json"
+                    ]
+                },
+            )
+        )
+
+        result, feedback, recovery = session.check_completion(ledger)
+
+        self.assertFalse(result.passed)
+        self.assertIn("exactly copies provisional source", feedback or "")
+        self.assertIsNotNone(recovery)
+        assert recovery is not None
+        self.assertEqual(
+            recovery.actions,
+            (TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.REPLAN),
+        )
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(
+            state.recoveries[-1].primary,
+            TaskFailureCategory.SYNTHESIS_LINEAGE_GAP,
+        )
+
     def test_response_policy_rejects_runtime_limit_text_as_completion(self) -> None:
         policy = AcceptFinalCompletion()
 

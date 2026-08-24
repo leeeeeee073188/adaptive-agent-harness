@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Protocol
@@ -468,6 +468,13 @@ class RuleBasedContractChecker:
                 reason = f"Expected public source access: {resource}, observed {latest.value!r}"
             else:
                 reason = f"Expected {subject}={expected!r}, observed {latest.value!r}"
+                diagnostics = latest.metadata.get("diagnostics")
+                if isinstance(diagnostics, Sequence) and not isinstance(
+                    diagnostics, (str, bytes)
+                ):
+                    bounded = [str(item)[:240] for item in diagnostics[:3] if str(item)]
+                    if bounded:
+                        reason = f"{reason}; diagnostics: {'; '.join(bounded)}"
             return CriterionAssessment(criterion.id, status, reason, (latest.id,))
         raise AssertionError(f"unhandled criterion kind: {criterion.kind}")
 

@@ -57,6 +57,8 @@ REQUIRED = tuple(
         (40, "v3-5-thinking-high-gate"),
         (41, "v3-5-thinking-high-container"),
         (42, "v3-5-thinking-high-live"),
+        (43, "source-grounding-gate"),
+        (44, "source-grounding-container"),
     )
 )
 OPTIONAL = (
@@ -95,6 +97,10 @@ OPTIONAL = (
     "a41-v3-5-thinking-high-container/readiness.json",
     "a42-v3-5-thinking-high-live/pair.json",
     "a42-v3-5-thinking-high-live/diagnosis.json",
+    "a44-source-grounding-container/container-wiring.json",
+    "a44-source-grounding-container/review.json",
+    "a44-source-grounding-container/verification.json",
+    "a44-source-grounding-container/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -180,6 +186,9 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_5_wiring = documents.get("a41-v3-5-thinking-high-container/container-wiring.json", {})
     v3_5_live = doc("a42-v3-5-thinking-high-live/summary.json") if not missing else {}
     v3_5_diagnosis = documents.get("a42-v3-5-thinking-high-live/diagnosis.json", {})
+    grounding_gate = doc("a43-source-grounding-gate/summary.json") if not missing else {}
+    grounding_conformance = doc("a44-source-grounding-container/summary.json") if not missing else {}
+    grounding_wiring = documents.get("a44-source-grounding-container/container-wiring.json", {})
     selected_live_row = next(
         (
             row
@@ -580,6 +589,38 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             ),
             None,
         ),
+        "source_grounding_gate_passed": grounding_gate.get("passed"),
+        "source_grounding_single_canary_allowed": grounding_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "source_grounding_paid_expansion_allowed": grounding_gate.get(
+            "paid_expansion_allowed"
+        ),
+        "source_grounding_contract_present": (
+            grounding_gate.get("contract") or {}
+        ).get("artifact_grounding_criterion_present"),
+        "source_grounding_historical_copy_rejected": (
+            grounding_gate.get("historical_artifact") or {}
+        ).get("grounding_rejected"),
+        "source_grounding_candidate_variant": (
+            (grounding_conformance.get("profiles") or {}).get("candidate") or {}
+        ).get("name"),
+        "source_grounding_paid_canary_allowed": (
+            grounding_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "source_grounding_source_hash_matches": bool(
+            grounding_gate.get("adaptive_source_sha256")
+        )
+        and grounding_gate.get("adaptive_source_sha256")
+        == grounding_wiring.get("adaptive_source_sha256"),
+        "source_grounding_profile_fingerprint_matches": bool(
+            grounding_gate.get("executable_policy_profile_fingerprint")
+        )
+        and grounding_gate.get("executable_policy_profile_fingerprint")
+        == grounding_wiring.get("executable_policy_profile_fingerprint"),
+        "source_grounding_container_copy_guard": (
+            grounding_wiring.get("checks") or {}
+        ).get("provisional_copy_guard_enforced"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -787,6 +828,22 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             == "adaptive_harness_runtime_evolution_v2_6"
             and claims["v3_5_live_paid_expansion_allowed"] is False
         ),
+        "source_grounding_zero_model_gate_cleared": claims[
+            "source_grounding_gate_passed"
+        ]
+        is True
+        and claims["source_grounding_single_canary_allowed"] is True
+        and claims["source_grounding_paid_expansion_allowed"] is False
+        and claims["source_grounding_contract_present"] is True
+        and claims["source_grounding_historical_copy_rejected"] is True,
+        "source_grounding_container_gate_cleared": claims[
+            "source_grounding_candidate_variant"
+        ]
+        == "adaptive_harness_source_grounding_v3_6"
+        and claims["source_grounding_paid_canary_allowed"] is True
+        and claims["source_grounding_source_hash_matches"] is True
+        and claims["source_grounding_profile_fingerprint_matches"] is True
+        and claims["source_grounding_container_copy_guard"] is True,
     }
     return {
         "schema_version": 1,
@@ -830,7 +887,9 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "v3.5 at thinking=enabled, reasoning_effort=high for one same-task canary only. A42 records "
             "that the lifecycle error disappeared and quality returned to 2/5, but the artifact copied a "
             "known public draft result, Token use reached 765,768, and v2.6 remained the selected Shadow. "
-            "Transfer, Held-out, and further task expansion remain disabled."
+            "A43/A44 add a hash-only claim/source lineage core and prove that the A42 public intermediate "
+            "copy is rejected in replay and in the pinned container. This is a copy guard, not full factual "
+            "verification. Transfer, Held-out, and further task expansion remain disabled."
         ),
     }
 

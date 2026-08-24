@@ -179,6 +179,19 @@ class EvidenceIndexTests(unittest.TestCase):
             ]
         )
         self.assertFalse(index["claims"]["v3_5_live_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["source_grounding_gate_passed"])
+        self.assertTrue(index["claims"]["source_grounding_single_canary_allowed"])
+        self.assertFalse(index["claims"]["source_grounding_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["source_grounding_contract_present"])
+        self.assertTrue(index["claims"]["source_grounding_historical_copy_rejected"])
+        self.assertEqual(
+            index["claims"]["source_grounding_candidate_variant"],
+            "adaptive_harness_source_grounding_v3_6",
+        )
+        self.assertTrue(index["claims"]["source_grounding_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["source_grounding_source_hash_matches"])
+        self.assertTrue(index["claims"]["source_grounding_profile_fingerprint_matches"])
+        self.assertTrue(index["claims"]["source_grounding_container_copy_guard"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

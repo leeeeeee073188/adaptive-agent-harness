@@ -158,6 +158,8 @@ A39 离线定位并修复 mutation epoch：真实 ToolCallRequest 的 runtime co
 
 v3.5 的真实结果记录在 `evidence/a42-v3-5-thinking-high-live/`：mutation epoch 回退已消失，Capacity 回到 0.4（2/5），但 Token 765,768、Tool 62、耗时 298 秒；产物 SHA 与公开 `workspace/analysis/results.json` 相同，说明模型最终复制了任务明确要求复核而非照抄的中间结果。相同质量下 v2.6 仅用 236,570 Token 和 75.2 秒，因此 v3.5 保持 Shadow 并停止扩跑。
 
+v3.6 引入 source-grounded synthesis 基础层与 provisional-copy guard。核心 LineageGraph 只保存公共 source/claim/content hash 与 derivation kind；Runtime 仅在公共任务同时出现“provisional/not truth”和“对 raw source 复核”时派生 grounding criterion，并以 512 文件、单文件 2 MiB 上限扫描公共 workspace。A43 使用 A42 公共产物证明 exact copy 会被拒绝并返回可操作 diagnostics；A44 在 pinned container 中验证同一行为。下一阶段仍需加入 authoritative source coverage 与 claim-level support，copy guard 不能替代事实 verifier。
+
 该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
 
 ## 测试规格摘要

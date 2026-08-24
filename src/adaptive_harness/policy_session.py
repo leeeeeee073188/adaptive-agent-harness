@@ -628,6 +628,7 @@ class KernelPolicySession:
         )
         failed_kinds: set[CriterionKind] = set()
         has_source_evidence_gap = False
+        has_synthesis_lineage_gap = False
         for criterion in unmet_required_criteria:
             failed_kinds.add(criterion.kind)
             if (
@@ -635,9 +636,18 @@ class KernelPolicySession:
                 and str(criterion.parameters.get("subject") or "").startswith("source.access:")
             ):
                 has_source_evidence_gap = True
+            if (
+                criterion.kind is CriterionKind.OBSERVATION_EQUALS
+                and str(criterion.parameters.get("subject") or "").startswith(
+                    "artifact.grounding:"
+                )
+            ):
+                has_synthesis_lineage_gap = True
         primary = (
             TaskFailureCategory.EVIDENCE_GAP
             if has_source_evidence_gap
+            else TaskFailureCategory.SYNTHESIS_LINEAGE_GAP
+            if has_synthesis_lineage_gap
             else TaskFailureCategory.ARTIFACT_ERROR
             if CriterionKind.ARTIFACT_EXISTS in failed_kinds
             else TaskFailureCategory.CONSTRAINT_MISS

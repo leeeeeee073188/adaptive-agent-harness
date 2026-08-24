@@ -1,0 +1,24 @@
+{
+  "scope": "v3.6 source-grounding pre-canary code review",
+  "verdict": "approve_single_development_canary",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "resolved_findings": [
+    "Oversized or unreadable provisional sources now fail closed.",
+    "Workspace scanning stops iteratively at 512 eligible files and truncation fails closed."
+  ],
+  "verified": {
+    "hash_only_lineage_core": true,
+    "provisional_copy_guard": true,
+    "legitimate_copy_without_revalidation_warning": true,
+    "bounded_workspace_scan": true,
+    "grounding_diagnostics_model_visible": true,
+    "thinking_request_effort": "high",
+    "model_calls_in_gate": 0
+  },
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false
+}
