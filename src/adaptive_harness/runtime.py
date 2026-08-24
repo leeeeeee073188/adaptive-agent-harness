@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from adaptive_harness.action_ledger import ToolActionLedger
+from adaptive_harness.action_ledger import ToolActionLedger, classify_tool_action
 from adaptive_harness.capabilities import (
     CompletionDecision,
     ModelRequest,
@@ -20,7 +20,7 @@ from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.lifecycle import AGENT_PRE_STEP, AGENT_REQUEST, AGENT_TURN_STOPPING, RUN_STARTED, RUN_STOPPED
 from adaptive_harness.policy_session import KernelPolicySession
 from adaptive_harness.progress import RuleBasedProgressDetector
-from adaptive_harness.resource_guardrail import ResourceGuardrail
+from adaptive_harness.resource_guardrail import NonMutatingTurnBudget, ResourceGuardrail
 from adaptive_harness.runtime_contract import (
     RuntimeRequest,
     RuntimeResult,
@@ -88,6 +88,7 @@ class AgentDriver:
             allow_unverified_completion=self.allow_unverified_completion,
         )
         action_ledger = ToolActionLedger()
+        turn_budget = NonMutatingTurnBudget(20)
         environment = self.kernel.services.get(ENVIRONMENT)
         model = self.kernel.services.get(MODEL)
         tool_runtime = self.kernel.services.get(TOOL_RUNTIME)
@@ -170,18 +171,43 @@ class AgentDriver:
                             step=step,
                         )
                         task_writer = TaskEventWriter(ledger)
-                        blocked = session.is_action_blocked(call)
-                        if blocked:
-                            session.record_blocked_action(
-                                ledger,
-                                call,
-                                turn=1,
-                                step=step,
-                            )
+                        semantics = classify_tool_action(call.name, call.arguments)
+                        budget_blocked = not turn_budget.admit(
+                            "agent-turn-1",
+                            mutating=semantics.mutating,
+                        )
+                        scope_blocked = session.is_action_blocked(call)
+                        if budget_blocked or scope_blocked:
+                            if budget_blocked:
+                                ledger.append(
+                                    "resource/turn-budget-blocked",
+                                    {
+                                        "call_id": call.id,
+                                        "maximum_nonmutating_actions": 20,
+                                    },
+                                    turn=1,
+                                    step=step,
+                                )
+                            if scope_blocked:
+                                session.record_blocked_action(
+                                    ledger,
+                                    call,
+                                    turn=1,
+                                    step=step,
+                                )
                             result = ToolResult(
                                 call.id,
-                                "Harness blocked this repeated no-progress Action Scope.",
-                                error_type="HARNESS_SCOPE_BLOCKED",
+                                (
+                                    "Harness ended this turn after the non-mutating action budget "
+                                    "was exhausted."
+                                    if budget_blocked
+                                    else "Harness blocked this repeated no-progress Action Scope."
+                                ),
+                                error_type=(
+                                    "HARNESS_TURN_BUDGET"
+                                    if budget_blocked
+                                    else "HARNESS_SCOPE_BLOCKED"
+                                ),
                                 metadata={"executed": False},
                             )
                             attempts = ()

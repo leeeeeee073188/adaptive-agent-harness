@@ -25,6 +25,7 @@ from adaptive_harness.action_ledger import (
 )
 from adaptive_harness.capabilities import ToolCall, ToolResult
 from adaptive_harness.policy_session import current_policy_session
+from adaptive_harness.resource_guardrail import NonMutatingTurnBudget
 
 _MAX_RUN_LEDGERS = 128
 _ADVICE = (
@@ -50,6 +51,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         )
         if self._max_nonmutating_actions < 1:
             raise ValueError("ADAPTIVE_MAX_NONMUTATING_ACTIONS_PER_TURN must be positive")
+        self._turn_budget = NonMutatingTurnBudget(self._max_nonmutating_actions)
         self._ledgers: OrderedDict[str, ToolActionLedger] = OrderedDict()
 
     def _ledger(self, request: ToolCallRequest) -> ToolActionLedger:
@@ -126,13 +128,10 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             dict(raw.get("args") or {}),
         )
         semantics = classify_tool_action(call.name, call.arguments)
-        records = self._ledger(request).records
-        mutation_epoch = records[-1].mutation_epoch if records else 0
-        nonmutating_count = sum(
-            record.mutation_epoch == mutation_epoch and not record.semantics.mutating
-            for record in records
-        )
-        if not semantics.mutating and nonmutating_count >= self._max_nonmutating_actions:
+        if not self._turn_budget.admit(
+            _run_key(request),
+            mutating=semantics.mutating,
+        ):
             return Command(
                 update={
                     "messages": [

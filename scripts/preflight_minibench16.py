@@ -36,7 +36,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_runtime_evolution_v2_2",
+        "adaptive_harness_runtime_evolution_v2_3",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",

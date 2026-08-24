@@ -50,6 +50,7 @@ from adaptive_harness.recovery import (
 from adaptive_harness.recovery_practice import RecoveryPracticeGate
 from adaptive_harness.resource_guardrail import (
     GuardrailObservation,
+    NonMutatingTurnBudget,
     NoProgressDisposition,
     ResourceGuardrail,
 )
@@ -93,6 +94,7 @@ __all__ = [
     "Profile",
     "PublicOutcome",
     "NoProgressDisposition",
+    "NonMutatingTurnBudget",
     "OfflineExperienceEvolution",
     "RuleBasedTaskRecoveryPolicy",
     "RolloutPartition",

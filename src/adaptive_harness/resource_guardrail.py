@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from threading import Lock
 
 
 class NoProgressDisposition(StrEnum):
@@ -107,3 +108,28 @@ class ResourceGuardrail:
             reason = "Third no-progress strategy blocks this action scope until strategy or state changes."
             self._blocked_signatures.add(signature)
         return NoProgressDecision(disposition, count, reason)
+
+
+class NonMutatingTurnBudget:
+    """Thread-safe admission budget for concurrent non-mutating tool calls."""
+
+    def __init__(self, maximum: int = 20) -> None:
+        if maximum < 1:
+            raise ValueError("non-mutating turn budget must be positive")
+        self.maximum = maximum
+        self._counts: dict[str, int] = {}
+        self._lock = Lock()
+
+    def admit(self, turn_key: str, *, mutating: bool) -> bool:
+        if mutating:
+            return True
+        with self._lock:
+            count = self._counts.get(turn_key, 0)
+            if count >= self.maximum:
+                return False
+            self._counts[turn_key] = count + 1
+            return True
+
+    def count(self, turn_key: str) -> int:
+        with self._lock:
+            return self._counts.get(turn_key, 0)

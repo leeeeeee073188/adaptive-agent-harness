@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 
 from adaptive_harness.resource_guardrail import (
     GuardrailObservation,
+    NonMutatingTurnBudget,
     NoProgressDisposition,
     ResourceGuardrail,
 )
@@ -22,6 +24,22 @@ def _observation(**overrides: object) -> GuardrailObservation:
 
 
 class ResourceGuardrailTests(unittest.TestCase):
+    def test_concurrent_nonmutating_admission_never_exceeds_turn_budget(self) -> None:
+        budget = NonMutatingTurnBudget(20)
+
+        with ThreadPoolExecutor(max_workers=32) as executor:
+            admitted = list(
+                executor.map(
+                    lambda _index: budget.admit("turn-1", mutating=False),
+                    range(100),
+                )
+            )
+
+        self.assertEqual(sum(admitted), 20)
+        self.assertEqual(budget.count("turn-1"), 20)
+        self.assertTrue(budget.admit("turn-1", mutating=True))
+        self.assertEqual(budget.count("turn-1"), 20)
+
     def test_no_progress_escalates_record_replan_then_block_scope(self) -> None:
         guardrail = ResourceGuardrail()
 
