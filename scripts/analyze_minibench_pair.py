@@ -20,7 +20,14 @@ def main() -> int:
     parser.add_argument("candidate_run", type=Path)
     parser.add_argument("task_id")
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--max-token-increase", type=float, default=0.25)
+    parser.add_argument(
+        "--token-diagnostic-threshold",
+        "--max-token-increase",
+        dest="token_diagnostic_threshold",
+        type=float,
+        default=0.25,
+        help="report-only threshold; never rejects or stops a valid pair",
+    )
     parser.add_argument("--history-root", type=Path)
     args = parser.parse_args()
 
@@ -28,7 +35,7 @@ def main() -> int:
         args.baseline_run,
         args.candidate_run,
         args.task_id,
-        max_token_increase=args.max_token_increase,
+        token_diagnostic_threshold=args.token_diagnostic_threshold,
         history_root=args.history_root,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -42,7 +49,7 @@ def analyze_pair(
     candidate_run: Path,
     task_id: str,
     *,
-    max_token_increase: float,
+    token_diagnostic_threshold: float,
     history_root: Path | None = None,
 ) -> dict[str, Any]:
     baseline_summary = _read_json(baseline_run / "summary.json")
@@ -58,6 +65,7 @@ def analyze_pair(
     ledger = [json.loads(line) for line in ledger_path.read_text().splitlines() if line.strip()]
     completion = [event for event in ledger if event.get("type") == "completion/checked"]
     evidence = [event for event in ledger if event.get("type") == "evidence/added"]
+    resource = _resource_guardrail_summary(ledger)
     baseline_tokens = int((baseline.get("usage") or {}).get("total_tokens") or 0)
     candidate_tokens = int((candidate.get("usage") or {}).get("total_tokens") or 0)
     token_delta = candidate_tokens - baseline_tokens
@@ -102,25 +110,25 @@ def analyze_pair(
         "completion_evidence_passed": bool(completion)
         and completion[-1].get("payload", {}).get("passed") is True
         and bool(evidence),
-        "token_cost_within_limit": token_increase is not None and token_increase <= max_token_increase,
-        "architecture_token_overhead_within_limit": attributable_increase is not None
-        and attributable_increase <= max_token_increase,
+        "no_uncontrolled_no_progress_loop": not resource["uncontrolled_no_progress_loop"],
     }
-    pair_valid = all(
-        value
-        for key, value in gates.items()
-        if key not in {"token_cost_within_limit", "architecture_token_overhead_within_limit"}
+    pair_valid = all(gates.values())
+    token_increase_over_diagnostic_threshold = bool(
+        token_increase is not None and token_increase > token_diagnostic_threshold
+    )
+    architecture_increase_over_diagnostic_threshold = bool(
+        attributable_increase is not None
+        and attributable_increase > token_diagnostic_threshold
     )
     cost_attribution_confident = bool(
-        gates["token_cost_within_limit"]
+        not token_increase_over_diagnostic_threshold
         or (not single_turn_surface_equivalent)
         or (history and history["sample_count"] >= 6)
     )
-    continue_block = (
-        pair_valid
-        and gates["architecture_token_overhead_within_limit"]
-        and cost_attribution_confident
-    )
+    # Token deltas remain visible diagnostics. Productive exploration is not
+    # rejected by a fixed growth ratio; no-progress/runaway policies are the
+    # execution guardrail and are evaluated from the ledger separately.
+    continue_block = pair_valid
     return {
         "scope": "MiniBench fresh paired canary",
         "task_id": task_id,
@@ -149,12 +157,17 @@ def analyze_pair(
         "counterfactual_projection": counterfactual,
         "historical_vanilla_distribution": history,
         "output_comparison": output_comparison,
+        "resource_guardrail": resource,
         "cost": {
             "token_delta": token_delta,
             "token_increase_fraction": token_increase,
-            "max_token_increase_fraction": max_token_increase,
+            "token_diagnostic_threshold_fraction": token_diagnostic_threshold,
+            "token_increase_over_diagnostic_threshold": token_increase_over_diagnostic_threshold,
             "attributable_architecture_token_delta": attributable_token_delta,
             "attributable_architecture_increase_fraction": attributable_increase,
+            "architecture_increase_over_diagnostic_threshold": (
+                architecture_increase_over_diagnostic_threshold
+            ),
             "attribution": (
                 "provider_or_trajectory_variance"
                 if single_turn_surface_equivalent
@@ -172,10 +185,46 @@ def analyze_pair(
         "decision": (
             "continue Block 1"
             if continue_block
-            else "stop before remaining Block 1 tasks and quantify provider variance"
+            else "stop before remaining Block 1 tasks because a quality or integrity gate failed"
         ),
         "analysis_model_calls": 0,
         "analysis_new_tokens": 0,
+    }
+
+
+def _resource_guardrail_summary(ledger: list[dict[str, Any]]) -> dict[str, Any]:
+    checks = [
+        event
+        for event in ledger
+        if event.get("type") == "resource/no-progress-checked"
+    ]
+    blocked = [
+        event
+        for event in checks
+        if (event.get("payload") or {}).get("disposition") == "block_scope"
+    ]
+    uncontrolled = False
+    for blocked_event in blocked:
+        blocked_index = ledger.index(blocked_event)
+        payload = blocked_event.get("payload") or {}
+        signature = (payload.get("scope_key"), payload.get("strategy_fingerprint"))
+        for later in ledger[blocked_index + 1 :]:
+            if later.get("type") != "tool/action-audited":
+                continue
+            record = (later.get("payload") or {}).get("record") or {}
+            if (record.get("scope_key"), record.get("argument_fingerprint")) == signature:
+                uncontrolled = True
+                break
+        if uncontrolled:
+            break
+    return {
+        "check_count": len(checks),
+        "replan_count": sum(
+            (event.get("payload") or {}).get("disposition") == "replan"
+            for event in checks
+        ),
+        "block_scope_count": len(blocked),
+        "uncontrolled_no_progress_loop": uncontrolled,
     }
 
 

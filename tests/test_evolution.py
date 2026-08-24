@@ -84,13 +84,12 @@ class EvolutionTests(unittest.TestCase):
         self.assertEqual(replayed.versions["recovery-v2"].status, VersionStatus.ROLLED_BACK)
         self.assertEqual(replayed.versions["baseline-v1"].status, VersionStatus.PROMOTED)
 
-    def test_integrity_leakage_regression_quality_and_cost_fail_closed(self) -> None:
+    def test_integrity_leakage_regression_and_quality_fail_closed(self) -> None:
         cases = (
             {"integrity_passed": False},
             {"leakage_passed": False},
             {"regressions": 1},
             {"quality_delta_lower_bound": -0.01},
-            {"token_delta_ratio": 0.11},
         )
         for index, overrides in enumerate(cases):
             with self.subTest(overrides=overrides):
@@ -106,6 +105,43 @@ class EvolutionTests(unittest.TestCase):
                     VersionStatus.REJECTED,
                 )
                 self.assertEqual(manager.state.active_version_id, "baseline-v1")
+
+    def test_high_token_delta_is_diagnostic_not_a_promotion_hard_failure(self) -> None:
+        manager = EvolutionManager(SessionLedger("evolution-high-token"))
+        manager.register_baseline("baseline-v1", _profile("baseline", 1))
+        manager.create_candidate(_candidate())
+
+        decision = manager.evaluate(_evaluation(token_delta_ratio=2.0))
+
+        self.assertEqual(decision.disposition, EvolutionDisposition.PROMOTE)
+        evaluated = [
+            event for event in manager.ledger.events if event.type == "evolution/shadow-evaluated"
+        ][-1]
+        self.assertEqual(evaluated.payload["token_delta_ratio"], 2.0)
+
+    def test_missing_token_delta_does_not_make_quality_evidence_incomplete(self) -> None:
+        manager = EvolutionManager(SessionLedger("evolution-no-token"))
+        manager.register_baseline("baseline-v1", _profile("baseline", 1))
+        manager.create_candidate(_candidate())
+
+        decision = manager.evaluate(_evaluation(token_delta_ratio=None))
+
+        self.assertEqual(decision.disposition, EvolutionDisposition.PROMOTE)
+
+    def test_uncontrolled_no_progress_or_regression_rejects_candidate(self) -> None:
+        cases = (
+            {"uncontrolled_no_progress_loop": True},
+            {"no_progress_regressions": 1},
+        )
+        for index, overrides in enumerate(cases):
+            with self.subTest(overrides=overrides):
+                manager = EvolutionManager(SessionLedger(f"evolution-no-progress-{index}"))
+                manager.register_baseline("baseline-v1", _profile("baseline", 1))
+                manager.create_candidate(_candidate())
+
+                decision = manager.evaluate(_evaluation(**overrides))
+
+                self.assertEqual(decision.disposition, EvolutionDisposition.REJECT)
 
     def test_candidate_must_fork_active_profile_and_cite_evidence(self) -> None:
         manager = EvolutionManager(SessionLedger("evolution-invalid"))

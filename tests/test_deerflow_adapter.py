@@ -27,13 +27,15 @@ from adaptive_harness.integrations.realreplica_observations import (
     WorkbenchCalendarObservationProvider,
 )
 from adaptive_harness.ledger import SessionLedger
-from adaptive_harness.progress import RuleBasedProgressDetector
+from adaptive_harness.model_routes import PRIMARY_MODEL
+from adaptive_harness.progress import ProgressResult, ProgressStatus, RuleBasedProgressDetector
 from adaptive_harness.recovery import (
     RuleBasedRecoveryOutcomeEvaluator,
     RuleBasedTaskRecoveryExecutor,
     RuleBasedTaskRecoveryPolicy,
     TaskRecoveryAction,
 )
+from adaptive_harness.resource_guardrail import ResourceGuardrail
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder
 from adaptive_harness.task_state import TaskStateProjector
 
@@ -303,6 +305,41 @@ class _TurnClient:
 
 
 class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
+    def test_policy_bridge_records_and_escalates_no_progress_resource_events(self) -> None:
+        bridge = DeerFlowPolicyBridge(resource_guardrail=ResourceGuardrail())
+        ledger = SessionLedger("resource-guardrail")
+        progress = ProgressResult(
+            ProgressStatus.NO_PROGRESS,
+            (),
+            (),
+            (),
+            "before",
+            "after",
+            "no task facts changed",
+        )
+        dispositions = []
+        for turn in range(1, 4):
+            ledger.append(
+                "tool/action-audited",
+                {
+                    "record": {
+                        "scope_key": "same-scope",
+                        "argument_fingerprint": "same-strategy",
+                        "mutation_epoch": 0,
+                        "intent": "read",
+                    }
+                },
+                turn=turn,
+            )
+            dispositions.append(
+                bridge.check_resources(ledger, progress, turn=turn)[0]["disposition"]
+            )
+
+        self.assertEqual(dispositions, ["record", "replan", "block_scope"])
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(state.values["resource.no_progress_streak"], 3)
+        self.assertTrue(state.values["resource.blocked_scope"])
+
     async def test_runtime_snapshots_request_and_cleans_environment(self) -> None:
         environment = _FakeEnvironment()
         client = _FakeClient()
@@ -310,7 +347,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         request = DeerFlowRunRequest(
             message="finish task",
             thread_id="thread-1",
-            client_options={"model_name": "deepseek-v4-flash"},
+            client_options={"model_name": PRIMARY_MODEL},
             tool_schemas=[{"name": "bash", "description": "run command"}],
             context={"profile": "baseline"},
         )

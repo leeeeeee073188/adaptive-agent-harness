@@ -24,7 +24,8 @@
 
 ```mermaid
 flowchart TD
-  C[Composition Plane\nProfile / Bundle / Overlay] --> K[Plugin Kernel]
+  C[Composition Plane\nProfile / Bundle / Overlay] --> A[Executable Assembly\nPlugin Registry / Factory]
+  A --> K[Plugin Kernel]
   K --> S[Scoped Service Registry]
   S --> R[Runtime Plane\nInbox / Turn / Step Driver]
   S --> CAP[Capability Plane\nModel / Env / Toolkit / Context / Tools]
@@ -72,6 +73,19 @@ flowchart TD
 7. Task-aware Context compiles five scored layers under a Profile budget,
    preserves tool-call/result atomicity, emits content-free selection audits,
    and has an optional DeerFlow model-call adapter (implemented, Shadow only).
+8. Executable Assembly resolves every composed PluginSpec through a closed
+   registry, mounts it with Profile config, and reverses partial effects on any
+   failure. Profile fingerprints reject credential-bearing configuration.
+9. Profile Promotion and Experience Promotion are separate append-only
+   lifecycles. Structured Experiences require three Development sources and
+   two disjoint Transfer tasks before promotion; runtime retrieval is read-only.
+
+## Primary model route
+
+The active Profile uses `deepseek-v4-flash-vision-exp` as one multimodal Primary
+Model for language and image inputs. Vision-required tasks reuse the same
+provider, base URL and credential route by default. A separate vision provider
+is a legacy Runtime Adapter override, not part of the active experiment design.
 
 ## Core and integration boundary
 
@@ -96,7 +110,7 @@ Evolution is a control-plane workflow, not an online model action:
 active immutable Profile
   -> evidence-backed candidate (parent fingerprint + hypothesis)
   -> paired Shadow evaluation
-  -> integrity + leakage + sample + quality-CI + token-cost + regression gate
+  -> integrity + leakage + sample + quality-CI + stable-pass + no-progress gate
   -> Promote | Keep Shadow | Reject
   -> optional deterministic Rollback to a known non-rejected version
 ```
@@ -104,11 +118,27 @@ active immutable Profile
 Candidate creation, Shadow evaluation, promotion, rejection and rollback are
 append-only events. `EvolutionProjector` reconstructs the active version and
 all statuses from JSONL. The online driver has no method that edits a Profile;
-therefore a task trajectory cannot self-promote. Default gates require at least
-five matched pairs, a non-negative quality lower bound, no regression, at most
-10% token increase, and successful integrity/leakage checks. Missing quality or
-cost estimates keep the candidate in Shadow rather than interpreting absence
-of evidence as success.
+therefore a task trajectory cannot self-promote. Default Profile gates require
+at least five matched pairs, a non-negative quality lower bound, no Stable-pass
+Regression, and successful integrity and leakage checks. Token, tool, latency
+and visual-call costs remain recorded diagnostics; fixed token growth does not
+reject an otherwise successful Candidate. Resource enforcement is based on
+consecutive No-progress Events and runaway repetition instead.
+
+Experience evolution is independent of Profile evolution:
+
+```text
+Development Rollout groups
+  -> Candidate Experience with structured Trigger / Strategy / Progress / Stop
+  -> leakage + generalisation + exact-content deduplication
+  -> Shadow transfer validation on >=2 tasks disjoint from >=3 source tasks
+  -> Promote | Keep Shadow | Quarantine | Retire
+  -> retrieve <=3 promoted Experiences by state + failure + runtime surface
+  -> record adoption / progress / success / harm for later offline decisions
+```
+
+Source task identifiers remain provenance in the control plane and are never
+rendered into the model working set. Retrieval cannot alter lifecycle state.
 
 ## Task-aware Context
 
@@ -182,20 +212,26 @@ the policy and tool/latency/sample gates remain open.
 
 ## Evaluation stop rule
 
-A paired cell must pass integrity, quality, semantic-output, Ledger-evidence,
-and token-cost gates. The first live pair exceeded the observed-run limit
-(+65.6% tokens versus +25%), so later Block 1 cells remain stopped. Its exact
-model-visible surface, one-turn execution, and exact counterfactual replay show
-zero attributable Harness model-token overhead for that cell. Historical
-vanilla token CV is 22.4%; the stop now means “insufficient variance confidence,”
-not “proven candidate cost regression.”
+A paired cell must pass integrity, quality, semantic-output and Ledger-evidence
+gates. Token, tool-call and latency deltas are always reported, but do not form
+a fixed-ratio stop gate. The first live pair historically stopped under the
+superseded +25% token policy; its evidence remains immutable and must not be
+relabelled as a new-policy result. A new run may continue only when Ledger
+evidence shows no uncontrolled No-progress loop.
+
+MiniBench16 is a frozen, stratified subset of the official Development pool.
+It has internal roles of 8 Development, 4 Transfer Validation and 4 Held-out
+Evaluation tasks. These project roles prevent Experience leakage; they do not
+claim to replace RealReplicaBench's official Held-out split. Paid execution is
+staged by role, and a final Candidate is the only configuration allowed to use
+the internal Held-out partition.
 
 Later Context Shadows are separate Profile versions and are not merged with
 that pair. A reused historical Vanilla result is exploratory only. Context v1.1
-crossed the 10% promotion cost gate, so MiniBench expansion stopped after one
-Development task even though quality recovered. v1.2 also stops after that
-same task: one exploratory success cannot satisfy the five-sample promotion
-gate, especially with +7 tool calls and +76.8% elapsed time.
+remains rejected historical evidence because the run used the superseded cost
+policy and only one Development task. v1.2 also stays Shadow: one exploratory
+success cannot satisfy the five-sample promotion gate, especially with +7 tool
+calls, +76.8% elapsed time, and no causal policy activation.
 
 ## Capability-negotiated completion
 

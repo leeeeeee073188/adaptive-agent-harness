@@ -22,6 +22,11 @@ from adaptive_harness.recovery import (
     TaskRecoveryExecutor,
     TaskRecoveryPolicy,
 )
+from adaptive_harness.resource_guardrail import (
+    GuardrailObservation,
+    NoProgressDisposition,
+    ResourceGuardrail,
+)
 from adaptive_harness.task_contract import (
     ContractBuilder,
     CriterionKind,
@@ -266,6 +271,7 @@ class DeerFlowPolicyBridge:
         recovery_executor: TaskRecoveryExecutor | None = None,
         progress_detector: ProgressDetector | None = None,
         recovery_outcome_evaluator: RecoveryOutcomeEvaluator | None = None,
+        resource_guardrail: ResourceGuardrail | None = None,
     ) -> None:
         if max_completion_turns < 1:
             raise ValueError("max_completion_turns must be at least one")
@@ -280,6 +286,7 @@ class DeerFlowPolicyBridge:
         self.recovery_executor = recovery_executor
         self.progress_detector = progress_detector
         self.recovery_outcome_evaluator = recovery_outcome_evaluator
+        self.resource_guardrail = resource_guardrail
 
     def start(
         self,
@@ -384,6 +391,79 @@ class DeerFlowPolicyBridge:
             reason="semantic progress checked",
         )
         return result
+
+    def check_resources(
+        self,
+        ledger: SessionLedger,
+        progress: ProgressResult | None,
+        *,
+        turn: int,
+    ) -> tuple[dict[str, object], ...]:
+        if self.resource_guardrail is None:
+            return ()
+        audited = [
+            event
+            for event in ledger.events
+            if event.type == "tool/action-audited" and event.turn == turn
+        ]
+        decisions: list[dict[str, object]] = []
+        for index, event in enumerate(audited):
+            record = event.payload.get("record") or {}
+            if not isinstance(record, Mapping):
+                continue
+            intent = str(record.get("intent") or "")
+            observation = GuardrailObservation(
+                action_scope=str(record.get("scope_key") or ""),
+                strategy_fingerprint=str(record.get("argument_fingerprint") or ""),
+                mutation_epoch=int(record.get("mutation_epoch") or 0),
+                semantic_progress=bool(
+                    progress is not None
+                    and progress.status is ProgressStatus.PROGRESSED
+                    and index == len(audited) - 1
+                ),
+                post_mutation_verification=(
+                    intent in {"read", "observe", "verify"}
+                    and int(record.get("mutation_epoch") or 0) > 0
+                ),
+            )
+            decision = self.resource_guardrail.observe(observation)
+            payload: dict[str, object] = {
+                "action_event_seq": event.seq,
+                "scope_key": observation.action_scope,
+                "strategy_fingerprint": observation.strategy_fingerprint,
+                "mutation_epoch": observation.mutation_epoch,
+                **decision.to_payload(),
+            }
+            ledger.append("resource/no-progress-checked", payload, turn=turn)
+            decisions.append(payload)
+            if decision.disposition in {
+                NoProgressDisposition.REPLAN,
+                NoProgressDisposition.BLOCK_SCOPE,
+            }:
+                TaskEventWriter(ledger).classify_failure(
+                    Failure(
+                        id=f"resource:t{turn}:a{event.seq}",
+                        error_type=(
+                            "LOOP"
+                            if decision.disposition is NoProgressDisposition.BLOCK_SCOPE
+                            else "NO_PROGRESS"
+                        ),
+                        message=decision.reason,
+                        source=EvidenceSource.RUNTIME_OBSERVATION,
+                        metadata={"scope_key": observation.action_scope},
+                    )
+                )
+        if decisions:
+            maximum = max(int(item["consecutive_no_progress"]) for item in decisions)
+            blocked = any(item["disposition"] == "block_scope" for item in decisions)
+            TaskEventWriter(ledger).update_state(
+                {
+                    "resource.no_progress_streak": maximum,
+                    "resource.blocked_scope": blocked,
+                },
+                reason="resource guardrail evaluated",
+            )
+        return tuple(decisions)
 
     def check_completion(
         self,
@@ -502,9 +582,13 @@ class DeerFlowPolicyBridge:
             secondary.append(TaskFailureCategory.NO_PROGRESS)
         elif progress_status == ProgressStatus.REGRESSED.value:
             secondary.append(TaskFailureCategory.STATE_INCONSISTENCY)
+        repeated_action_count = int(state.values.get("resource.no_progress_streak") or 0)
+        if state.values.get("resource.blocked_scope"):
+            secondary.append(TaskFailureCategory.LOOP)
         return TaskFailureContext(
             primary,
             tuple(secondary),
+            repeated_action_count=repeated_action_count,
             attempts=attempts,
         )
 

@@ -1,6 +1,7 @@
 """Adaptive Agent Harness public API."""
 
 from adaptive_harness.action_ledger import ToolActionLedger, VerificationBudgetConfig
+from adaptive_harness.assembly import PluginRegistry, assemble_profile
 from adaptive_harness.config import Bundle, PluginSpec, Profile
 from adaptive_harness.context import ContextBudget, TaskAwareContextManager
 from adaptive_harness.evolution import (
@@ -10,6 +11,15 @@ from adaptive_harness.evolution import (
     EvolutionManager,
     ShadowEvaluation,
 )
+from adaptive_harness.experience_store import (
+    Experience,
+    ExperienceStatus,
+    ExperienceStore,
+    RetrievalOutcome,
+    RetrievalQuery,
+    TaskStateExperienceRetriever,
+    TransferValidation,
+)
 from adaptive_harness.kernel import Kernel, Plugin, ServiceKey
 from adaptive_harness.progress import RuleBasedProgressDetector
 from adaptive_harness.recovery import (
@@ -18,6 +28,11 @@ from adaptive_harness.recovery import (
     RuleBasedTaskRecoveryPolicy,
 )
 from adaptive_harness.recovery_practice import RecoveryPracticeGate
+from adaptive_harness.resource_guardrail import (
+    GuardrailObservation,
+    NoProgressDisposition,
+    ResourceGuardrail,
+)
 from adaptive_harness.runtime import AgentDriver, RunResult
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder, TaskContract
 from adaptive_harness.task_state import (
@@ -37,13 +52,22 @@ __all__ = [
     "EvolutionGate",
     "EvolutionGateConfig",
     "EvolutionManager",
+    "Experience",
+    "ExperienceStatus",
+    "ExperienceStore",
+    "GuardrailObservation",
     "Kernel",
     "Plugin",
+    "PluginRegistry",
     "PluginSpec",
     "Profile",
+    "NoProgressDisposition",
     "RuleBasedTaskRecoveryPolicy",
+    "RetrievalQuery",
+    "RetrievalOutcome",
     "RuleBasedTaskRecoveryExecutor",
     "RecoveryPracticeGate",
+    "ResourceGuardrail",
     "RuleBasedContractChecker",
     "RuleBasedTaskContractBuilder",
     "RuleBasedProgressDetector",
@@ -55,7 +79,10 @@ __all__ = [
     "TaskAwareContextManager",
     "ToolActionLedger",
     "TaskState",
+    "TaskStateExperienceRetriever",
     "TaskStateProjector",
     "ToolReliabilityConfig",
+    "TransferValidation",
     "VerificationBudgetConfig",
+    "assemble_profile",
 ]

@@ -97,11 +97,17 @@ class ShadowEvaluation:
     integrity_passed: bool
     leakage_passed: bool
     evaluation_ref: str
+    no_progress_regressions: int = 0
+    uncontrolled_no_progress_loop: bool = False
 
     def validate(self) -> None:
         if not self.version_id.strip() or not self.evaluation_ref.strip():
             raise ValueError("evaluation version_id and evaluation_ref must be non-empty")
-        if self.matched_samples < 0 or self.regressions < 0:
+        if (
+            self.matched_samples < 0
+            or self.regressions < 0
+            or self.no_progress_regressions < 0
+        ):
             raise ValueError("evaluation counts must be non-negative")
 
     def to_payload(self) -> dict[str, Any]:
@@ -115,6 +121,8 @@ class ShadowEvaluation:
             "integrity_passed": self.integrity_passed,
             "leakage_passed": self.leakage_passed,
             "evaluation_ref": self.evaluation_ref,
+            "no_progress_regressions": self.no_progress_regressions,
+            "uncontrolled_no_progress_loop": self.uncontrolled_no_progress_loop,
         }
 
 
@@ -122,14 +130,13 @@ class ShadowEvaluation:
 class EvolutionGateConfig:
     min_matched_samples: int = 5
     min_quality_delta_lower_bound: float = 0.0
-    max_token_delta_ratio: float = 0.10
     max_regressions: int = 0
 
     def __post_init__(self) -> None:
         if self.min_matched_samples < 1:
             raise ValueError("min_matched_samples must be positive")
-        if self.max_token_delta_ratio < 0 or self.max_regressions < 0:
-            raise ValueError("cost and regression limits must be non-negative")
+        if self.max_regressions < 0:
+            raise ValueError("regression limits must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -158,6 +165,10 @@ class EvolutionGate:
             hard_failures.append(
                 f"regressions {evaluation.regressions} exceed {self.config.max_regressions}"
             )
+        if evaluation.no_progress_regressions:
+            hard_failures.append("candidate introduced no-progress regressions")
+        if evaluation.uncontrolled_no_progress_loop:
+            hard_failures.append("candidate contains an uncontrolled no-progress loop")
         if (
             evaluation.quality_delta_lower_bound is not None
             and evaluation.quality_delta_lower_bound < self.config.min_quality_delta_lower_bound
@@ -165,11 +176,6 @@ class EvolutionGate:
             hard_failures.append(
                 "quality confidence lower bound is below the promotion threshold"
             )
-        if (
-            evaluation.token_delta_ratio is not None
-            and evaluation.token_delta_ratio > self.config.max_token_delta_ratio
-        ):
-            hard_failures.append("token cost increase exceeds the promotion threshold")
         if hard_failures:
             return EvolutionDecision(EvolutionDisposition.REJECT, tuple(hard_failures))
 
@@ -180,8 +186,6 @@ class EvolutionGate:
             )
         if evaluation.quality_delta is None or evaluation.quality_delta_lower_bound is None:
             incomplete.append("quality effect is not estimable")
-        if evaluation.token_delta_ratio is None:
-            incomplete.append("token cost effect is not estimable")
         if incomplete:
             return EvolutionDecision(EvolutionDisposition.KEEP_SHADOW, tuple(incomplete))
         return EvolutionDecision(EvolutionDisposition.PROMOTE, ("all promotion gates passed",))

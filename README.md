@@ -26,12 +26,9 @@ Plugin Kernel ── Scoped Service Registry ── reversible lifecycle
 
 Offline Evolution Plane
   Outcomes / Rollouts
-        → admissibility & leakage checks
-        → immutable Profile candidate
-        → paired Shadow evaluation
-        → integrity / sample / quality / cost / regression gates
-        → Promote | Keep Shadow | Reject
-        → append-only decision history and deterministic Rollback
+        ├→ immutable Profile candidate → paired Shadow evaluation → Profile Promotion
+        └→ Candidate Experience → leakage / generalisation / dedup / transfer validation
+                                → Experience Store → bounded runtime retrieval
 
 External adapters
   DeerFlow Runtime       RealReplica contract/provider/evaluation
@@ -47,6 +44,8 @@ External adapters
 6. **Evolution is offline and governed**：运行中的生产 Profile 不会自主改写；候选必须先 Shadow、通过门禁并可回滚。
 7. **Evaluation stays external**：verifier、rubric、ground truth、expected answer 不进入在线 Runtime。
 8. **Context is a decision working set**：不是无限对话回放；任务、工具协议和高价值事实必须在预算内保持可审计。
+9. **Success first, waste bounded**：Token 是诊断指标；Resource Guardrail 按 No-progress Event 升级干预。
+10. **One multimodal primary model**：语言与视觉任务统一使用 `deepseek-v4-flash-vision-exp`，不要求独立视觉模型。
 
 ## 模块边界
 
@@ -59,21 +58,23 @@ External adapters
 | `progress.py` / `recovery.py` | 语义进展、结构化恢复决策、执行与结果归因 |
 | `context.py` | 五层上下文评分、Token预算、工具协议原子性、紧凑工具事实和泄漏过滤 |
 | `action_ledger.py` | Tool Intent/Resource投影、Mutation epoch、重复验证预算与可回放决策 |
+| `assembly.py` | Profile → Plugin Factory → Kernel 的可执行、失败回收装配 |
+| `resource_guardrail.py` | No-progress 的记录、重规划与 Action Scope 阻断决策 |
 | `evolution.py` | Profile 版本、Shadow 评估、晋升/拒绝/回滚治理 |
+| `experience_store.py` | Candidate Experience、Transfer Validation、晋升/隔离/退休、检索与结果归因 |
 | `integrations/deerflow*.py` | DeerFlow stream/event/runtime 桥接 |
 | `integrations/realreplica*.py` | Bench 专属 Contract 语义、Observation Provider 与评测适配 |
 
 ## 自进化不是在线自改 Prompt
 
-`EvolutionManager` 管理不可变 Profile 版本，并把每次候选、评估、晋升、拒绝与回滚写入 Ledger。默认门禁要求：
+`EvolutionManager` 管理不可变 Profile 版本，并把每次候选、评估、晋升、拒绝与回滚写入 Ledger。Profile 默认门禁要求：
 
 - paired matched samples ≥ 5；
 - 质量提升置信下界 ≥ 0；
-- token 增幅 ≤ 10%；
 - 回归数 = 0；
 - integrity 与 leakage 检查均通过。
 
-样本或成本估计不足时只保持 Shadow；泄漏、完整性、质量、成本或回归失败时直接 Reject。该模块不挂接在线 Runtime 的写路径，因此模型无法在一次任务中修改生产 Profile。
+Token、工具调用、延迟和视觉调用始终记录，但固定增长比例不会单独 Reject 成功 Candidate；同 Scope、同策略且无新证据或状态变化时，由 Resource Guardrail 依次记录、强制重规划并阻断继续重复。`ExperienceStore` 使用独立的 Candidate/Shadow/Promoted/Quarantined/Retired 生命周期，运行时检索不能执行晋升或修改全局 Prompt/Policy。
 
 ## Task-aware Context Working Set
 
@@ -87,7 +88,7 @@ P19把工具轨迹投影为可回放的Intent、Resource、Data field、Mutation
 
 扩展Browser/API语义后，7条轨迹的200个Action达到100%分类；5条确定性Browser和2条stable-pass控制均0告警，2条历史失败控制均被覆盖。Wilson门禁只允许非阻断Advice，不允许Enforcement。
 
-实际Shadow仍按成本门禁处理：v1.4只在最后一次验证触发1次Advice，却达到189,696 Token、23 Tool，Reject；v1.5加入“第4次同scope且结果不变的Read”Advice后，同题1.0、154,036 Token（方向性+1.31%），但实际0次Advice触发、Tool仍+7、耗时+128%，因此改善不可归因于策略并继续Shadow。
+历史 Shadow 当时仍按已废止的固定成本门禁处理：v1.4只在最后一次验证触发1次 Advice，却达到189,696 Token、23 Tool；v1.5加入“第4次同scope且结果不变的Read”Advice后，同题1.0、154,036 Token（方向性+1.31%），但实际0次 Advice 触发、Tool仍+7、耗时+128%。这些 evidence 保持原样，不追溯改写为新策略结果；v1.5仍因单样本且改善不可归因而保持 Shadow。
 
 ## 验证
 
@@ -97,8 +98,8 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 PYTHONPATH=src python3 -m compileall -q src tests scripts
 ```
 
-当前 93 项零模型测试覆盖 Core/integration 边界、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Task-aware Context、Tool Action Ledger/Advice Gate、Progress/Recovery，以及 Evolution 的 Shadow/Promote/Reject/Rollback 与 JSONL replay。
+零模型测试覆盖 Core/integration 边界、Executable Profile Assembly、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Task-aware Context、Tool Action Ledger、Resource Guardrail、Progress/Recovery，以及 Profile/Experience 两套独立生命周期与 JSONL replay。
 
-RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能力与难度，未运行完整 107 任务。本阶段只执行同一 Development 任务的两个探索性 Context Shadow，不能声称总体通过率提升。历史证据、成本停止规则和可声明边界见 [`evidence/index.json`](evidence/index.json)。
+RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能力与难度，并内部隔离为 8 Development / 4 Transfer Validation / 4 Held-out Evaluation；不会运行完整 107 任务。当前新模型还没有新的总体成功率证据，不能声称总体通过率提升。历史证据和可声明边界见 [`evidence/index.json`](evidence/index.json)。
 
-详细架构见 [`docs/architecture.md`](docs/architecture.md)，重构决策见 [`docs/architecture-refactor-plan.zh-CN.md`](docs/architecture-refactor-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。
+详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

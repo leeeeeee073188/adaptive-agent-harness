@@ -16,6 +16,7 @@ from adaptive_harness.evaluation import (
     ExperienceAdmissibilityFilter,
     ExperienceCandidate,
 )
+from adaptive_harness.experience_store import Experience, ExperienceAdmissibility
 
 CONTEXT_SELECTED = "context/selected"
 CONTEXT_POLICY_VERSION = "task-aware-v1.5"
@@ -103,7 +104,10 @@ class ContextItem:
 
 
 class ExperienceRetriever(Protocol):
-    def retrieve(self, task_state: Mapping[str, Any]) -> Sequence[ExperienceCandidate]: ...
+    def retrieve(
+        self,
+        task_state: Mapping[str, Any],
+    ) -> Sequence[ExperienceCandidate | Experience]: ...
 
 
 @dataclass(frozen=True)
@@ -391,9 +395,15 @@ class TaskAwareContextManager:
         rejected = 0
         if self.experience_retriever is not None:
             for index, experience in enumerate(self.experience_retriever.retrieve(task_state)):
-                if not self.admissibility_filter.admit(experience):
+                if isinstance(experience, Experience):
+                    admitted = ExperienceAdmissibility().check(experience).passed
+                else:
+                    admitted = self.admissibility_filter.admit(experience)
+                if not admitted:
                     rejected += 1
                     continue
+                progress_signal = getattr(experience, "progress_signal", "")
+                stop_condition = getattr(experience, "stop_condition", "")
                 items.append(
                     ContextItem(
                         f"experience:{index + 1}",
@@ -402,7 +412,9 @@ class TaskAwareContextManager:
                             "situation": experience.situation,
                             "strategy": experience.strategy,
                             "anti_pattern": experience.anti_pattern,
-                            "provenance": list(experience.provenance),
+                            "progress_signal": progress_signal,
+                            "stop_condition": stop_condition,
+                            "match_reason": "structured task state, failure type, and runtime surface",
                         },
                         0.75,
                         0.5,

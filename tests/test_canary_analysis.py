@@ -9,7 +9,7 @@ from scripts.analyze_minibench_pair import analyze_pair
 
 
 class CanaryAnalysisTests(unittest.TestCase):
-    def test_semantic_newline_equivalence_does_not_hide_cost_regression(self) -> None:
+    def test_high_token_growth_is_reported_without_blocking_a_valid_pair(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             baseline, candidate = _pair_fixture(root, baseline_tokens=100, candidate_tokens=160)
@@ -18,16 +18,17 @@ class CanaryAnalysisTests(unittest.TestCase):
                 baseline,
                 candidate,
                 "task-1",
-                max_token_increase=0.25,
+                token_diagnostic_threshold=0.25,
             )
 
         self.assertTrue(report["pair_valid"])
         self.assertTrue(report["gates"]["semantic_outputs_equal"])
-        self.assertFalse(report["gates"]["token_cost_within_limit"])
-        self.assertTrue(report["gates"]["architecture_token_overhead_within_limit"])
+        self.assertTrue(report["cost"]["token_increase_over_diagnostic_threshold"])
+        self.assertFalse(report["cost"]["architecture_increase_over_diagnostic_threshold"])
         self.assertEqual(report["cost"]["attributable_architecture_token_delta"], 0)
         self.assertEqual(report["cost"]["attribution"], "provider_or_trajectory_variance")
-        self.assertFalse(report["continue_block"])
+        self.assertTrue(report["continue_block"])
+        self.assertEqual(report["decision"], "continue Block 1")
 
     def test_valid_low_cost_pair_can_continue(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -38,13 +39,59 @@ class CanaryAnalysisTests(unittest.TestCase):
                 baseline,
                 candidate,
                 "task-1",
-                max_token_increase=0.25,
+                token_diagnostic_threshold=0.25,
             )
 
         self.assertTrue(report["continue_block"])
 
+    def test_action_repeated_after_block_scope_stops_continuation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            baseline, candidate = _pair_fixture(
+                root,
+                baseline_tokens=100,
+                candidate_tokens=120,
+                resource_events=(
+                    {
+                        "type": "resource/no-progress-checked",
+                        "payload": {
+                            "disposition": "block_scope",
+                            "scope_key": "scope-a",
+                            "strategy_fingerprint": "strategy-a",
+                        },
+                    },
+                    {
+                        "type": "tool/action-audited",
+                        "payload": {
+                            "record": {
+                                "scope_key": "scope-a",
+                                "argument_fingerprint": "strategy-a",
+                            }
+                        },
+                    },
+                ),
+            )
 
-def _pair_fixture(root: Path, *, baseline_tokens: int, candidate_tokens: int) -> tuple[Path, Path]:
+            report = analyze_pair(
+                baseline,
+                candidate,
+                "task-1",
+                token_diagnostic_threshold=0.25,
+            )
+
+        self.assertFalse(report["continue_block"])
+        self.assertTrue(
+            report["resource_guardrail"]["uncontrolled_no_progress_loop"]
+        )
+
+
+def _pair_fixture(
+    root: Path,
+    *,
+    baseline_tokens: int,
+    candidate_tokens: int,
+    resource_events: tuple[dict[str, object], ...] = (),
+) -> tuple[Path, Path]:
     task_dirs = {}
     for variant in ("baseline", "candidate"):
         run = root / variant
@@ -70,6 +117,7 @@ def _pair_fixture(root: Path, *, baseline_tokens: int, candidate_tokens: int) ->
     ledger = [
         {"type": "evidence/added", "payload": {"evidence": {"id": "e1"}}},
         {"type": "completion/checked", "payload": {"passed": True}},
+        *resource_events,
     ]
     (task_dirs["candidate"] / "agent/adaptive-ledger.jsonl").write_text(
         "".join(json.dumps(row) + "\n" for row in ledger)

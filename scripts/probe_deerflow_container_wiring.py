@@ -15,6 +15,7 @@ from pathlib import Path
 from preflight_minibench16 import DEFAULT_IMAGE, _variant_specs
 
 from adaptive_harness.integrations.realreplica import RealReplicaMiniBenchAdapter
+from adaptive_harness.model_routes import PRIMARY_MODEL
 
 ROOT = Path(__file__).resolve().parents[1]
 DEERFLOW_PYTHON = "/opt/deer-flow/backend/.venv/bin/python"
@@ -124,7 +125,7 @@ def main() -> int:
                 "/tmp/adaptive-probe/result.json",
                 "/tmp/adaptive-probe/ledger.jsonl",
                 "/tmp/context-config.yaml",
-                "deepseek-v4-flash",
+                PRIMARY_MODEL,
                 "probe-thread",
                 "disabled",
                 "100",

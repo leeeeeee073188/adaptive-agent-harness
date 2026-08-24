@@ -5,6 +5,13 @@ import unittest
 from adaptive_harness.capabilities import PreparedContext
 from adaptive_harness.context import ContextBudget, TaskAwareContextManager
 from adaptive_harness.evaluation import ExperienceCandidate
+from adaptive_harness.experience_store import (
+    Experience,
+    ExperienceStore,
+    TaskStateExperienceRetriever,
+    TransferValidation,
+)
+from adaptive_harness.ledger import SessionLedger
 
 
 class _ExperienceRetriever:
@@ -130,6 +137,59 @@ class TaskAwareContextTests(unittest.TestCase):
         self.assertIn("Refresh observable state", rendered)
         self.assertNotIn("Use the cached answer", rendered)
         self.assertEqual(prepared.audit["rejected_experiences"], 1)
+
+    def test_promoted_store_experience_is_retrieved_without_source_task_ids(self) -> None:
+        store = ExperienceStore(SessionLedger("context-experience-store"))
+        experience = Experience(
+            experience_id="recover-timeout",
+            version=1,
+            task_state="tool_recovery",
+            failure_type="TIMEOUT",
+            runtime_surface="cli",
+            situation="A command timed out before producing task evidence.",
+            strategy="Use a narrower command and inspect fresh evidence.",
+            anti_pattern="Do not repeat the unchanged long-running command.",
+            progress_signal="The narrower command produces new task evidence.",
+            stop_condition="Stop after another no-progress outcome.",
+            source_task_ids=("dev-a", "dev-b", "dev-c"),
+        )
+        store.create_candidate(experience)
+        store.start_shadow(experience.experience_id, experience.version, reason="checks passed")
+        store.promote(
+            experience.experience_id,
+            experience.version,
+            TransferValidation(
+                ("transfer-a", "transfer-b"),
+                stable_pass_regressions=0,
+                harm_observed=False,
+                evidence_ref="evidence://transfer",
+                effective_task_ids=("transfer-a",),
+            ),
+        )
+        state = _task_state()
+        state["task"]["values"].update(
+            {
+                "task_state": "tool_recovery",
+                "failure_type": "TIMEOUT",
+                "runtime_surface": "cli",
+            }
+        )
+        manager = TaskAwareContextManager(
+            budget=ContextBudget(max_input_tokens=900),
+            experience_retriever=TaskStateExperienceRetriever(store),
+        )
+
+        prepared = manager.prepare(
+            ({"role": "user", "content": "Complete the task."},),
+            environment_state={},
+            task_state=state,
+        )
+
+        rendered = str(prepared.messages)
+        self.assertIn("new task evidence", rendered)
+        self.assertIn("structured task state", rendered)
+        self.assertNotIn("recover-timeout", rendered)
+        self.assertNotIn("dev-a", rendered)
 
     def test_oversized_immutable_task_is_preserved_and_reported(self) -> None:
         task = "必须完整保留的任务要求。" * 30

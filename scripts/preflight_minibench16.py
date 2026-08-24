@@ -13,6 +13,7 @@ from adaptive_harness.integrations.realreplica import (
     VariantSpec,
     stable_profile_fingerprint,
 )
+from adaptive_harness.model_routes import PRIMARY_MODEL
 
 DEFAULT_IMAGE = "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d"
 
@@ -21,7 +22,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
     baseline = VariantSpec(
         "vanilla_deerflow",
         stable_profile_fingerprint({"runtime": "deerflow", "policies": []}),
-        "deepseek-v4-flash",
+        PRIMARY_MODEL,
         DEFAULT_IMAGE,
         seed,
     )

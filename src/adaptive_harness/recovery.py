@@ -156,6 +156,8 @@ class RuleBasedTaskRecoveryPolicy:
     def decide(self, context: TaskFailureContext) -> TaskRecoveryDecision:
         categories = context.categories
         proposed: list[TaskRecoveryAction] = []
+        if context.repeated_action_count >= 3:
+            proposed.append(TaskRecoveryAction.STOP_REPEATED_ACTION)
         if context.primary is TaskFailureCategory.BROWSER_GROUNDING:
             if categories & {TaskFailureCategory.LOOP, TaskFailureCategory.NO_PROGRESS}:
                 proposed.append(TaskRecoveryAction.STOP_REPEATED_ACTION)

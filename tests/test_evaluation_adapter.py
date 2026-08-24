@@ -9,10 +9,12 @@ from pathlib import Path
 
 from adaptive_harness.evaluation import RolloutRecord, summarize_paired_rollouts
 from adaptive_harness.integrations.realreplica import (
+    EvaluationRole,
     RealReplicaMiniBenchAdapter,
     VariantSpec,
     stable_profile_fingerprint,
 )
+from adaptive_harness.model_routes import PRIMARY_MODEL
 from scripts.preflight_minibench16 import DEFAULT_IMAGE, _bridge_evidence_valid
 
 IMAGE = "realreplicabench/deerflow:test"
@@ -39,6 +41,13 @@ class EvaluationAdapterTests(unittest.TestCase):
         self.assertEqual(coverage.total_count, 16)
         self.assertEqual(provider_coverage.enforced_task_count, 8)
         self.assertEqual(provider_coverage.ready_blocks, ())
+        self.assertEqual(
+            dataset.counts()["evaluation_role"],
+            {"development": 8, "heldout": 4, "transfer": 4},
+        )
+        self.assertEqual(len(dataset.tasks_for_role(EvaluationRole.DEVELOPMENT)), 8)
+        self.assertEqual(len(dataset.tasks_for_role(EvaluationRole.TRANSFER)), 4)
+        self.assertEqual(len(dataset.tasks_for_role(EvaluationRole.HELDOUT)), 4)
         self.assertEqual(len(dataset.fingerprint), 64)
 
     def test_selection_order_drift_fails_closed(self) -> None:
@@ -143,7 +152,7 @@ class EvaluationAdapterTests(unittest.TestCase):
 
 
 def _variant(name: str, seed: int, profile: str) -> VariantSpec:
-    return VariantSpec(name, profile, "deepseek-v4-flash", IMAGE, seed)
+    return VariantSpec(name, profile, PRIMARY_MODEL, IMAGE, seed)
 
 
 def _write_minibench_fixture(root: Path) -> list[str]:
@@ -153,6 +162,7 @@ def _write_minibench_fixture(root: Path) -> list[str]:
     categories = ["cli", "browser", "file", "api"]
     difficulties = ["easy"] * 4 + ["medium"] * 4 + ["hard"] * 8
     capabilities = ["text-only", "browser-text", "vision", "text-only"] * 4
+    evaluation_roles = ["development"] * 8 + ["transfer"] * 4 + ["heldout"] * 4
     task_ids = [f"task-{index:02d}" for index in range(16)]
     tasks = []
     for index, task_id in enumerate(task_ids):
@@ -186,6 +196,7 @@ def _write_minibench_fixture(root: Path) -> list[str]:
                 "difficulty_raw": difficulties[index],
                 "difficulty_band": difficulties[index],
                 "capability": capabilities[index],
+                "evaluation_role": evaluation_roles[index],
                 "max_actions": 60,
                 "timeout_sec": 1800,
                 "smoke_reuse": index < 5,
@@ -200,6 +211,9 @@ def _write_minibench_fixture(root: Path) -> list[str]:
         "category": dict(sorted(Counter(row["category"] for row in tasks).items())),
         "difficulty_band": dict(sorted(Counter(row["difficulty_band"] for row in tasks).items())),
         "capability": dict(sorted(Counter(row["capability"] for row in tasks).items())),
+        "evaluation_role": dict(
+            sorted(Counter(row["evaluation_role"] for row in tasks).items())
+        ),
         "smoke_reused": 5,
     }
     _write_json(
@@ -227,7 +241,7 @@ def _write_minibench_fixture(root: Path) -> list[str]:
             "run_id": "baseline",
             "started_at": "2026-01-01T00:00:00",
             "harness": "deerflow",
-            "model_name": "deepseek-v4-flash",
+            "model_name": PRIMARY_MODEL,
             "image": IMAGE,
             "run_config_sha256": "config-hash",
             "experiment": {"variant": "baseline", "seed": 7},

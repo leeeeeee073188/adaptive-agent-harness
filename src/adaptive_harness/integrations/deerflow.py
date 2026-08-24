@@ -231,7 +231,8 @@ class DeerFlowRuntimeAdapter:
                 raise
             summaries.append(summary)
             self.policy_bridge.observe_turn(ledger, contract, summary, turn=turn)
-            self.policy_bridge.check_progress(ledger, progress_before)
+            progress = self.policy_bridge.check_progress(ledger, progress_before)
+            self.policy_bridge.check_resources(ledger, progress, turn=turn)
             completion, feedback, recovery = self.policy_bridge.check_completion(ledger)
             ledger.append(
                 "turn/end",

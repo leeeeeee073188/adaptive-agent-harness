@@ -9,6 +9,7 @@ import tomllib
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,14 @@ from adaptive_harness.task_contract import ContractBuilder, CriterionKind
 MINIBENCH_TASK_COUNT = 16
 
 
+class EvaluationRole(StrEnum):
+    """Internal isolation roles; all selected tasks remain official Development."""
+
+    DEVELOPMENT = "development"
+    TRANSFER = "transfer"
+    HELDOUT = "heldout"
+
+
 @dataclass(frozen=True)
 class MiniBenchTask:
     task_id: str
@@ -25,6 +34,7 @@ class MiniBenchTask:
     difficulty_raw: str
     difficulty_band: str
     capability: str
+    evaluation_role: EvaluationRole
     block: int
     max_actions: int
     timeout_sec: int
@@ -41,6 +51,7 @@ class MiniBenchTask:
             "difficulty_raw": self.difficulty_raw,
             "difficulty_band": self.difficulty_band,
             "capability": self.capability,
+            "evaluation_role": self.evaluation_role.value,
             "block": self.block,
             "max_actions": self.max_actions,
             "timeout_sec": self.timeout_sec,
@@ -67,8 +78,14 @@ class MiniBenchDataset:
                 sorted(Counter(task.difficulty_band for task in self.tasks).items())
             ),
             "capability": dict(sorted(Counter(task.capability for task in self.tasks).items())),
+            "evaluation_role": dict(
+                sorted(Counter(task.evaluation_role.value for task in self.tasks).items())
+            ),
             "smoke_reused": sum(task.smoke_reuse for task in self.tasks),
         }
+
+    def tasks_for_role(self, role: EvaluationRole) -> tuple[MiniBenchTask, ...]:
+        return tuple(task for task in self.tasks if task.evaluation_role is role)
 
 
 @dataclass(frozen=True)
@@ -248,6 +265,7 @@ class RealReplicaMiniBenchAdapter:
                     difficulty_raw=str(row["difficulty_raw"]),
                     difficulty_band=str(row["difficulty_band"]),
                     capability=str(row["capability"]),
+                    evaluation_role=EvaluationRole(str(row["evaluation_role"])),
                     block=block_by_task[task_id],
                     max_actions=int(row["max_actions"]),
                     timeout_sec=int(row["timeout_sec"]),
@@ -275,9 +293,22 @@ class RealReplicaMiniBenchAdapter:
             fingerprint,
         )
         actual_counts = dataset.counts()
-        for key in ("total", "category", "difficulty_band", "capability", "smoke_reused"):
+        for key in (
+            "total",
+            "category",
+            "difficulty_band",
+            "capability",
+            "evaluation_role",
+            "smoke_reused",
+        ):
             if actual_counts[key] != expected_counts.get(key):
                 raise ValueError(f"selection count drift for {key}")
+        if actual_counts["evaluation_role"] != {
+            "development": 8,
+            "heldout": 4,
+            "transfer": 4,
+        }:
+            raise ValueError("MiniBench evaluation roles must be Development/Transfer/Held-out 8/4/4")
         return dataset
 
     def contract_coverage(
