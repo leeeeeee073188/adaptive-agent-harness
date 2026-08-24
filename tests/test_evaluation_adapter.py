@@ -136,6 +136,7 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "action_scope_block_enforced": True,
                 "context_profile_session_bound": True,
                 "completion_conjunction_preserves_assessments": True,
+                "blocked_grounding_preserves_artifact_recovery": True,
                 "global_nonmutating_budget_enforced": True,
                 "delivery_first_gate_enforced": True,
                 "delivery_synthesis_transform_allowed": True,

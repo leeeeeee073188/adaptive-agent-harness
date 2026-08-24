@@ -244,6 +244,10 @@ def main() -> int:
                 "completion_conjunction_preserves_assessments"
             )
             is True,
+            "blocked_grounding_preserves_artifact_recovery": adaptive.get(
+                "blocked_grounding_preserves_artifact_recovery"
+            )
+            is True,
             "public_non_vacuity_gate_enforced": adaptive.get(
                 "public_non_vacuity_gate_enforced"
             )

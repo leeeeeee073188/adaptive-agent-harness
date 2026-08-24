@@ -95,6 +95,33 @@ class PolicySessionTests(unittest.TestCase):
             TaskFailureCategory.SYNTHESIS_LINEAGE_GAP,
         )
 
+    def test_blocked_grounding_criterion_does_not_hide_missing_artifact_recovery(self) -> None:
+        ledger = SessionLedger("policy-grounding-before-artifact")
+        session = KernelPolicySession(
+            completion_gate=EvidenceCompletionGate(),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+        )
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt=(
+                "`workspace/results.json` is a draft, not truth. Re-check it against raw "
+                "records before writing outputs/report.json."
+            ),
+            public_schema=None,
+        )
+
+        result, feedback, recovery = session.check_completion(ledger)
+
+        self.assertFalse(result.passed)
+        self.assertIsNotNone(recovery)
+        assert recovery is not None
+        self.assertIn(TaskRecoveryAction.WRITE_PARTIAL, recovery.actions)
+        self.assertIn("[HARNESS DELIVERY REQUIRED]", feedback or "")
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(state.recoveries[-1].primary, TaskFailureCategory.ARTIFACT_ERROR)
+
     def test_response_policy_rejects_runtime_limit_text_as_completion(self) -> None:
         policy = AcceptFinalCompletion()
 

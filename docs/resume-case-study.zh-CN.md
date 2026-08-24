@@ -98,7 +98,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 
 | 项目 | 证据 |
 |---|---:|
-| 当前 Adaptive 零模型单元测试 | 308 |
+| 当前 Adaptive 零模型单元测试 | 311 |
 | Core中的RealReplica业务词汇 | 0（边界测试） |
 | Evolution在线修改Profile | disabled |
 | Evolution Shadow/Promote/Reject/Rollback | deterministic + replayable |
@@ -119,6 +119,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | v3.4 thinking=max | 1/5；719,574 Token；64 Tool；1,043.6秒；mutation-epoch失败，不晋升 |
 | v3.5 thinking=high | 2/5；765,768 Token；62 Tool；epoch 已修复但复制公开中间结果，不晋升 |
 | v3.6 Source Grounding | Claim/Source lineage core；A43/A44 copy反事实与容器门禁通过；未付费运行 |
+| v3.6 live / v3.7 gate | v3.6 0/5无产物；v3.7 修复 blocked-grounding 恢复优先级，A46/A47 通过 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

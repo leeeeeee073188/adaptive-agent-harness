@@ -1,0 +1,17 @@
+{
+  "scope": "v3.7 grounding recovery-priority review",
+  "verdict": "approve_single_development_canary",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "verified": {
+    "blocked_grounding_preserves_artifact_recovery": true,
+    "unsatisfied_grounding_uses_lineage_recovery": true,
+    "provisional_copy_guard": true,
+    "thinking_request_effort": "high",
+    "secret_findings": 0
+  },
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false
+}

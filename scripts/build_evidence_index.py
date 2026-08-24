@@ -59,6 +59,9 @@ REQUIRED = tuple(
         (42, "v3-5-thinking-high-live"),
         (43, "source-grounding-gate"),
         (44, "source-grounding-container"),
+        (45, "v3-6-live"),
+        (46, "v3-7-grounding-recovery-gate"),
+        (47, "v3-7-grounding-recovery-container"),
     )
 )
 OPTIONAL = (
@@ -101,6 +104,12 @@ OPTIONAL = (
     "a44-source-grounding-container/review.json",
     "a44-source-grounding-container/verification.json",
     "a44-source-grounding-container/readiness.json",
+    "a45-v3-6-live/pair.json",
+    "a45-v3-6-live/diagnosis.json",
+    "a47-v3-7-grounding-recovery-container/container-wiring.json",
+    "a47-v3-7-grounding-recovery-container/review.json",
+    "a47-v3-7-grounding-recovery-container/verification.json",
+    "a47-v3-7-grounding-recovery-container/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -189,6 +198,11 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     grounding_gate = doc("a43-source-grounding-gate/summary.json") if not missing else {}
     grounding_conformance = doc("a44-source-grounding-container/summary.json") if not missing else {}
     grounding_wiring = documents.get("a44-source-grounding-container/container-wiring.json", {})
+    v3_6_live = doc("a45-v3-6-live/summary.json") if not missing else {}
+    v3_6_diagnosis = documents.get("a45-v3-6-live/diagnosis.json", {})
+    v3_7_gate = doc("a46-v3-7-grounding-recovery-gate/summary.json") if not missing else {}
+    v3_7_conformance = doc("a47-v3-7-grounding-recovery-container/summary.json") if not missing else {}
+    v3_7_wiring = documents.get("a47-v3-7-grounding-recovery-container/container-wiring.json", {})
     selected_live_row = next(
         (
             row
@@ -621,6 +635,46 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "source_grounding_container_copy_guard": (
             grounding_wiring.get("checks") or {}
         ).get("provisional_copy_guard_enforced"),
+        "v3_6_live_selected_candidate": v3_6_live.get("selected_candidate_variant"),
+        "v3_6_live_paid_expansion_allowed": v3_6_live.get("paid_expansion_allowed"),
+        "v3_6_live_row": next(
+            (
+                row
+                for row in v3_6_live.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_source_grounding_v3_6"
+            ),
+            None,
+        ),
+        "v3_6_diagnosis_row": next(
+            (
+                row
+                for row in v3_6_diagnosis.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_source_grounding_v3_6"
+            ),
+            None,
+        ),
+        "v3_7_gate_passed": v3_7_gate.get("passed"),
+        "v3_7_single_canary_allowed": v3_7_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v3_7_paid_expansion_allowed": v3_7_gate.get("paid_expansion_allowed"),
+        "v3_7_candidate_variant": (
+            (v3_7_conformance.get("profiles") or {}).get("candidate") or {}
+        ).get("name"),
+        "v3_7_paid_canary_allowed": (
+            v3_7_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v3_7_source_hash_matches": bool(v3_7_gate.get("adaptive_source_sha256"))
+        and v3_7_gate.get("adaptive_source_sha256")
+        == v3_7_wiring.get("adaptive_source_sha256"),
+        "v3_7_profile_fingerprint_matches": bool(
+            v3_7_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v3_7_gate.get("executable_policy_profile_fingerprint")
+        == v3_7_wiring.get("executable_policy_profile_fingerprint"),
+        "v3_7_blocked_grounding_preserves_artifact_recovery": (
+            v3_7_wiring.get("checks") or {}
+        ).get("blocked_grounding_preserves_artifact_recovery"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -844,6 +898,28 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["source_grounding_source_hash_matches"] is True
         and claims["source_grounding_profile_fingerprint_matches"] is True
         and claims["source_grounding_container_copy_guard"] is True,
+        "v3_6_regression_not_promoted": (
+            (claims["v3_6_live_row"] or {}).get("passed") is False
+            and (claims["v3_6_live_row"] or {}).get("capacity_score") == 0.0
+            and (claims["v3_6_live_row"] or {}).get("total_tokens") == 320755
+            and (claims["v3_6_live_row"] or {}).get("output_file_count") == 0
+            and ((claims["v3_6_diagnosis_row"] or {}).get("signals") or {}).get(
+                "mutation_epoch_regression"
+            )
+            is False
+            and claims["v3_6_live_selected_candidate"]
+            == "adaptive_harness_runtime_evolution_v2_6"
+            and claims["v3_6_live_paid_expansion_allowed"] is False
+        ),
+        "v3_7_gate_is_single_canary_only": claims["v3_7_gate_passed"] is True
+        and claims["v3_7_single_canary_allowed"] is True
+        and claims["v3_7_paid_expansion_allowed"] is False,
+        "v3_7_container_gate_cleared": claims["v3_7_candidate_variant"]
+        == "adaptive_harness_source_grounding_v3_7"
+        and claims["v3_7_paid_canary_allowed"] is True
+        and claims["v3_7_source_hash_matches"] is True
+        and claims["v3_7_profile_fingerprint_matches"] is True
+        and claims["v3_7_blocked_grounding_preserves_artifact_recovery"] is True,
     }
     return {
         "schema_version": 1,
@@ -888,7 +964,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "that the lifecycle error disappeared and quality returned to 2/5, but the artifact copied a "
             "known public draft result, Token use reached 765,768, and v2.6 remained the selected Shadow. "
             "A43/A44 add a hash-only claim/source lineage core and prove that the A42 public intermediate "
-            "copy is rejected in replay and in the pinned container. This is a copy guard, not full factual "
+            "copy is rejected in replay and in the pinned container. A45 records a v3.6 recovery-order "
+            "regression: blocked grounding masked the missing artifact, so no output was produced. A46/A47 "
+            "verify that only an explicitly unsatisfied grounding criterion becomes a lineage failure and "
+            "artifact delivery recovery remains available. This is a copy guard, not full factual "
             "verification. Transfer, Held-out, and further task expansion remain disabled."
         ),
     }

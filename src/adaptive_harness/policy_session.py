@@ -42,6 +42,7 @@ from adaptive_harness.resource_guardrail import (
 from adaptive_harness.task_contract import ContractBuilder, CriterionKind, RuleBasedTaskContractBuilder, TaskContract
 from adaptive_harness.task_state import (
     ContractCompletionResult,
+    CriterionStatus,
     Evidence,
     EvidenceCompletionGate,
     EvidenceKind,
@@ -619,17 +620,17 @@ class KernelPolicySession:
             criterion.id: criterion
             for criterion in (state.contract.criteria if state.contract is not None else ())
         }
-        unmet_required_criteria = (
-            by_id[assessment.criterion_id]
+        unmet_required_criteria = tuple(
+            (by_id[assessment.criterion_id], assessment)
             for assessment in result.assessments
-            if assessment.status.value != "satisfied"
+            if assessment.status is not CriterionStatus.SATISFIED
             and assessment.criterion_id in by_id
             and by_id[assessment.criterion_id].required
         )
         failed_kinds: set[CriterionKind] = set()
         has_source_evidence_gap = False
         has_synthesis_lineage_gap = False
-        for criterion in unmet_required_criteria:
+        for criterion, assessment in unmet_required_criteria:
             failed_kinds.add(criterion.kind)
             if (
                 criterion.kind is CriterionKind.OBSERVATION_EQUALS
@@ -641,6 +642,7 @@ class KernelPolicySession:
                 and str(criterion.parameters.get("subject") or "").startswith(
                     "artifact.grounding:"
                 )
+                and assessment.status is CriterionStatus.UNSATISFIED
             ):
                 has_synthesis_lineage_gap = True
         primary = (

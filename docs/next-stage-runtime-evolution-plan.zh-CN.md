@@ -160,6 +160,8 @@ v3.5 的真实结果记录在 `evidence/a42-v3-5-thinking-high-live/`：mutation
 
 v3.6 引入 source-grounded synthesis 基础层与 provisional-copy guard。核心 LineageGraph 只保存公共 source/claim/content hash 与 derivation kind；Runtime 仅在公共任务同时出现“provisional/not truth”和“对 raw source 复核”时派生 grounding criterion，并以 512 文件、单文件 2 MiB 上限扫描公共 workspace。A43 使用 A42 公共产物证明 exact copy 会被拒绝并返回可操作 diagnostics；A44 在 pinned container 中验证同一行为。下一阶段仍需加入 authoritative source coverage 与 claim-level support，copy guard 不能替代事实 verifier。
 
+v3.6 live（A45）因 recovery 优先级回退到 0/5：Artifact 不存在时 grounding assessment 是 `BLOCKED`，但 failure classifier 提前选择了 lineage gap，未请求首次交付。v3.7 将 lineage failure 限定为 grounding `UNSATISFIED`，缺失 Artifact 继续走 `ARTIFACT_ERROR + WRITE_PARTIAL`。A46/A47 通过 311 项单测和容器 probe 验证 copy guard、thinking=high 与交付恢复共存；尚未执行付费 canary。
+
 该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
 
 ## 测试规格摘要

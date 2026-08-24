@@ -37,7 +37,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_source_grounding_v3_6",
+        "adaptive_harness_source_grounding_v3_7",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -60,6 +60,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                     "workspace_scan_max_files": 512,
                     "workspace_scan_max_file_bytes": 2097152,
                     "grounding_diagnostics_model_visible": True,
+                    "blocked_grounding_preserves_artifact_recovery": True,
                 },
                 "phase": {"policy": "evidence-driven-soft-phase-v1"},
                 "model_reasoning": {
@@ -252,6 +253,7 @@ def _bridge_evidence_valid(
         "action_scope_block_enforced",
         "context_profile_session_bound",
         "completion_conjunction_preserves_assessments",
+        "blocked_grounding_preserves_artifact_recovery",
         "global_nonmutating_budget_enforced",
         "delivery_first_gate_enforced",
         "delivery_synthesis_transform_allowed",
