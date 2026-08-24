@@ -141,6 +141,8 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "delivery_first_gate_enforced": True,
                 "delivery_synthesis_transform_allowed": True,
                 "delivery_non_output_write_blocked": True,
+                "delivery_rearmed_after_invalid_artifact": True,
+                "invalid_artifact_recovery_rewrites_output": True,
                 "embedded_client_stream_exercised": True,
                 "executable_policy_profile_assembled": True,
                 "max_completion_turns_frozen": True,

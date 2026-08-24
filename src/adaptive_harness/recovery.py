@@ -19,6 +19,7 @@ class TaskFailureCategory(StrEnum):
     LOOP = "LOOP"
     PREMATURE_FINISH = "PREMATURE_FINISH"
     ARTIFACT_ERROR = "ARTIFACT_ERROR"
+    ARTIFACT_INVALID = "ARTIFACT_INVALID"
     EVIDENCE_GAP = "EVIDENCE_GAP"
     SYNTHESIS_LINEAGE_GAP = "SYNTHESIS_LINEAGE_GAP"
     CONSTRAINT_MISS = "CONSTRAINT_MISS"
@@ -33,6 +34,7 @@ class TaskRecoveryAction(StrEnum):
     VALIDATE_CONTRACT = "validate_contract"
     REPLAN = "replan"
     WRITE_PARTIAL = "write_partial"
+    REPAIR_ARTIFACT = "repair_artifact"
     STOP_REPEATED_ACTION = "stop_repeated_action"
     STOP = "stop"
 
@@ -47,6 +49,7 @@ class TaskRecoveryBudget:
             TaskRecoveryAction.VALIDATE_CONTRACT: 1,
             TaskRecoveryAction.REPLAN: 1,
             TaskRecoveryAction.WRITE_PARTIAL: 1,
+            TaskRecoveryAction.REPAIR_ARTIFACT: 1,
             TaskRecoveryAction.STOP_REPEATED_ACTION: 1,
         }
     )
@@ -197,6 +200,12 @@ class RuleBasedTaskRecoveryPolicy:
             )
             if TaskFailureCategory.LOOP in categories:
                 proposed.append(TaskRecoveryAction.STOP_REPEATED_ACTION)
+        elif context.primary is TaskFailureCategory.ARTIFACT_INVALID:
+            proposed.extend(
+                (TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.REPAIR_ARTIFACT)
+            )
+            if TaskFailureCategory.LOOP in categories:
+                proposed.append(TaskRecoveryAction.STOP_REPEATED_ACTION)
         elif context.primary in {
             TaskFailureCategory.STALE_STATE,
             TaskFailureCategory.STATE_INCONSISTENCY,
@@ -271,6 +280,14 @@ class RuleBasedTaskRecoveryExecutor:
                     f"directly synthesize {missing_text}. Run a task-provided transform script when "
                     "available; do not perform more plain reads. Never create a knowingly empty "
                     "placeholder solely to unlock inspection."
+                ),
+            ),
+            TaskRecoveryAction.REPAIR_ARTIFACT: (
+                {"recovery.partial_delivery_requested": True},
+                (
+                    "[HARNESS DELIVERY REQUIRED] The existing artifact failed public "
+                    f"validation. Repair or directly re-synthesize {missing_text}; do not "
+                    "resume plain reads or create another knowingly invalid placeholder."
                 ),
             ),
             TaskRecoveryAction.STOP_REPEATED_ACTION: (

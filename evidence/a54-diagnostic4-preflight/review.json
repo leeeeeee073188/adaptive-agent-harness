@@ -1,0 +1,20 @@
+{
+  "scope": "Diagnostic4 breadth-first workflow review",
+  "verdict": "approve_zero_model_preflight_and_config",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "verified": {
+    "deterministic_selection": true,
+    "four_task_types": true,
+    "easy_medium_only": true,
+    "capability_breadth": true,
+    "official_development_only": true,
+    "minibench16_disjoint": true,
+    "thinking_high_default": true,
+    "single_task_default": true
+  },
+  "paid_run_approved": false,
+  "paid_expansion_allowed": false
+}

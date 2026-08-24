@@ -121,6 +121,8 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | v3.6 Source Grounding | Claim/Source lineage core；A43/A44 copy反事实与容器门禁通过；未付费运行 |
 | v3.6 live / v3.7 gate | v3.6 0/5无产物；v3.7 修复 blocked-grounding 恢复优先级，A46/A47 通过 |
 | v3.7 live / v3.8 gate | v3.7 0/5、439,869 Token；v3.8 阻止 delivery recovery 写非输出脚本 |
+| v3.8 live / v3.9 offline | v3.8 1/5、858,909 Token；A52/A53 验证独立 artifact-repair budget 与 delivery re-arm |
+| Diagnostic4 preflight | A54：4 类任务、2 easy/2 medium、text/browser/vision、与 MiniBench16 完全互斥 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

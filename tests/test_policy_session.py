@@ -122,6 +122,64 @@ class PolicySessionTests(unittest.TestCase):
         state = TaskStateProjector().project(ledger.events)
         self.assertEqual(state.recoveries[-1].primary, TaskFailureCategory.ARTIFACT_ERROR)
 
+    def test_invalid_artifact_shape_recovers_by_rewriting_the_artifact(self) -> None:
+        ledger = SessionLedger("policy-invalid-artifact-shape")
+        session = KernelPolicySession(
+            completion_gate=EvidenceCompletionGate(),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+        )
+        contract = session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="""Write outputs/audit.json. Report all matching records.
+
+```json
+{"items": [{"id": "sample"}]}
+```
+""",
+            public_schema=None,
+        )
+        shape = next(
+            item
+            for item in contract.criteria
+            if item.parameters.get("subject") == "artifact.json_shape:outputs/audit.json"
+        )
+        _, _, initial_recovery = session.check_completion(ledger)
+        self.assertIsNotNone(initial_recovery)
+        assert initial_recovery is not None
+        self.assertIn(TaskRecoveryAction.WRITE_PARTIAL, initial_recovery.actions)
+        writer = TaskEventWriter(ledger)
+        writer.add_evidence(
+            Evidence(
+                "artifact",
+                EvidenceKind.ARTIFACT,
+                "outputs/audit.json",
+                {"exists": True, "sha256": "a" * 64},
+                EvidenceSource.ARTIFACT_INSPECTION,
+            )
+        )
+        writer.add_evidence(
+            Evidence(
+                "shape",
+                EvidenceKind.OBSERVATION,
+                str(shape.parameters["subject"]),
+                False,
+                EvidenceSource.ARTIFACT_INSPECTION,
+                {"diagnostics": ["all completeness-scoped collections are empty: $.items"]},
+            )
+        )
+
+        result, feedback, recovery = session.check_completion(ledger)
+
+        self.assertFalse(result.passed)
+        self.assertIsNotNone(recovery)
+        assert recovery is not None
+        self.assertIn(TaskRecoveryAction.REPAIR_ARTIFACT, recovery.actions)
+        self.assertIn("[HARNESS DELIVERY REQUIRED]", feedback or "")
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(state.recoveries[-1].primary, TaskFailureCategory.ARTIFACT_INVALID)
+
     def test_response_policy_rejects_runtime_limit_text_as_completion(self) -> None:
         policy = AcceptFinalCompletion()
 

@@ -67,7 +67,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         if self._max_reads_per_resource < 1:
             raise ValueError("ADAPTIVE_MAX_READS_PER_RESOURCE must be positive")
         self._turn_budget = NonMutatingTurnBudget(self._max_nonmutating_actions)
-        self._delivery_satisfied: set[str] = set()
+        self._delivery_satisfied_generation: dict[str, int] = {}
         self._read_counts: dict[str, dict[str, int]] = {}
         self._read_inflight: dict[str, dict[str, tuple[tuple[str, ...], int]]] = {}
         self._resource_epochs: dict[str, int] = {}
@@ -87,7 +87,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             self._ledgers[key] = ledger
             if len(self._ledgers) > _MAX_RUN_LEDGERS:
                 evicted_key, _ = self._ledgers.popitem(last=False)
-                self._delivery_satisfied.discard(evicted_key)
+                self._delivery_satisfied_generation.pop(evicted_key, None)
                 self._read_counts.pop(evicted_key, None)
                 self._read_inflight.pop(evicted_key, None)
                 self._resource_epochs.pop(evicted_key, None)
@@ -169,7 +169,11 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                     for resource in resources:
                         counts[resource] = counts.get(resource, 0) + 1
             if tool_result.error_type is None and _is_delivery_write(call):
-                self._delivery_satisfied.add(run_key)
+                generation = _delivery_requirement_generation(request.state)
+                self._delivery_satisfied_generation[run_key] = max(
+                    generation,
+                    self._delivery_satisfied_generation.get(run_key, 0),
+                )
         advice_applied = bool(
             self._config.mode is VerificationMode.ADVISE
             and decision.disposition is VerificationDisposition.WARN
@@ -220,10 +224,11 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         )
         semantics = classify_tool_action(call.name, call.arguments)
         run_key = _run_key(request)
+        required_generation = _delivery_requirement_generation(request.state)
         with self._state_lock:
             self._ledger_locked(run_key)
-            delivery_satisfied = run_key in self._delivery_satisfied
-        delivery_required = _delivery_required(request.state) and not delivery_satisfied
+            satisfied_generation = self._delivery_satisfied_generation.get(run_key, 0)
+        delivery_required = required_generation > satisfied_generation
         if delivery_required and not _advances_delivery(call, semantics):
             blocked_kind = "non-output write" if semantics.mutating else "plain read"
             return ToolMessage(
@@ -404,16 +409,32 @@ def _looks_like_textual_tool_error(content: str) -> bool:
     return bool(_TEXTUAL_TOOL_ERROR.search(content))
 
 
-def _delivery_required(state: Any) -> bool:
+def _delivery_requirement_generation(state: Any) -> int:
     if not isinstance(state, Mapping):
-        return False
+        return 0
     messages = state.get("messages")
     if not isinstance(messages, list):
-        return False
-    return any(
-        "[HARNESS DELIVERY REQUIRED]" in _content_text(getattr(message, "content", ""))
+        return 0
+    return sum(
+        _is_user_message(message)
+        and "[HARNESS DELIVERY REQUIRED]"
+        in _content_text(
+            message.get("content", "")
+            if isinstance(message, Mapping)
+            else getattr(message, "content", "")
+        )
         for message in messages
     )
+
+
+def _is_user_message(message: Any) -> bool:
+    if isinstance(message, Mapping):
+        kind = str(message.get("type") or message.get("role") or "").lower()
+    else:
+        kind = str(
+            getattr(message, "type", "") or getattr(message, "role", "") or ""
+        ).lower()
+    return kind in {"human", "user"}
 
 
 def _is_delivery_write(call: ToolCall) -> bool:

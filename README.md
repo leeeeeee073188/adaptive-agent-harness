@@ -121,8 +121,10 @@ v3.6 不再继续调 Prompt，而是增加 Source Grounding 深模块：`SourceH
 
 v3.6 真实 canary 随后暴露 recovery priority 错误：Artifact 缺失时 grounding criterion 只是依赖阻断，却被归类为 `SYNTHESIS_LINEAGE_GAP`，使首次交付恢复消失；结果 0/5、无产物、320,755 Token。v3.7 只在 grounding assessment 明确 `UNSATISFIED` 时进入 lineage recovery，`BLOCKED` 仍由 Artifact delivery 恢复处理；A46/A47 在单测和 pinned container 中锁定该顺序，尚未付费运行。
 
-v3.7 live（A48）正确进入 Artifact delivery recovery，但原门禁仍允许写任意非输出脚本；模型因此用整个恢复 Turn 反复生成 helper scripts，最终 0/5、无产物、439,869 Token。v3.8 将 delivery progress 收紧为最终输出写入、直接 task-provided transform 或必要环境交互，阻止非输出 write；A49/A50 通过 313 项测试与容器 probe，尚未付费运行。
+v3.7 live（A48）正确进入 Artifact delivery recovery，但原门禁仍允许写任意非输出脚本；模型因此用整个恢复 Turn 反复生成 helper scripts，最终 0/5、无产物、439,869 Token。v3.8 将 delivery progress 收紧为最终输出写入、直接 task-provided transform 或必要环境交互，阻止非输出 write；A49/A50 通过 313 项测试与容器 probe。真实 A51 canary 虽生成产物，却写入四个全空集合；Harness 随后把公开 shape/non-vacuity 失败误分为 `STATE_INCONSISTENCY`，已满足的 delivery 门禁也没有被新修复义务重新武装，最终仅 1/5、858,909 Token、65 Tool。v3.9 将 missing 与 invalid Artifact 分成 `ARTIFACT_ERROR/WRITE_PARTIAL` 和 `ARTIFACT_INVALID/REPAIR_ARTIFACT` 两个独立的一次性预算，并按用户侧 delivery directive generation 重新武装门禁；A52/A53 已完成零模型和 pinned-container 验证。v2.6 继续作为历史最优 Shadow，停止所有付费扩跑，尚未执行 v3.9 live。
 
 所有后续 DeerFlow 测试默认 `thinking=enabled`、`reasoning_effort=high`；历史归档配置保持原值，只在明确标记的 ablation 中关闭或改变强度。
+
+为避免继续围绕单个困难 CLI 任务低效迭代，后续真实模型反馈先走与 MiniBench16 完全互斥的 Development `Diagnostic4`：File/easy、CLI/easy+vision、Browser/medium、API/medium 各一项，按固定 seed 和最低成本代理选择，一次只跑一个 index，但收齐四种类型的首次样本后才做架构修改。优化按规划、上下文、工具、环境、Artifact、Verification/Grounding、Recovery、多模态、离线 Experience 和成本十个维度聚类，禁止 task-id 特判。A54 零模型 preflight 已验证四类覆盖、难度/能力切片、MiniBench16 隔离及默认 `thinking=enabled/high`；详细流程见 [`docs/diagnostic4-evolution-loop.zh-CN.md`](docs/diagnostic4-evolution-loop.zh-CN.md)。
 
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

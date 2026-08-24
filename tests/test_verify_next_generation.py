@@ -64,6 +64,40 @@ class VerifyNextGenerationGateTests(unittest.TestCase):
             self.assertNotIn('"summary": "ok"', rendered)
             self.assertNotIn('"id": "x"', rendered)
 
+    def test_gate_accepts_public_shape_rejection_without_false_copy_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            case_dir, run_dir = _write_fixture(
+                root,
+                artifact_payload={"summary": "empty", "items": []},
+                intermediate_payload={"summary": "draft", "items": [{"id": "x"}]},
+            )
+
+            with mock.patch(
+                "scripts.verify_next_generation._run_test_modules",
+                return_value={
+                    "passed": True,
+                    "returncode": 0,
+                    "test_count": 42,
+                    "command": ["python", "-m", "unittest"],
+                },
+            ):
+                report = run_gate(
+                    real_repo=root / "realrepo",
+                    task_case=case_dir,
+                    historical_run=run_dir,
+                    output=root / "gate.json",
+                    core_root=root / "core",
+                )
+
+        self.assertTrue(report["passed"], report)
+        self.assertTrue(report["historical_artifact"]["rejected"])
+        self.assertFalse(report["historical_artifact"]["grounding_rejected"])
+        self.assertEqual(
+            report["historical_artifact"]["diagnostic_types"],
+            ["all_collections_empty"],
+        )
+
     def test_gate_fails_closed_when_required_paths_are_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -137,7 +171,12 @@ class VerifyNextGenerationGateTests(unittest.TestCase):
         self.assertEqual(rejected["findings"][0]["type"], "evaluator_private_path")
 
 
-def _write_fixture(root: Path, *, artifact_payload: object) -> tuple[Path, Path]:
+def _write_fixture(
+    root: Path,
+    *,
+    artifact_payload: object,
+    intermediate_payload: object | None = None,
+) -> tuple[Path, Path]:
     real_repo = root / "realrepo"
     real_repo.mkdir()
     core = root / "core"
@@ -169,7 +208,10 @@ Verify it against the raw source and report all matching records.
     output_dir.mkdir(parents=True)
     intermediate = run_dir / "workspace" / "workspace" / "analysis" / "results.json"
     intermediate.parent.mkdir(parents=True)
-    intermediate.write_text(json.dumps(artifact_payload), encoding="utf-8")
+    intermediate.write_text(
+        json.dumps(artifact_payload if intermediate_payload is None else intermediate_payload),
+        encoding="utf-8",
+    )
     (output_dir / "quality_audit.json").write_text(json.dumps(artifact_payload), encoding="utf-8")
     messages = [
         {"type": "human", "content": task_prompt},

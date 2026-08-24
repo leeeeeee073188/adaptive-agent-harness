@@ -256,6 +256,26 @@
       "sha256": "720a26f9255df7b2435bb820b85fd6b94300893bd4ce42e06ca2a590335f1d5c"
     },
     {
+      "bytes": 11051,
+      "path": "a51-v3-8-live/summary.json",
+      "sha256": "97cf0a62f3247261e5ea4b1d3460dbf44dad829d7b0ccac949a0da13daa7cf9f"
+    },
+    {
+      "bytes": 4031,
+      "path": "a52-v3-9-artifact-repair-gate/summary.json",
+      "sha256": "8dcd83f26e0e5e7d24a425992a6c2c119303e029408f1c6aa2063a9cf05005a6"
+    },
+    {
+      "bytes": 3598,
+      "path": "a53-v3-9-artifact-repair-container/summary.json",
+      "sha256": "c359e1c3948a7b3bf42ccb288aa054ca440b39808005569a55e0fbacc72c1db2"
+    },
+    {
+      "bytes": 1772,
+      "path": "a54-diagnostic4-preflight/summary.json",
+      "sha256": "298402dc51dfe50dbc12cbed56d4ab750e24ac59122dadacd2b8e0bdd68afb1b"
+    },
+    {
       "bytes": 2236,
       "path": "a20-runtime-evolution/container-wiring.json",
       "sha256": "8d02498ecf0c47547b8fea221d73edf6f6c94690e16e4a8a42cdac98259e2171"
@@ -509,9 +529,49 @@
       "bytes": 1814,
       "path": "a50-v3-8-strict-delivery-container/readiness.json",
       "sha256": "33ed969bb434e25b93c55abd159dc2a905d61b4c9b19d593dbf41c38c47de45f"
+    },
+    {
+      "bytes": 3032,
+      "path": "a51-v3-8-live/pair.json",
+      "sha256": "c5ce494ea1c8baceb22f582f6c30518db25d0e587b5edcfb5fb1add312c7bdc7"
+    },
+    {
+      "bytes": 3748,
+      "path": "a51-v3-8-live/diagnosis.json",
+      "sha256": "2c20b1939a1912065ccb21771979700ff2339398f97ca297783ca756c1523394"
+    },
+    {
+      "bytes": 3296,
+      "path": "a53-v3-9-artifact-repair-container/container-wiring.json",
+      "sha256": "5f2efb2084e611e5773d7838090ee4db38a5cde46a9725017036f3cbcaae73f0"
+    },
+    {
+      "bytes": 505,
+      "path": "a53-v3-9-artifact-repair-container/review.json",
+      "sha256": "9cc80cf91fafab50283292b846e9b012b0de61e4de73f62e591faf75c9e4b65a"
+    },
+    {
+      "bytes": 596,
+      "path": "a54-diagnostic4-preflight/lint-delta.json",
+      "sha256": "768927a22913b3c80255122deb1686052866cef23d72e96ab5d53eef0715c2a4"
+    },
+    {
+      "bytes": 526,
+      "path": "a54-diagnostic4-preflight/review.json",
+      "sha256": "4fc9bede5d0e3866e54bce2bc3d8c3640dd077af47ca57eb9c7d2172b0231a21"
+    },
+    {
+      "bytes": 743,
+      "path": "a54-diagnostic4-preflight/verification.json",
+      "sha256": "e446d92f50061c7682ae555eeb5377b84c7938d4c51acb2d3e5fc811de2775c3"
+    },
+    {
+      "bytes": 1594,
+      "path": "a54-diagnostic4-preflight/readiness.json",
+      "sha256": "949e069032467388c5f8265c1a816b4bb45fe423b62d8cf5efb17fccaa7b5aa7"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and latency but still produced no artifact. A30/A31 bind the loopback public-source materializer and early cache-block turn termination to one v3.2 canary. A32 records that source access and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error completion rejection, direct synthesis transforms, and fail-closed textual tool errors to one replacement Development canary. A35 records that v3.3 correctly rejected the empty completion but lost Evidence assessments behind the Response gate and produced no artifact. A36/A37 preserve those assessments and bind DeepSeek thinking=enabled with reasoning_effort=max through the actual pinned-container model factory for v3.4. A38 records that max thinking still reached only 1/5 while consuming 719,574 Tokens and ending on a mutation-epoch regression, so v2.6 remains selected. A39 binds the fix to a durable PolicySession run identity and proves object-shaped DeerFlow contexts keep epoch [1,1]. A40/A41 then freeze v3.5 at thinking=enabled, reasoning_effort=high for one same-task canary only. A42 records that the lifecycle error disappeared and quality returned to 2/5, but the artifact copied a known public draft result, Token use reached 765,768, and v2.6 remained the selected Shadow. A43/A44 add a hash-only claim/source lineage core and prove that the A42 public intermediate copy is rejected in replay and in the pinned container. A45 records a v3.6 recovery-order regression: blocked grounding masked the missing artifact, so no output was produced. A46/A47 verify that only an explicitly unsatisfied grounding criterion becomes a lineage failure and artifact delivery recovery remains available. A48 records that v3.7 requested delivery but the model spent the turn writing non-output helper scripts and still produced no artifact. A49/A50 make delivery recovery reject non-output writes while preserving task transforms and environment interactions. This is a copy guard, not full factual verification. Transfer, Held-out, and further task expansion remain disabled.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and latency but still produced no artifact. A30/A31 bind the loopback public-source materializer and early cache-block turn termination to one v3.2 canary. A32 records that source access and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error completion rejection, direct synthesis transforms, and fail-closed textual tool errors to one replacement Development canary. A35 records that v3.3 correctly rejected the empty completion but lost Evidence assessments behind the Response gate and produced no artifact. A36/A37 preserve those assessments and bind DeepSeek thinking=enabled with reasoning_effort=max through the actual pinned-container model factory for v3.4. A38 records that max thinking still reached only 1/5 while consuming 719,574 Tokens and ending on a mutation-epoch regression, so v2.6 remains selected. A39 binds the fix to a durable PolicySession run identity and proves object-shaped DeerFlow contexts keep epoch [1,1]. A40/A41 then freeze v3.5 at thinking=enabled, reasoning_effort=high for one same-task canary only. A42 records that the lifecycle error disappeared and quality returned to 2/5, but the artifact copied a known public draft result, Token use reached 765,768, and v2.6 remained the selected Shadow. A43/A44 add a hash-only claim/source lineage core and prove that the A42 public intermediate copy is rejected in replay and in the pinned container. A45 records a v3.6 recovery-order regression: blocked grounding masked the missing artifact, so no output was produced. A46/A47 verify that only an explicitly unsatisfied grounding criterion becomes a lineage failure and artifact delivery recovery remains available. A48 records that v3.7 requested delivery but the model spent the turn writing non-output helper scripts and still produced no artifact. A49/A50 make delivery recovery reject non-output writes while preserving task transforms and environment interactions. A51 records that v3.8 then wrote an empty placeholder, treated the failed public shape as state inconsistency, and exhausted 858,909 Tokens without passing. A52/A53 separate missing Artifact delivery from invalid Artifact repair, bound each to one attempt, and re-arm delivery by user directive generation in the pinned container. No paid v3.9 run has been performed. A54 freezes a MiniBench16-disjoint Diagnostic4 with one low-cost Development task per file/CLI/browser/API type and high thinking as the breadth-first feedback stage. This is a copy guard, not full factual verification. Transfer, Held-out, and further task expansion remain disabled.",
   "claims": {
     "action_ledger_classified_fraction": 0.8049999999999999,
     "action_ledger_enforcement_ready": false,
@@ -538,6 +598,50 @@
     "contract_coverage": 16,
     "core_business_vocabulary_findings": 0,
     "current_realreplica_unit_tests": 67,
+    "diagnostic4_counts": {
+      "capability": {
+        "browser-text": 1,
+        "text-only": 2,
+        "vision": 1
+      },
+      "category": {
+        "api": 1,
+        "browser": 1,
+        "cli": 1,
+        "file": 1
+      },
+      "difficulty_band": {
+        "easy": 2,
+        "medium": 2
+      },
+      "max_actions_sum": 240,
+      "timeout_sec_sum": 7200,
+      "total": 4
+    },
+    "diagnostic4_minibench16_disjoint": true,
+    "diagnostic4_new_lint_findings": 0,
+    "diagnostic4_optimization_dimensions": [
+      "task_understanding_and_planning",
+      "context_and_evidence",
+      "tool_selection_and_arguments",
+      "environment_interaction",
+      "artifact_synthesis",
+      "verification_and_grounding",
+      "recovery_and_loop_control",
+      "multimodal_perception",
+      "offline_experience_evolution",
+      "cost_and_observability"
+    ],
+    "diagnostic4_paid_expansion_allowed": false,
+    "diagnostic4_passed": true,
+    "diagnostic4_readiness": true,
+    "diagnostic4_task_ids": [
+      "file-google-trends-data-quality-audit",
+      "cli-alibaba-silicone-kitchenware-publish",
+      "browser-reddit-auth-browse",
+      "api-slack-contacts-sourcing-project-status-brief"
+    ],
+    "diagnostic4_thinking_high_default": true,
     "evolution_online_mutation_enabled": false,
     "failure_analysis_model_calls": 0,
     "failure_analysis_run_count": 6,
@@ -1263,12 +1367,195 @@
     "v3_7_source_hash_matches": true,
     "v3_8_candidate_variant": "adaptive_harness_source_grounding_v3_8",
     "v3_8_delivery_non_output_write_blocked": true,
+    "v3_8_diagnosis_row": {
+      "actions_by_intent": {
+        "discover": 6,
+        "read": 31,
+        "verify": 12,
+        "write": 8
+      },
+      "artifact_matches_non_output_files": [],
+      "audited_actions": 57,
+      "capacity_score": 0.2,
+      "context": {
+        "max_failure_layer_tokens": 944,
+        "max_history_dropped": 90,
+        "model_call_audits": 35
+      },
+      "failure_types": {
+        "LOOP": 4,
+        "NO_PROGRESS": 6
+      },
+      "passed": false,
+      "repeated_resources": [
+        {
+          "access_count": 10,
+          "resource": "workspace/handoff.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 9,
+          "resource": "workspace/readme.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 9,
+          "resource": "workspace",
+          "tool_names": [
+            "bash",
+            "glob",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 8,
+          "resource": "workspace/slack_excerpt.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "workspace/analysis/audit.py",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "workspace/drafts/draft_audit.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "workspace/analysis/results.json",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "http://127.0.0.1:4500/api",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "outputs",
+          "tool_names": [
+            "bash",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "outputs/quality_audit.json",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace/results.json",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/synthesize.py",
+          "tool_names": [
+            "bash",
+            "write_file"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "/mnt/user-data/workspace/synthesize.py",
+          "tool_names": [
+            "write_file"
+          ]
+        }
+      ],
+      "required_contract_kinds": [
+        "artifact_exists",
+        "observation_equals"
+      ],
+      "run_id": "adaptive-harness-source-grounding-v3-8-development",
+      "runtime_error_types": [],
+      "signals": {
+        "artifact_only_contract": false,
+        "cross_tool_repeated_resource_count": 8,
+        "durable_failure_state_missing_from_model_context": false,
+        "mutation_epoch_regression": false,
+        "repeated_resource_accesses": 55
+      },
+      "tool_calls": 65,
+      "total_tokens": 858909,
+      "variant": "adaptive_harness_source_grounding_v3_8"
+    },
     "v3_8_gate_passed": true,
+    "v3_8_live_paid_expansion_allowed": false,
+    "v3_8_live_row": {
+      "capacity_score": 0.2,
+      "checks_passed": 1,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.2,
+        "elapsed_sec": 285.54599999999994,
+        "token_fraction": 2.226931009997408,
+        "tool_calls": 47,
+        "total_tokens": 592740
+      },
+      "elapsed_sec": 421.328,
+      "integrity_passed": true,
+      "ledger_event_count": 1402,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 1,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 15,
+        "check_count": 57,
+        "dispositions": {
+          "allow": 20,
+          "block_scope": 4,
+          "record": 27,
+          "replan": 6
+        }
+      },
+      "run_id": "adaptive-harness-source-grounding-v3-8-development",
+      "tool_calls": 65,
+      "total_tokens": 858909,
+      "variant": "adaptive_harness_source_grounding_v3_8"
+    },
+    "v3_8_live_selected_candidate": "adaptive_harness_runtime_evolution_v2_6",
     "v3_8_paid_canary_allowed": true,
     "v3_8_paid_expansion_allowed": false,
     "v3_8_profile_fingerprint_matches": true,
     "v3_8_single_canary_allowed": true,
     "v3_8_source_hash_matches": true,
+    "v3_9_candidate_variant": "adaptive_harness_source_grounding_v3_9",
+    "v3_9_delivery_rearmed_after_invalid_artifact": true,
+    "v3_9_gate_passed": true,
+    "v3_9_invalid_artifact_recovery_rewrites_output": true,
+    "v3_9_paid_canary_allowed": true,
+    "v3_9_paid_expansion_allowed": false,
+    "v3_9_profile_fingerprint_matches": true,
+    "v3_9_single_canary_allowed": true,
+    "v3_9_source_hash_matches": true,
     "v3_candidate_variant": "adaptive_harness_evidence_workspace_v3",
     "v3_live_paid_expansion_allowed": false,
     "v3_live_row": {
@@ -1312,7 +1599,7 @@
     "v3_zero_model_passed": true,
     "zero_model_unit_tests": 179
   },
-  "git_head": "9fa0bc4333a45ef48bffc4495e8518f5e60662d7",
+  "git_head": "a2af528c879134a4c64a472f9aa6518033dacca1",
   "invariants": {
     "action_ledger_observe_only": true,
     "action_ledger_stable_controls_unwarned": true,
@@ -1322,6 +1609,7 @@
     "context_next_candidate_stays_shadow": true,
     "context_stage_not_full_benchmark": true,
     "core_business_semantics_decoupled": true,
+    "diagnostic4_is_breadth_first_and_isolated": true,
     "evolution_is_offline_governed": true,
     "failure_analysis_covers_live_chain": true,
     "failure_analysis_is_zero_model": true,
@@ -1378,6 +1666,9 @@
     "v3_7_regression_not_promoted": true,
     "v3_8_container_gate_cleared": true,
     "v3_8_gate_is_single_canary_only": true,
+    "v3_8_regression_not_promoted": true,
+    "v3_9_container_gate_cleared": true,
+    "v3_9_gate_is_single_canary_only": true,
     "v3_container_and_candidate_gate_cleared": true,
     "v3_evidence_bound_to_current_source": true,
     "v3_regression_not_promoted": true

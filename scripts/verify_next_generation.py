@@ -177,7 +177,10 @@ def run_gate(
         report["historical_artifact"] = artifact_report
         if not artifact_report["rejected"]:
             blockers.append("historical artifact was not rejected by public shape diagnostics")
-        if not artifact_report["grounding_rejected"]:
+        if (
+            "exact_provisional_copy" in artifact_report["diagnostic_types"]
+            and not artifact_report["grounding_rejected"]
+        ):
             blockers.append("historical provisional copy was not rejected by grounding diagnostics")
     else:
         report.setdefault(

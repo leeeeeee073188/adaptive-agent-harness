@@ -47,6 +47,26 @@ class TaskRecoveryTests(unittest.TestCase):
             (TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.WRITE_PARTIAL),
         )
 
+    def test_invalid_artifact_has_one_independent_repair_attempt(self) -> None:
+        decision = RuleBasedTaskRecoveryPolicy().decide(
+            TaskFailureContext(
+                TaskFailureCategory.ARTIFACT_INVALID,
+                attempts={
+                    TaskRecoveryAction.VALIDATE_CONTRACT: 1,
+                    TaskRecoveryAction.WRITE_PARTIAL: 1,
+                },
+            )
+        )
+
+        self.assertTrue(decision.should_continue)
+        self.assertEqual(decision.actions, (TaskRecoveryAction.REPAIR_ARTIFACT,))
+        execution = RuleBasedTaskRecoveryExecutor().execute(
+            decision,
+            missing=("Artifact failed public shape validation",),
+        )
+        self.assertTrue(execution.state_delta["recovery.partial_delivery_requested"])
+        self.assertIn("existing artifact failed public validation", execution.directives[0])
+
     def test_exhausted_recovery_budget_stops(self) -> None:
         attempts = {action: 1 for action in TaskRecoveryAction if action is not TaskRecoveryAction.STOP}
         decision = RuleBasedTaskRecoveryPolicy().decide(

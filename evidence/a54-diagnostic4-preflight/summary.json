@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "scope": "Diagnostic4 zero-model breadth-first preflight",
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "passed": true,
+  "checks": {
+    "task_count": true,
+    "unique_tasks": true,
+    "all_official_development": true,
+    "official_heldout_disjoint": true,
+    "minibench16_disjoint": true,
+    "category_breadth": true,
+    "simple_difficulty": true,
+    "capability_breadth": true,
+    "low_cost_proxy": true,
+    "collection_matches_selection": true,
+    "candidate_variant_frozen": true,
+    "development_phase_frozen": true,
+    "single_task_default": true,
+    "thinking_high_default": true
+  },
+  "task_ids": [
+    "file-google-trends-data-quality-audit",
+    "cli-alibaba-silicone-kitchenware-publish",
+    "browser-reddit-auth-browse",
+    "api-slack-contacts-sourcing-project-status-brief"
+  ],
+  "counts": {
+    "total": 4,
+    "category": {
+      "api": 1,
+      "browser": 1,
+      "cli": 1,
+      "file": 1
+    },
+    "difficulty_band": {
+      "easy": 2,
+      "medium": 2
+    },
+    "capability": {
+      "browser-text": 1,
+      "text-only": 2,
+      "vision": 1
+    },
+    "max_actions_sum": 240,
+    "timeout_sec_sum": 7200
+  },
+  "selection_algorithm": "type+easy-or-medium+lowest-cost-proxy+sha256-tiebreak-v1",
+  "optimization_dimensions": [
+    "task_understanding_and_planning",
+    "context_and_evidence",
+    "tool_selection_and_arguments",
+    "environment_interaction",
+    "artifact_synthesis",
+    "verification_and_grounding",
+    "recovery_and_loop_control",
+    "multimodal_perception",
+    "offline_experience_evolution",
+    "cost_and_observability"
+  ],
+  "paid_expansion_allowed": false,
+  "execution_policy": "Run one index at a time; collect one first sample per type before architecture changes."
+}

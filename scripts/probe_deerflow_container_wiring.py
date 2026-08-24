@@ -236,6 +236,14 @@ def main() -> int:
                 "delivery_non_output_write_blocked"
             )
             is True,
+            "delivery_rearmed_after_invalid_artifact": adaptive.get(
+                "delivery_rearmed_after_invalid_artifact"
+            )
+            is True,
+            "invalid_artifact_recovery_rewrites_output": adaptive.get(
+                "invalid_artifact_recovery_rewrites_output"
+            )
+            is True,
             "textual_tool_errors_fail_closed": adaptive.get(
                 "textual_tool_errors_fail_closed"
             )

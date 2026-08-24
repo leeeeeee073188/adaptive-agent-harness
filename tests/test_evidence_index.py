@@ -221,6 +221,46 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertTrue(index["claims"]["v3_8_source_hash_matches"])
         self.assertTrue(index["claims"]["v3_8_profile_fingerprint_matches"])
         self.assertTrue(index["claims"]["v3_8_delivery_non_output_write_blocked"])
+        self.assertEqual(index["claims"]["v3_8_live_row"]["capacity_score"], 0.2)
+        self.assertEqual(index["claims"]["v3_8_live_row"]["total_tokens"], 858909)
+        self.assertEqual(index["claims"]["v3_8_live_row"]["output_file_count"], 1)
+        self.assertFalse(index["claims"]["v3_8_live_paid_expansion_allowed"])
+        self.assertFalse(
+            index["claims"]["v3_8_diagnosis_row"]["signals"][
+                "mutation_epoch_regression"
+            ]
+        )
+        self.assertTrue(index["claims"]["v3_9_gate_passed"])
+        self.assertTrue(index["claims"]["v3_9_single_canary_allowed"])
+        self.assertFalse(index["claims"]["v3_9_paid_expansion_allowed"])
+        self.assertEqual(
+            index["claims"]["v3_9_candidate_variant"],
+            "adaptive_harness_source_grounding_v3_9",
+        )
+        self.assertTrue(index["claims"]["v3_9_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["v3_9_source_hash_matches"])
+        self.assertTrue(index["claims"]["v3_9_profile_fingerprint_matches"])
+        self.assertTrue(index["claims"]["v3_9_delivery_rearmed_after_invalid_artifact"])
+        self.assertTrue(index["claims"]["v3_9_invalid_artifact_recovery_rewrites_output"])
+        self.assertTrue(index["claims"]["diagnostic4_passed"])
+        self.assertEqual(len(index["claims"]["diagnostic4_task_ids"]), 4)
+        self.assertEqual(
+            index["claims"]["diagnostic4_counts"]["category"],
+            {"api": 1, "browser": 1, "cli": 1, "file": 1},
+        )
+        self.assertEqual(
+            index["claims"]["diagnostic4_counts"]["difficulty_band"],
+            {"easy": 2, "medium": 2},
+        )
+        self.assertTrue(index["claims"]["diagnostic4_thinking_high_default"])
+        self.assertTrue(index["claims"]["diagnostic4_minibench16_disjoint"])
+        self.assertEqual(
+            len(index["claims"]["diagnostic4_optimization_dimensions"]),
+            10,
+        )
+        self.assertEqual(index["claims"]["diagnostic4_new_lint_findings"], 0)
+        self.assertTrue(index["claims"]["diagnostic4_readiness"])
+        self.assertFalse(index["claims"]["diagnostic4_paid_expansion_allowed"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

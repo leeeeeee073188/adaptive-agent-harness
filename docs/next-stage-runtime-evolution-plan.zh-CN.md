@@ -164,7 +164,9 @@ v3.6 live（A45）因 recovery 优先级回退到 0/5：Artifact 不存在时 gr
 
 v3.7 live（A48）虽进入正确 recovery，却在 Turn 2 写入多个非输出 Python helper，未生成最终 Artifact。v3.8 的 delivery gate 只允许 `_is_delivery_write`、直接 `TRANSFORM` 和 `NAVIGATE/INTERACT`，明确阻止非输出 `WRITE`；这既约束 CLI 文件任务的临时脚本风暴，也保留 Browser/API 状态转换。A49/A50 零模型与容器门禁通过。
 
-该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
+v3.8 live（A51）证明“首次交付”和“校验失败后的修复”不能共享一个永久 satisfied bit。模型在门禁压力下先写了四个全空集合，公共 non-vacuity gate 正确拒绝；但 failure classifier 将 `artifact.json_shape:* = false` 归为 `STATE_INCONSISTENCY`，Recovery 转去 refresh/replan，原 delivery-satisfied 状态又让后续读取恢复，最终形成 65 Tool、858,909 Token 的新循环且只通过 1/5。v3.9 将 missing 与 invalid Artifact 分成 `ARTIFACT_ERROR/WRITE_PARTIAL` 和 `ARTIFACT_INVALID/REPAIR_ARTIFACT` 两条一次性预算，并以用户侧 delivery directive generation 重新武装门禁；工具返回中的 marker 不会伪造新 generation。A52/A53 已用 A51 全空产物反事实、160 项核心 gate、71 项 Runtime/Offline Evolution gate 和 pinned container 证明修复接线，模型调用与新增 Token 均为 0；考虑 A51 的高成本回退，暂不执行 v3.9 live。
+
+连续单题 canary 只用于关闭已知失败链，不是综合能力评测。下一轮改用与 MiniBench16 完全互斥的 Development Diagnostic4：File/easy/text、CLI/easy/vision、Browser/medium/text、API/medium/text 各一项；一次只跑一个 index，但普通单题失败不阻断剩余类型的首次采样，收齐四种类型后才允许修改架构。A54 已用零模型 preflight 锁定四类、easy/medium、text/browser/vision、`max_actions=60`、Dev-only、MiniBench16-disjoint 和 thinking=enabled/high。优化必须同时评估规划、上下文、工具、环境、Artifact、Verification/Grounding、Recovery、多模态、离线 Experience 和成本层，优先修复跨类型失败簇。通过后再进入 MiniBench16 Development，冻结 Profile/Experience Store，最后分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用。完整规则见 `docs/diagnostic4-evolution-loop.zh-CN.md`。
 
 ## 测试规格摘要
 

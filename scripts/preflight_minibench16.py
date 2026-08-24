@@ -37,7 +37,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_source_grounding_v3_8",
+        "adaptive_harness_source_grounding_v3_9",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -62,6 +62,8 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                     "grounding_diagnostics_model_visible": True,
                     "blocked_grounding_preserves_artifact_recovery": True,
                     "delivery_blocks_non_output_writes": True,
+                    "artifact_validation_failure_is_artifact_error": True,
+                    "delivery_directive_generation_rearms_after_invalid_artifact": True,
                 },
                 "phase": {"policy": "evidence-driven-soft-phase-v1"},
                 "model_reasoning": {
@@ -90,6 +92,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                     "max_reads_per_local_resource": 3,
                     "max_total_tool_calls_per_turn": 20,
                     "delivery_first_recovery": True,
+                    "bounded_artifact_write_attempts": {"initial": 1, "repair": 1},
                     "direct_synthesis_transform_allowed": True,
                     "empty_placeholder_discouraged": True,
                     "task_run_ledger_state": True,
@@ -259,6 +262,8 @@ def _bridge_evidence_valid(
         "delivery_first_gate_enforced",
         "delivery_synthesis_transform_allowed",
         "delivery_non_output_write_blocked",
+        "delivery_rearmed_after_invalid_artifact",
+        "invalid_artifact_recovery_rewrites_output",
         "embedded_client_stream_exercised",
         "executable_policy_profile_assembled",
         "max_completion_turns_frozen",

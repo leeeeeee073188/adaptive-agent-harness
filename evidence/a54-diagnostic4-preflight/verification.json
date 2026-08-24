@@ -1,0 +1,21 @@
+{
+  "scope": "leader integration verification after independent review",
+  "verdict": "pass_zero_model_workflow_only",
+  "adaptive_tests_passed": 317,
+  "realreplica_tests_passed": 77,
+  "diagnostic_deerflow_tests_passed": 50,
+  "diagnostic4_preflight_passed": true,
+  "container_probe_passed": true,
+  "adaptive_scoped_ruff_passed": true,
+  "real_scoped_ruff_passed_excluding_legacy_entrypoint": true,
+  "legacy_entrypoint_baseline_lint_findings": 9,
+  "legacy_entrypoint_current_lint_findings": 9,
+  "legacy_entrypoint_new_lint_findings": 0,
+  "compile_passed": true,
+  "diff_check_passed": true,
+  "readiness": true,
+  "thinking_request_effort": "high",
+  "model_calls": 0,
+  "paid_run_approved": false,
+  "paid_expansion_allowed": false
+}

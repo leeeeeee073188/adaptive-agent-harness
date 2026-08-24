@@ -65,6 +65,10 @@ REQUIRED = tuple(
         (48, "v3-7-live"),
         (49, "v3-8-strict-delivery-gate"),
         (50, "v3-8-strict-delivery-container"),
+        (51, "v3-8-live"),
+        (52, "v3-9-artifact-repair-gate"),
+        (53, "v3-9-artifact-repair-container"),
+        (54, "diagnostic4-preflight"),
     )
 )
 OPTIONAL = (
@@ -119,6 +123,14 @@ OPTIONAL = (
     "a50-v3-8-strict-delivery-container/review.json",
     "a50-v3-8-strict-delivery-container/verification.json",
     "a50-v3-8-strict-delivery-container/readiness.json",
+    "a51-v3-8-live/pair.json",
+    "a51-v3-8-live/diagnosis.json",
+    "a53-v3-9-artifact-repair-container/container-wiring.json",
+    "a53-v3-9-artifact-repair-container/review.json",
+    "a54-diagnostic4-preflight/lint-delta.json",
+    "a54-diagnostic4-preflight/review.json",
+    "a54-diagnostic4-preflight/verification.json",
+    "a54-diagnostic4-preflight/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -217,6 +229,18 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_8_gate = doc("a49-v3-8-strict-delivery-gate/summary.json") if not missing else {}
     v3_8_conformance = doc("a50-v3-8-strict-delivery-container/summary.json") if not missing else {}
     v3_8_wiring = documents.get("a50-v3-8-strict-delivery-container/container-wiring.json", {})
+    v3_8_live = doc("a51-v3-8-live/summary.json") if not missing else {}
+    v3_8_diagnosis = documents.get("a51-v3-8-live/diagnosis.json", {})
+    v3_9_gate = doc("a52-v3-9-artifact-repair-gate/summary.json") if not missing else {}
+    v3_9_conformance = doc("a53-v3-9-artifact-repair-container/summary.json") if not missing else {}
+    v3_9_wiring = documents.get("a53-v3-9-artifact-repair-container/container-wiring.json", {})
+    diagnostic4 = doc("a54-diagnostic4-preflight/summary.json") if not missing else {}
+    diagnostic4_lint_delta = documents.get(
+        "a54-diagnostic4-preflight/lint-delta.json", {}
+    )
+    diagnostic4_readiness = documents.get(
+        "a54-diagnostic4-preflight/readiness.json", {}
+    )
     selected_live_row = next(
         (
             row
@@ -723,6 +747,68 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "v3_8_delivery_non_output_write_blocked": (
             v3_8_wiring.get("checks") or {}
         ).get("delivery_non_output_write_blocked"),
+        "v3_8_live_selected_candidate": v3_8_live.get("selected_candidate_variant"),
+        "v3_8_live_paid_expansion_allowed": v3_8_live.get("paid_expansion_allowed"),
+        "v3_8_live_row": next(
+            (
+                row
+                for row in v3_8_live.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_source_grounding_v3_8"
+            ),
+            None,
+        ),
+        "v3_8_diagnosis_row": next(
+            (
+                row
+                for row in v3_8_diagnosis.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_source_grounding_v3_8"
+            ),
+            None,
+        ),
+        "v3_9_gate_passed": v3_9_gate.get("passed"),
+        "v3_9_single_canary_allowed": v3_9_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v3_9_paid_expansion_allowed": v3_9_gate.get("paid_expansion_allowed"),
+        "v3_9_candidate_variant": (
+            ((v3_9_conformance.get("profiles") or {}).get("candidate") or {}).get("name")
+        ),
+        "v3_9_paid_canary_allowed": (
+            v3_9_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v3_9_source_hash_matches": bool(v3_9_gate.get("adaptive_source_sha256"))
+        and v3_9_gate.get("adaptive_source_sha256")
+        == v3_9_wiring.get("adaptive_source_sha256"),
+        "v3_9_profile_fingerprint_matches": bool(
+            v3_9_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v3_9_gate.get("executable_policy_profile_fingerprint")
+        == v3_9_wiring.get("executable_policy_profile_fingerprint"),
+        "v3_9_delivery_rearmed_after_invalid_artifact": (
+            v3_9_wiring.get("checks") or {}
+        ).get("delivery_rearmed_after_invalid_artifact"),
+        "v3_9_invalid_artifact_recovery_rewrites_output": (
+            v3_9_wiring.get("checks") or {}
+        ).get("invalid_artifact_recovery_rewrites_output"),
+        "diagnostic4_passed": diagnostic4.get("passed"),
+        "diagnostic4_task_ids": diagnostic4.get("task_ids"),
+        "diagnostic4_counts": diagnostic4.get("counts"),
+        "diagnostic4_optimization_dimensions": diagnostic4.get(
+            "optimization_dimensions"
+        ),
+        "diagnostic4_thinking_high_default": (
+            diagnostic4.get("checks") or {}
+        ).get("thinking_high_default"),
+        "diagnostic4_minibench16_disjoint": (
+            diagnostic4.get("checks") or {}
+        ).get("minibench16_disjoint"),
+        "diagnostic4_paid_expansion_allowed": diagnostic4.get(
+            "paid_expansion_allowed"
+        ),
+        "diagnostic4_new_lint_findings": diagnostic4_lint_delta.get(
+            "new_finding_count"
+        ),
+        "diagnostic4_readiness": diagnostic4_readiness.get("ready"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -986,6 +1072,42 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v3_8_source_hash_matches"] is True
         and claims["v3_8_profile_fingerprint_matches"] is True
         and claims["v3_8_delivery_non_output_write_blocked"] is True,
+        "v3_8_regression_not_promoted": (
+            (claims["v3_8_live_row"] or {}).get("passed") is False
+            and (claims["v3_8_live_row"] or {}).get("capacity_score") == 0.2
+            and (claims["v3_8_live_row"] or {}).get("total_tokens") == 858909
+            and (claims["v3_8_live_row"] or {}).get("output_file_count") == 1
+            and ((claims["v3_8_diagnosis_row"] or {}).get("signals") or {}).get(
+                "mutation_epoch_regression"
+            )
+            is False
+            and claims["v3_8_live_selected_candidate"]
+            == "adaptive_harness_runtime_evolution_v2_6"
+            and claims["v3_8_live_paid_expansion_allowed"] is False
+        ),
+        "v3_9_gate_is_single_canary_only": claims["v3_9_gate_passed"] is True
+        and claims["v3_9_single_canary_allowed"] is True
+        and claims["v3_9_paid_expansion_allowed"] is False,
+        "v3_9_container_gate_cleared": claims["v3_9_candidate_variant"]
+        == "adaptive_harness_source_grounding_v3_9"
+        and claims["v3_9_paid_canary_allowed"] is True
+        and claims["v3_9_source_hash_matches"] is True
+        and claims["v3_9_profile_fingerprint_matches"] is True
+        and claims["v3_9_delivery_rearmed_after_invalid_artifact"] is True
+        and claims["v3_9_invalid_artifact_recovery_rewrites_output"] is True,
+        "diagnostic4_is_breadth_first_and_isolated": claims["diagnostic4_passed"]
+        is True
+        and len(claims["diagnostic4_task_ids"] or ()) == 4
+        and ((claims["diagnostic4_counts"] or {}).get("category") or {})
+        == {"api": 1, "browser": 1, "cli": 1, "file": 1}
+        and ((claims["diagnostic4_counts"] or {}).get("difficulty_band") or {})
+        == {"easy": 2, "medium": 2}
+        and claims["diagnostic4_thinking_high_default"] is True
+        and claims["diagnostic4_minibench16_disjoint"] is True
+        and len(claims["diagnostic4_optimization_dimensions"] or ()) == 10
+        and claims["diagnostic4_new_lint_findings"] == 0
+        and claims["diagnostic4_readiness"] is True
+        and claims["diagnostic4_paid_expansion_allowed"] is False,
     }
     return {
         "schema_version": 1,
@@ -1036,7 +1158,14 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "artifact delivery recovery remains available. A48 records that v3.7 requested delivery but "
             "the model spent the turn writing non-output helper scripts and still produced no artifact. "
             "A49/A50 make delivery recovery reject non-output writes while preserving task transforms and "
-            "environment interactions. This is a copy guard, not full factual verification. Transfer, "
+            "environment interactions. A51 records that v3.8 then wrote an empty placeholder, treated the "
+            "failed public shape as state inconsistency, and exhausted 858,909 Tokens without passing. "
+            "A52/A53 separate missing Artifact delivery from invalid Artifact repair, bound each to one "
+            "attempt, and re-arm delivery by user directive generation in the pinned container. No paid "
+            "v3.9 run has been performed. "
+            "A54 freezes a MiniBench16-disjoint Diagnostic4 with one low-cost Development task per "
+            "file/CLI/browser/API type and high thinking as the breadth-first feedback stage. "
+            "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),
     }

@@ -630,26 +630,35 @@ class KernelPolicySession:
         failed_kinds: set[CriterionKind] = set()
         has_source_evidence_gap = False
         has_synthesis_lineage_gap = False
+        has_artifact_validation_gap = False
         for criterion, assessment in unmet_required_criteria:
             failed_kinds.add(criterion.kind)
+            subject = str(criterion.parameters.get("subject") or "")
             if (
                 criterion.kind is CriterionKind.OBSERVATION_EQUALS
-                and str(criterion.parameters.get("subject") or "").startswith("source.access:")
+                and subject.startswith("source.access:")
             ):
                 has_source_evidence_gap = True
             if (
                 criterion.kind is CriterionKind.OBSERVATION_EQUALS
-                and str(criterion.parameters.get("subject") or "").startswith(
-                    "artifact.grounding:"
-                )
+                and subject.startswith("artifact.grounding:")
                 and assessment.status is CriterionStatus.UNSATISFIED
             ):
                 has_synthesis_lineage_gap = True
+            if (
+                criterion.kind is CriterionKind.OBSERVATION_EQUALS
+                and subject.startswith("artifact.")
+                and not subject.startswith("artifact.grounding:")
+                and assessment.status is CriterionStatus.UNSATISFIED
+            ):
+                has_artifact_validation_gap = True
         primary = (
             TaskFailureCategory.EVIDENCE_GAP
             if has_source_evidence_gap
             else TaskFailureCategory.SYNTHESIS_LINEAGE_GAP
             if has_synthesis_lineage_gap
+            else TaskFailureCategory.ARTIFACT_INVALID
+            if has_artifact_validation_gap
             else TaskFailureCategory.ARTIFACT_ERROR
             if CriterionKind.ARTIFACT_EXISTS in failed_kinds
             else TaskFailureCategory.CONSTRAINT_MISS

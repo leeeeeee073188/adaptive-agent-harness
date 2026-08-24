@@ -1,0 +1,17 @@
+{
+  "scope": "v3.9 artifact-repair lifecycle review",
+  "verdict": "approve_zero_model_and_container_only",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "verified": {
+    "artifact_invalid_has_independent_repair": true,
+    "delivery_rearmed_by_user_directive_generation": true,
+    "tool_markers_do_not_rearm_delivery": true,
+    "missing_artifact_recovery_remains_bounded": true,
+    "thinking_request_effort": "high"
+  },
+  "paid_run_approved": false,
+  "paid_expansion_allowed": false
+}

@@ -118,14 +118,18 @@ def _request(
     )
 
 
-def _delivery_required_state() -> dict[str, Any]:
+def _delivery_required_state(count: int = 1) -> dict[str, Any]:
     return {
         "messages": [
-            ToolMessage(
-                "[HARNESS DELIVERY REQUIRED] Read-only action blocked. Write a required artifact first.",
-                tool_call_id="previous",
-                status="error",
+            types.SimpleNamespace(
+                content=(
+                    "[HARNESS DELIVERY REQUIRED] Read-only action blocked. "
+                    "Write a required artifact first."
+                ),
+                type="human",
+                id=f"previous-{index}",
             )
+            for index in range(count)
         ]
     }
 
@@ -343,6 +347,7 @@ class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
                     name="write_file",
                     args={"path": "outputs/report.csv", "content": "partial"},
                     turn=1,
+                    state=_delivery_required_state(),
                 ),
                 lambda request: ToolMessage("wrote", tool_call_id=request.tool_call["id"]),
             )
@@ -357,6 +362,14 @@ class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
             called = True
             return ToolMessage("source rows", tool_call_id=request.tool_call["id"])
 
+        next_state = _delivery_required_state()
+        next_state["messages"].append(
+            ToolMessage(
+                "[HARNESS DELIVERY REQUIRED] plain read blocked.",
+                tool_call_id="old-blocked-read",
+                status="error",
+            )
+        )
         with bind_policy_session(session), bind_action_audit_sink(lambda _payload: None):
             read_result = middleware.wrap_tool_call(
                 _request(
@@ -364,7 +377,7 @@ class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
                     name="bash",
                     args={"command": "cat inputs/data.csv"},
                     turn=2,
-                    state=_delivery_required_state(),
+                    state=next_state,
                 ),
                 handler,
             )
@@ -372,6 +385,44 @@ class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
         self.assertTrue(called)
         self.assertEqual(read_result.content, "source rows")
         self.assertIsNone(read_result.status)
+
+    def test_new_delivery_directive_rearms_gate_after_invalid_artifact(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+
+        with bind_action_audit_sink(lambda _payload: None):
+            middleware.wrap_tool_call(
+                _request(
+                    call_id="write-placeholder",
+                    name="write_file",
+                    args={"path": "outputs/report.json", "content": "{}"},
+                    turn=1,
+                    state=_delivery_required_state(),
+                ),
+                lambda request: ToolMessage("wrote", tool_call_id=request.tool_call["id"]),
+            )
+
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("stale source", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="read-after-invalid-artifact",
+                    name="read_file",
+                    args={"path": "workspace/handoff.md"},
+                    turn=2,
+                    state=_delivery_required_state(2),
+                ),
+                handler,
+            )
+
+        self.assertFalse(called)
+        self.assertEqual(result.status, "error")
+        self.assertIn("[HARNESS DELIVERY REQUIRED]", result.content)
 
     def test_action_ledger_mutation_epoch_is_monotonic_across_turns_for_same_run(self) -> None:
         middleware = DeerFlowToolActionLedgerMiddleware()

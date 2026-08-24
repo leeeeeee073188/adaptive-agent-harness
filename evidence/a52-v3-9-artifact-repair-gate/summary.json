@@ -1,0 +1,117 @@
+{
+  "adaptive_source_sha256": "2f1bccbb883f3b993d5a5ae5181f52b1702f886152e69391f0390c003f7909de",
+  "blockers": [],
+  "candidate_single_development_canary_allowed": true,
+  "context_replay": {
+    "blockers": [],
+    "budget_tokens": 4096,
+    "history_dropped": true,
+    "max_estimated_tokens": 3915,
+    "passed": true,
+    "secret_findings": 0,
+    "snapshot_count": 6,
+    "task_excerpt_overlap_count": 45,
+    "visible_workspace_selected": true
+  },
+  "contract": {
+    "artifact_criterion_count": 1,
+    "artifact_grounding_criterion_present": true,
+    "artifact_non_vacuity_constraint_present": true,
+    "artifact_shape_criterion_present": true,
+    "criterion_count": 5,
+    "non_vacuous_collection_path_count": 4,
+    "provisional_source_path_count": 6,
+    "source_access_criteria_present": true,
+    "source_access_criterion_count": 2
+  },
+  "core_leakage": {
+    "finding_count": 0,
+    "findings": [],
+    "guardrail_literal_count": 36,
+    "guardrail_literal_interpretation": "generic evaluator-leakage terms are allowed only as defensive denylist/validation vocabulary; direct benchmark task ids, reward files, and private verifier paths fail this gate",
+    "passed": true
+  },
+  "cross_turn_tests": {
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "tests.test_deerflow_context_middleware",
+      "tests.test_policy_session"
+    ],
+    "passed": true,
+    "returncode": 0,
+    "stderr_tail": "............................\n----------------------------------------------------------------------\nRan 28 tests in 0.010s\n\nOK\n",
+    "stdout_tail": "",
+    "test_count": 28,
+    "test_modules": [
+      "tests.test_deerflow_context_middleware",
+      "tests.test_policy_session"
+    ]
+  },
+  "executable_policy_profile_fingerprint": "1d6ecca4685b3a93fb93297b14b1cb55db0f8687e7687f78c595c97057bed946",
+  "fail_closed": false,
+  "historical_artifact": {
+    "diagnostic_count": 1,
+    "diagnostic_types": [
+      "all_collections_empty"
+    ],
+    "grounding_checked": true,
+    "grounding_rejected": false,
+    "rejected": true,
+    "shape_checked": true
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "new_tokens": 0,
+  "paid_expansion_allowed": false,
+  "passed": true,
+  "repository_public_artifact_scan": {
+    "finding_count": 0,
+    "findings": [],
+    "passed": true,
+    "policy": "Public task/run identifiers are allowed in analysis documentation and aggregate evidence; credentials and evaluator-private file paths are forbidden.",
+    "public_task_reference_count": 238
+  },
+  "runtime_conformance": {
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "tests.test_task_state",
+      "tests.test_source_grounding",
+      "tests.test_action_ledger",
+      "tests.test_evidence_workspace",
+      "tests.test_context",
+      "tests.test_phase",
+      "tests.test_policy_session",
+      "tests.test_deerflow_policy",
+      "tests.test_deerflow_context_middleware",
+      "tests.test_deerflow_action_ledger_middleware",
+      "tests.test_recovery"
+    ],
+    "passed": true,
+    "returncode": 0,
+    "stderr_tail": "................................................................................................................................................................\n----------------------------------------------------------------------\nRan 160 tests in 0.265s\n\nOK\n",
+    "stdout_tail": "",
+    "test_count": 160,
+    "test_modules": [
+      "tests.test_task_state",
+      "tests.test_source_grounding",
+      "tests.test_action_ledger",
+      "tests.test_evidence_workspace",
+      "tests.test_context",
+      "tests.test_phase",
+      "tests.test_policy_session",
+      "tests.test_deerflow_policy",
+      "tests.test_deerflow_context_middleware",
+      "tests.test_deerflow_action_ledger_middleware",
+      "tests.test_recovery"
+    ]
+  },
+  "runtime_semantics": {
+    "direct_public_script_is_transform": true,
+    "runtime_limit_response_rejected": true
+  },
+  "scope": "next-generation zero-model adaptive harness gate"
+}

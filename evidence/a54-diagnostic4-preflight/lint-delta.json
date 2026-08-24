@@ -1,0 +1,24 @@
+{
+  "scope": "modified legacy batch entrypoint lint delta under repository Ruff config",
+  "baseline_commit": "c1cc224",
+  "baseline_returncode": 1,
+  "baseline_count": 9,
+  "baseline_codes": {
+    "BLE001": 2,
+    "DTZ005": 4,
+    "PIE810": 1,
+    "S112": 1,
+    "SIM114": 1
+  },
+  "current_returncode": 1,
+  "current_count": 9,
+  "current_codes": {
+    "BLE001": 2,
+    "DTZ005": 4,
+    "PIE810": 1,
+    "S112": 1,
+    "SIM114": 1
+  },
+  "new_finding_count": 0,
+  "interpretation": "No new lint findings; existing full-file debt remains outside the Diagnostic4 partition-guard change scope."
+}

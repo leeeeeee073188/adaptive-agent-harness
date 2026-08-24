@@ -370,6 +370,16 @@ derived from the Ledger projection. No mutable retry counter is authoritative.
 When all proposed actions are exhausted, the bridge terminates before its
 maximum turn count rather than issuing another model call.
 
+Artifact delivery has two bounded lifecycle transitions rather than one sticky
+boolean. A missing artifact receives one `ARTIFACT_ERROR → WRITE_PARTIAL`
+attempt. If the artifact then exists but an artifact-derived public observation
+(for example shape or non-vacuity) is explicitly unsatisfied, it receives one
+independent `ARTIFACT_INVALID → REPAIR_ARTIFACT` attempt. DeerFlow gates these
+attempts by the generation count of user-side delivery directives; tool error
+messages cannot manufacture a new generation. A valid output write satisfies
+only the currently observed generation, so a later failed validation re-arms
+delivery without reopening an unbounded retry loop.
+
 Execution remains deliberately split: `RecoveryExecutor` applies auditable
 Harness control-state deltas and next-turn directives, while external browser,
 API, and file mutations remain ordinary tools. This prevents a control policy
