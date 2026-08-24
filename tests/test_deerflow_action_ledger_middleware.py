@@ -131,6 +131,98 @@ def _delivery_required_state() -> dict[str, Any]:
 
 
 class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
+    def test_object_runtime_context_run_id_keeps_epoch_monotonic_without_policy_session(self) -> None:
+        from langgraph.prebuilt.tool_node import ToolCallRequest
+
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        audits: list[dict[str, Any]] = []
+        runtimes: list[Any] = []
+
+        def request(call_id: str, name: str, args: dict[str, Any], turn: int):
+            runtime = types.SimpleNamespace(
+                context=types.SimpleNamespace(run_id="transport-run", turn=turn)
+            )
+            runtimes.append(runtime)
+            return ToolCallRequest(
+                tool_call={"id": call_id, "name": name, "args": args},
+                state={},
+                runtime=runtime,
+            )
+
+        with bind_action_audit_sink(audits.append):
+            middleware.wrap_tool_call(
+                request(
+                    "write-1",
+                    "write_file",
+                    {"path": "outputs/report.json", "content": "{}"},
+                    1,
+                ),
+                lambda raw: ToolMessage("written", tool_call_id=raw.tool_call["id"]),
+            )
+            middleware.wrap_tool_call(
+                request("read-2", "read_file", {"path": "outputs/report.json"}, 2),
+                lambda raw: ToolMessage("{}", tool_call_id=raw.tool_call["id"]),
+            )
+
+        self.assertEqual(len(runtimes), 2)
+        self.assertNotEqual(id(runtimes[0]), id(runtimes[1]))
+        self.assertEqual(
+            [audit["record"]["mutation_epoch"] for audit in audits],
+            [1, 1],
+        )
+
+    def test_policy_session_run_id_keeps_epoch_monotonic_for_object_runtime_contexts(self) -> None:
+        from langgraph.prebuilt.tool_node import ToolCallRequest
+
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        session = KernelPolicySession()
+        ledger = SessionLedger("durable-run")
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Write outputs/report.json.",
+            public_schema=None,
+        )
+        audits: list[dict[str, Any]] = []
+        runtimes: list[Any] = []
+
+        def request(call_id: str, name: str, args: dict[str, Any], turn: int):
+            runtime = types.SimpleNamespace(
+                context=types.SimpleNamespace(run_id="transport-run", turn=turn)
+            )
+            runtimes.append(runtime)
+            return ToolCallRequest(
+                tool_call={"id": call_id, "name": name, "args": args},
+                state={},
+                runtime=runtime,
+            )
+
+        session.begin_turn(ledger)
+        with bind_policy_session(session), bind_action_audit_sink(audits.append):
+            middleware.wrap_tool_call(
+                request(
+                    "write-1",
+                    "write_file",
+                    {"path": "outputs/report.json", "content": "{}"},
+                    1,
+                ),
+                lambda raw: ToolMessage("written", tool_call_id=raw.tool_call["id"]),
+            )
+
+        session.begin_turn(ledger)
+        with bind_policy_session(session), bind_action_audit_sink(audits.append):
+            middleware.wrap_tool_call(
+                request("read-2", "read_file", {"path": "outputs/report.json"}, 2),
+                lambda raw: ToolMessage("{}", tool_call_id=raw.tool_call["id"]),
+            )
+
+        self.assertEqual(len(runtimes), 2)
+        self.assertNotEqual(id(runtimes[0]), id(runtimes[1]))
+        self.assertEqual(
+            [audit["record"]["mutation_epoch"] for audit in audits],
+            [1, 1],
+        )
+
     def test_delivery_gate_allows_direct_synthesis_script_before_artifact_write(self) -> None:
         middleware = DeerFlowToolActionLedgerMiddleware()
         called = False

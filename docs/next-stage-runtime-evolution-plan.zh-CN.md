@@ -154,6 +154,8 @@ v3.4 修复 Completion 合取语义，并按 DeepSeek 官方 OpenAI-compatible �
 
 v3.4 的真实结果记录在 `evidence/a38-v3-4-thinking-max-live/`：思考模式确实输出 `reasoning_content`，但模型在三个 turn 内生成大量中间脚本并反复触发工具 schema/交付门禁，最终将产物回退为空集合；Capacity 仅 0.2，Token 719,574、Tool 64、耗时 1,043.6 秒，并因 `mutation epoch cannot move backwards` 结束。相对 Vanilla Token 增加 170.3%，因此 v2.6 继续作为历史最优 Shadow，thinking=max 不得扩跑。
 
+A39 离线定位并修复 mutation epoch：真实 ToolCallRequest 的 runtime context 为对象，原 `_run_key` 只识别 Mapping，跨 Turn 退化为不同 `id(runtime)`。修复后 PolicySession 从 SessionLedger 持有 durable run id，中间件优先使用该身份；单测和 pinned-container 对象 context 均验证 epoch `[1,1]`。A40/A41 将 v3.5 冻结为 `thinking.type=enabled + reasoning_effort=high`，同时确认 high request 与 epoch 单调，只授权同一 Development 任务一次运行。
+
 该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
 
 ## 测试规格摘要

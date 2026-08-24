@@ -13,9 +13,13 @@ import uuid
 from pathlib import Path
 
 try:
-    from scripts.preflight_minibench16 import DEFAULT_IMAGE, _variant_specs
+    from scripts.preflight_minibench16 import (
+        CANDIDATE_THINKING_EFFORT,
+        DEFAULT_IMAGE,
+        _variant_specs,
+    )
 except ModuleNotFoundError:  # Direct script execution puts scripts/ on sys.path.
-    from preflight_minibench16 import DEFAULT_IMAGE, _variant_specs
+    from preflight_minibench16 import CANDIDATE_THINKING_EFFORT, DEFAULT_IMAGE, _variant_specs
 
 from adaptive_harness.integrations.realreplica import RealReplicaMiniBenchAdapter
 from adaptive_harness.model_routes import PRIMARY_MODEL
@@ -48,6 +52,7 @@ def main() -> int:
     image_id = _run("docker", "image", "inspect", args.image, "--format", "{{.Id}}")
     source_dir = ROOT / "src/adaptive_harness"
     runner_path = realreplica_root / "real_replica_bench/harnesses/deerflow/runner.py"
+    batch_runner_path = realreplica_root / "scripts/run_realreplicabench.py"
     candidate_config = realreplica_root / "configs/realreplicabench_adaptive_minibench16.yaml"
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -63,7 +68,7 @@ def main() -> int:
             build_deerflow_config(
                 adaptive_context_enabled=True,
                 adaptive_action_ledger_enabled=True,
-                thinking_effort="max",
+                thinking_effort=CANDIDATE_THINKING_EFFORT,
             ).to_yaml(),
             encoding="utf-8",
         )
@@ -150,6 +155,7 @@ def main() -> int:
         payload = json.loads(result_path.read_text())
         adaptive = payload.get("adaptive") or {}
         runner_text = runner_path.read_text()
+        batch_runner_text = batch_runner_path.read_text()
         config_text = candidate_config.read_text()
         checks = {
             "adaptive_package_imported": True,
@@ -197,15 +203,21 @@ def main() -> int:
                 "tool_call_limit_request_shape_valid"
             )
             is True,
-            "thinking_max_request_configured": adaptive.get(
-                "thinking_max_request_configured"
+            "thinking_request_configured": adaptive.get(
+                "thinking_request_configured"
             )
             is True,
+            "thinking_effort_matches": adaptive.get("thinking_request_effort")
+            == CANDIDATE_THINKING_EFFORT,
             "action_ledger_request_shape_valid": (
                 adaptive.get("action_ledger_request_shape_valid") is True
             ),
             "action_scope_block_enforced": adaptive.get(
                 "action_scope_block_enforced"
+            )
+            is True,
+            "object_context_epoch_monotonic": adaptive.get(
+                "object_context_epoch_monotonic"
             )
             is True,
             "global_nonmutating_budget_enforced": adaptive.get(
@@ -254,6 +266,10 @@ def main() -> int:
             ),
             "realreplica_runner_copies_source": "/tmp/adaptive-src/adaptive_harness" in runner_text,
             "realreplica_runner_persists_ledger": "adaptive-ledger.jsonl" in runner_text,
+            "realreplica_batch_thinking_effort_wired": (
+                '"deerflow.thinking_effort"' in batch_runner_text
+                and '"--deerflow-thinking-effort"' in batch_runner_text
+            ),
             "runner_probe_used_zero_models": adaptive.get("model_calls") == 0,
         }
         runner_wired = all(
@@ -265,6 +281,7 @@ def main() -> int:
                 "public_source_materializer_wired",
                 "realreplica_runner_copies_source",
                 "realreplica_runner_persists_ledger",
+                "realreplica_batch_thinking_effort_wired",
                 "max_completion_turns_frozen",
                 "local_resource_read_budget_frozen",
                 "runner_probe_used_zero_models",
@@ -283,6 +300,9 @@ def main() -> int:
             ),
             "adaptive_source_sha256": _sha256_tree(source_dir),
             "runner_source_sha256": hashlib.sha256(runner_path.read_bytes()).hexdigest(),
+            "batch_runner_source_sha256": hashlib.sha256(
+                batch_runner_path.read_bytes()
+            ).hexdigest(),
             "probe_script_sha256": hashlib.sha256(generated_script.read_bytes()).hexdigest(),
             "model_calls": 0,
             "new_model_tokens": 0,
@@ -291,6 +311,7 @@ def main() -> int:
             "ledger_event_count": adaptive.get("ledger_event_count"),
             "ledger_sha256": hashlib.sha256(ledger_path.read_bytes()).hexdigest(),
             "usage": adaptive.get("usage") or {},
+            "thinking_request_effort": adaptive.get("thinking_request_effort"),
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")

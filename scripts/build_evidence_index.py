@@ -53,6 +53,9 @@ REQUIRED = tuple(
         (36, "v3-4-thinking-max-gate"),
         (37, "v3-4-thinking-max-container"),
         (38, "v3-4-thinking-max-live"),
+        (39, "mutation-epoch-offline"),
+        (40, "v3-5-thinking-high-gate"),
+        (41, "v3-5-thinking-high-container"),
     )
 )
 OPTIONAL = (
@@ -82,6 +85,13 @@ OPTIONAL = (
     "a37-v3-4-thinking-max-container/readiness.json",
     "a38-v3-4-thinking-max-live/pair.json",
     "a38-v3-4-thinking-max-live/diagnosis.json",
+    "a39-mutation-epoch-offline/zero-model-gate.json",
+    "a39-mutation-epoch-offline/container-wiring.json",
+    "a41-v3-5-thinking-high-container/container-wiring.json",
+    "a41-v3-5-thinking-high-container/review.json",
+    "a41-v3-5-thinking-high-container/verification.json",
+    "a41-v3-5-thinking-high-container/lint-delta.json",
+    "a41-v3-5-thinking-high-container/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -160,6 +170,11 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_4_conformance = doc("a37-v3-4-thinking-max-container/summary.json") if not missing else {}
     v3_4_wiring = documents.get("a37-v3-4-thinking-max-container/container-wiring.json", {})
     v3_4_live = doc("a38-v3-4-thinking-max-live/summary.json") if not missing else {}
+    epoch_offline = doc("a39-mutation-epoch-offline/summary.json") if not missing else {}
+    epoch_wiring = documents.get("a39-mutation-epoch-offline/container-wiring.json", {})
+    v3_5_gate = doc("a40-v3-5-thinking-high-gate/summary.json") if not missing else {}
+    v3_5_conformance = doc("a41-v3-5-thinking-high-container/summary.json") if not missing else {}
+    v3_5_wiring = documents.get("a41-v3-5-thinking-high-container/container-wiring.json", {})
     selected_live_row = next(
         (
             row
@@ -512,6 +527,36 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             ),
             None,
         ),
+        "mutation_epoch_offline_gate_passed": epoch_offline.get("zero_model_passed"),
+        "mutation_epoch_object_context_monotonic": (
+            epoch_wiring.get("checks") or {}
+        ).get("object_context_epoch_monotonic"),
+        "v3_5_gate_passed": v3_5_gate.get("passed"),
+        "v3_5_single_canary_allowed": v3_5_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v3_5_paid_expansion_allowed": v3_5_gate.get("paid_expansion_allowed"),
+        "v3_5_candidate_variant": (
+            (v3_5_conformance.get("profiles") or {}).get("candidate") or {}
+        ).get("name"),
+        "v3_5_paid_canary_allowed": (
+            v3_5_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v3_5_source_hash_matches": bool(v3_5_gate.get("adaptive_source_sha256"))
+        and v3_5_gate.get("adaptive_source_sha256")
+        == v3_5_wiring.get("adaptive_source_sha256"),
+        "v3_5_profile_fingerprint_matches": bool(
+            v3_5_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v3_5_gate.get("executable_policy_profile_fingerprint")
+        == v3_5_wiring.get("executable_policy_profile_fingerprint"),
+        "v3_5_thinking_effort": v3_5_wiring.get("thinking_request_effort"),
+        "v3_5_thinking_request_configured": (
+            v3_5_wiring.get("checks") or {}
+        ).get("thinking_request_configured"),
+        "v3_5_epoch_monotonic": (
+            v3_5_wiring.get("checks") or {}
+        ).get("object_context_epoch_monotonic"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -690,6 +735,22 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             == "adaptive_harness_runtime_evolution_v2_6"
             and claims["v3_4_live_paid_expansion_allowed"] is False
         ),
+        "mutation_epoch_offline_fix_verified": claims[
+            "mutation_epoch_offline_gate_passed"
+        ]
+        is True
+        and claims["mutation_epoch_object_context_monotonic"] is True,
+        "v3_5_gate_is_single_canary_only": claims["v3_5_gate_passed"] is True
+        and claims["v3_5_single_canary_allowed"] is True
+        and claims["v3_5_paid_expansion_allowed"] is False,
+        "v3_5_high_container_gate_cleared": claims["v3_5_candidate_variant"]
+        == "adaptive_harness_evidence_workspace_v3_5"
+        and claims["v3_5_paid_canary_allowed"] is True
+        and claims["v3_5_source_hash_matches"] is True
+        and claims["v3_5_profile_fingerprint_matches"] is True
+        and claims["v3_5_thinking_effort"] == "high"
+        and claims["v3_5_thinking_request_configured"] is True
+        and claims["v3_5_epoch_monotonic"] is True,
     }
     return {
         "schema_version": 1,
@@ -728,8 +789,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "A36/A37 preserve those assessments and bind DeepSeek thinking=enabled with reasoning_effort=max "
             "through the actual pinned-container model factory for v3.4. A38 records that max thinking "
             "still reached only 1/5 while consuming 719,574 Tokens and ending on a mutation-epoch "
-            "regression, so v2.6 remains selected. Transfer, Held-out, and further task expansion remain "
-            "disabled."
+            "regression, so v2.6 remains selected. A39 binds the fix to a durable PolicySession run "
+            "identity and proves object-shaped DeerFlow contexts keep epoch [1,1]. A40/A41 then freeze "
+            "v3.5 at thinking=enabled, reasoning_effort=high for one same-task canary only. Transfer, "
+            "Held-out, and further task expansion remain disabled."
         ),
     }
 

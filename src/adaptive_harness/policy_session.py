@@ -143,10 +143,17 @@ class KernelPolicySession:
         self._resource_cursor = -1
         self._task_prompt = ""
         self._turn_index = 0
+        self._run_id: str | None = None
 
     @property
     def turn_index(self) -> int:
         return self._turn_index
+
+    @property
+    def run_id(self) -> str | None:
+        """Durable run identity shared with middleware across transport turns."""
+
+        return self._run_id
 
     def prepare_context(
         self,
@@ -202,6 +209,9 @@ class KernelPolicySession:
         public_schema: Mapping[str, object] | None,
         criterion_supported: CriterionSupport | None = None,
     ) -> TaskContract:
+        if self._run_id is not None and self._run_id != ledger.run_id:
+            raise ValueError("one PolicySession cannot be reused across different runs")
+        self._run_id = ledger.run_id
         contract = self.contract_builder.build(task_id, task_prompt, public_schema)
         self._task_prompt = task_prompt
         if self.unsupported_criteria == "observe_only" and criterion_supported is not None:

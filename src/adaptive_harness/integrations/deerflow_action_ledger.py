@@ -323,12 +323,15 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
 def _run_key(request: ToolCallRequest) -> str:
     """Return the stable task-run key shared by all policy turns in one run."""
 
+    session = current_policy_session()
+    if session is not None and session.run_id:
+        return f"policy-session:{session.run_id}"
     runtime = getattr(request, "runtime", None)
     context = getattr(runtime, "context", None)
-    if isinstance(context, Mapping):
-        for key in ("run_id", "thread_id"):
-            if context.get(key):
-                return f"{key}:{context[key]}"
+    for key in ("run_id", "thread_id"):
+        value = _context_value(context, key)
+        if value:
+            return f"{key}:{value}"
     return f"runtime:{id(runtime)}"
 
 
@@ -341,11 +344,17 @@ def _turn_key(request: ToolCallRequest) -> str:
         return f"{run_key}:policy-turn:{session.turn_index}"
     runtime = getattr(request, "runtime", None)
     context = getattr(runtime, "context", None)
-    if isinstance(context, Mapping):
-        for key in ("policy_turn", "turn_index", "turn"):
-            if context.get(key) is not None:
-                return f"{run_key}:policy-turn:{context[key]}"
+    for key in ("policy_turn", "turn_index", "turn"):
+        value = _context_value(context, key)
+        if value is not None:
+            return f"{run_key}:policy-turn:{value}"
     return f"{run_key}:policy-turn:0"
+
+
+def _context_value(context: Any, key: str) -> Any:
+    if isinstance(context, Mapping):
+        return context.get(key)
+    return getattr(context, key, None)
 
 
 def _tool_result(call_id: str, result: ToolMessage | Command) -> ToolResult:

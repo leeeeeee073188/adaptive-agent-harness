@@ -1,0 +1,17 @@
+{
+  "scope": "independent v3.5 pre-canary verification",
+  "verdict": "pass_single_development_canary",
+  "adaptive_tests_passed": 295,
+  "realreplica_tests_passed": 71,
+  "object_context_epoch_monotonic": true,
+  "thinking_request_effort": "high",
+  "thinking_request_configured": true,
+  "batch_thinking_effort_wired": true,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "legacy_entrypoint_new_lint_findings": 0,
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false,
+  "execution_blocker": "Commit and clean both worktrees before the formal canary."
+}

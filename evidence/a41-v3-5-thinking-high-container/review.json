@@ -1,0 +1,28 @@
+{
+  "scope": "v3.5 epoch-fix and thinking-high pre-canary code review",
+  "verdict": "approve_single_development_canary",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "resolved_findings": [
+    {
+      "severity": "medium",
+      "issue": "Batch CLI thinking-effort override did not update resolved config.",
+      "resolution": "resolve_config now applies deerflow.thinking_effort and a CLI override regression test passes."
+    }
+  ],
+  "verified": {
+    "durable_policy_session_run_identity": true,
+    "object_runtime_context_epoch_monotonic": true,
+    "thinking_enabled": true,
+    "reasoning_effort": "high",
+    "batch_effort_propagation": true,
+    "model_calls_in_gate": 0,
+    "secret_findings": 0
+  },
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false,
+  "prohibited": ["additional Development tasks", "Transfer", "Held-out", "full 107-task run"]
+}

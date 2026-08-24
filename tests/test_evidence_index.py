@@ -155,6 +155,21 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertEqual(index["claims"]["v3_4_live_row"]["total_tokens"], 719574)
         self.assertEqual(index["claims"]["v3_4_live_row"]["tool_calls"], 64)
         self.assertFalse(index["claims"]["v3_4_live_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["mutation_epoch_offline_gate_passed"])
+        self.assertTrue(index["claims"]["mutation_epoch_object_context_monotonic"])
+        self.assertTrue(index["claims"]["v3_5_gate_passed"])
+        self.assertTrue(index["claims"]["v3_5_single_canary_allowed"])
+        self.assertFalse(index["claims"]["v3_5_paid_expansion_allowed"])
+        self.assertEqual(
+            index["claims"]["v3_5_candidate_variant"],
+            "adaptive_harness_evidence_workspace_v3_5",
+        )
+        self.assertTrue(index["claims"]["v3_5_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["v3_5_source_hash_matches"])
+        self.assertTrue(index["claims"]["v3_5_profile_fingerprint_matches"])
+        self.assertEqual(index["claims"]["v3_5_thinking_effort"], "high")
+        self.assertTrue(index["claims"]["v3_5_thinking_request_configured"])
+        self.assertTrue(index["claims"]["v3_5_epoch_monotonic"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

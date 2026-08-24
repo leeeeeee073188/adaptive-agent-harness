@@ -18,6 +18,7 @@ from adaptive_harness.model_routes import PRIMARY_MODEL
 from adaptive_harness.profiles import candidate_policy_profile
 
 DEFAULT_IMAGE = "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d"
+CANDIDATE_THINKING_EFFORT = "high"
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -36,7 +37,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_evidence_workspace_v3_4",
+        "adaptive_harness_evidence_workspace_v3_5",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -55,7 +56,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                 "phase": {"policy": "evidence-driven-soft-phase-v1"},
                 "model_reasoning": {
                     "thinking": "enabled",
-                    "reasoning_effort": "max",
+                    "reasoning_effort": CANDIDATE_THINKING_EFFORT,
                     "wire_format": "openai-chat-completions",
                 },
                 "completion": {
@@ -249,8 +250,10 @@ def _bridge_evidence_valid(
         "embedded_client_stream_exercised",
         "executable_policy_profile_assembled",
         "max_completion_turns_frozen",
+        "object_context_epoch_monotonic",
         "local_resource_read_budget_frozen",
         "public_source_materializer_wired",
+        "realreplica_batch_thinking_effort_wired",
         "public_non_vacuity_gate_enforced",
         "runtime_limit_response_rejected",
         "textual_tool_errors_fail_closed",
@@ -259,7 +262,8 @@ def _bridge_evidence_valid(
         "policy_profile_fingerprint_matches",
         "tool_call_limit_middleware_imported",
         "tool_call_limit_request_shape_valid",
-        "thinking_max_request_configured",
+        "thinking_request_configured",
+        "thinking_effort_matches",
     }
     return bool(
         isinstance(value, dict)

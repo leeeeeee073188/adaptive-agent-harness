@@ -1,0 +1,31 @@
+{
+  "baseline_codes": {
+    "BLE001": 5,
+    "DTZ005": 16,
+    "F541": 4,
+    "I001": 1,
+    "PIE810": 1,
+    "PLW1510": 1,
+    "S112": 2,
+    "SIM114": 1,
+    "UP035": 1
+  },
+  "baseline_commit": "572f410",
+  "baseline_count": 32,
+  "baseline_returncode": 1,
+  "current_codes": {
+    "BLE001": 5,
+    "DTZ005": 16,
+    "F541": 4,
+    "PIE810": 1,
+    "PLW1510": 1,
+    "S112": 2,
+    "SIM114": 1,
+    "UP035": 1
+  },
+  "current_count": 31,
+  "current_returncode": 1,
+  "interpretation": "No new lint findings; existing full-file debt remains outside the v3.5 change scope.",
+  "new_finding_count": 0,
+  "scope": "legacy entrypoint lint delta under repository Ruff config"
+}

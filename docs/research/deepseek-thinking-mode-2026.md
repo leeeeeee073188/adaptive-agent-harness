@@ -27,7 +27,7 @@ field when replaying assistant messages.
 
 ## Harness mapping
 
-The generated DeerFlow model profile therefore declares:
+The v3.4 generated DeerFlow model profile declared:
 
 ```yaml
 supports_thinking: true
@@ -51,3 +51,8 @@ A pinned-container zero-model probe instantiates the actual
 resulting client has `reasoning_effort == "max"` and
 `extra_body.thinking.type == "enabled"`. This proves request configuration, not
 model quality; quality is measured only by the subsequent Development canary.
+
+The v3.4 max-effort canary did not improve quality and materially increased
+cost, so the next frozen v3.5 candidate keeps thinking enabled but changes only
+the public effort field to `high`. Its pinned-container probe verifies
+`reasoning_effort == "high"` before the one-task Development rerun.

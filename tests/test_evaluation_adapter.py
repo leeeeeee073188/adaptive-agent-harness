@@ -142,8 +142,10 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "embedded_client_stream_exercised": True,
                 "executable_policy_profile_assembled": True,
                 "max_completion_turns_frozen": True,
+                "object_context_epoch_monotonic": True,
                 "local_resource_read_budget_frozen": True,
                 "public_source_materializer_wired": True,
+                "realreplica_batch_thinking_effort_wired": True,
                 "public_non_vacuity_gate_enforced": True,
                 "runtime_limit_response_rejected": True,
                 "textual_tool_errors_fail_closed": True,
@@ -152,7 +154,8 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "policy_profile_fingerprint_matches": True,
                 "tool_call_limit_middleware_imported": True,
                 "tool_call_limit_request_shape_valid": True,
-                "thinking_max_request_configured": True,
+                "thinking_request_configured": True,
+                "thinking_effort_matches": True,
             },
         }
         _write_json(path, payload)
