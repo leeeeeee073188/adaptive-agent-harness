@@ -391,6 +391,15 @@ the visible file count for directories. Runtime observation providers contain
 `OSError`/HTTP failures as `OBSERVATION_SNAPSHOT_FAILED` facts instead of
 crashing the Agent loop.
 
+Tool adapters may repair only non-semantic compatibility metadata. DeerFlow's
+`write_file` and `str_replace` require a short `description`; when the model
+omits only that field, the middleware supplies an audited bounded description
+while preserving every semantic argument (`path`, content, replacement text).
+It never repairs missing semantic fields or overrides an explicit description.
+The after-model delivery guard also terminates a multi-tool batch when none of
+its calls can advance the current required Artifact generation, avoiding many
+redundant blocked tool executions from one model response.
+
 Execution remains deliberately split: `RecoveryExecutor` applies auditable
 Harness control-state deltas and next-turn directives, while external browser,
 API, and file mutations remain ordinary tools. This prevents a control policy

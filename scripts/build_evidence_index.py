@@ -74,6 +74,9 @@ REQUIRED = tuple(
         (55, "diagnostic4-live"),
         (56, "v4-cross-type-gate"),
         (57, "v4-cross-type-container"),
+        (58, "v4-file-live"),
+        (59, "v4-1-tool-compat-gate"),
+        (60, "v4-1-tool-compat-container"),
     )
 )
 OPTIONAL = (
@@ -141,6 +144,13 @@ OPTIONAL = (
     "a57-v4-cross-type-container/review.json",
     "a57-v4-cross-type-container/verification.json",
     "a57-v4-cross-type-container/readiness.json",
+    "a58-v4-file-live/pair.json",
+    "a58-v4-file-live/diagnosis.json",
+    "a60-v4-1-tool-compat-container/container-wiring.json",
+    "a60-v4-1-tool-compat-container/lint-delta.json",
+    "a60-v4-1-tool-compat-container/review.json",
+    "a60-v4-1-tool-compat-container/verification.json",
+    "a60-v4-1-tool-compat-container/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -257,6 +267,18 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v4_wiring = documents.get("a57-v4-cross-type-container/container-wiring.json", {})
     v4_lint_delta = documents.get("a57-v4-cross-type-container/lint-delta.json", {})
     v4_readiness = documents.get("a57-v4-cross-type-container/readiness.json", {})
+    v4_live = doc("a58-v4-file-live/summary.json") if not missing else {}
+    v4_1_gate = doc("a59-v4-1-tool-compat-gate/summary.json") if not missing else {}
+    v4_1_conformance = doc("a60-v4-1-tool-compat-container/summary.json") if not missing else {}
+    v4_1_wiring = documents.get(
+        "a60-v4-1-tool-compat-container/container-wiring.json", {}
+    )
+    v4_1_lint_delta = documents.get(
+        "a60-v4-1-tool-compat-container/lint-delta.json", {}
+    )
+    v4_1_readiness = documents.get(
+        "a60-v4-1-tool-compat-container/readiness.json", {}
+    )
     selected_live_row = next(
         (
             row
@@ -855,9 +877,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         ).get("allowed"),
         "v4_source_hash_matches": bool(v4_gate.get("adaptive_source_sha256"))
         and v4_gate.get("adaptive_source_sha256")
-        == v4_wiring.get("adaptive_source_sha256")
-        == current_adaptive_source_sha256,
-        "v4_current_adaptive_source_sha256": current_adaptive_source_sha256,
+        == v4_wiring.get("adaptive_source_sha256"),
         "v4_profile_fingerprint_matches": bool(
             v4_gate.get("executable_policy_profile_fingerprint")
         )
@@ -877,6 +897,50 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         ).get("delivery_violation_budget_enforced"),
         "v4_new_full_repo_lint_findings": v4_lint_delta.get("new_finding_count"),
         "v4_readiness": v4_readiness.get("ready"),
+        "v4_live_baseline": v4_live.get("baseline"),
+        "v4_live_candidate": v4_live.get("candidate"),
+        "v4_live_correct_required_target_attempted": v4_live.get(
+            "correct_required_target_attempted"
+        ),
+        "v4_live_correct_write_failed_missing_description": v4_live.get(
+            "correct_write_failed_missing_description"
+        ),
+        "v4_live_repeated_delivery_early_end_results": v4_live.get(
+            "repeated_delivery_early_end_results"
+        ),
+        "v4_live_selected_candidate": v4_live.get("selected_candidate_variant"),
+        "v4_live_paid_expansion_allowed": v4_live.get("paid_expansion_allowed"),
+        "v4_1_gate_passed": v4_1_gate.get("passed"),
+        "v4_1_single_canary_allowed": v4_1_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v4_1_paid_expansion_allowed": v4_1_gate.get("paid_expansion_allowed"),
+        "v4_1_candidate_variant": (
+            ((v4_1_conformance.get("profiles") or {}).get("candidate") or {}).get("name")
+        ),
+        "v4_1_paid_canary_allowed": (
+            v4_1_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v4_1_source_hash_matches": bool(v4_1_gate.get("adaptive_source_sha256"))
+        and v4_1_gate.get("adaptive_source_sha256")
+        == v4_1_wiring.get("adaptive_source_sha256")
+        == current_adaptive_source_sha256,
+        "current_adaptive_source_sha256": current_adaptive_source_sha256,
+        "v4_1_profile_fingerprint_matches": bool(
+            v4_1_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v4_1_gate.get("executable_policy_profile_fingerprint")
+        == v4_1_wiring.get("executable_policy_profile_fingerprint"),
+        "v4_1_delivery_batch_guard_enforced": (
+            v4_1_wiring.get("checks") or {}
+        ).get("delivery_batch_guard_enforced"),
+        "v4_1_write_description_repair_enforced": (
+            v4_1_wiring.get("checks") or {}
+        ).get("write_description_repair_enforced"),
+        "v4_1_new_full_repo_lint_findings": v4_1_lint_delta.get(
+            "new_finding_count"
+        ),
+        "v4_1_readiness": v4_1_readiness.get("ready"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -1199,6 +1263,29 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v4_delivery_violation_budget_enforced"] is True
         and claims["v4_new_full_repo_lint_findings"] == 0
         and claims["v4_readiness"] is True,
+        "v4_live_regression_not_promoted": (
+            (claims["v4_live_candidate"] or {}).get("passed") is False
+            and (claims["v4_live_candidate"] or {}).get("capacity_score") == 0.0
+            and (claims["v4_live_candidate"] or {}).get("total_tokens") == 337994
+            and claims["v4_live_correct_required_target_attempted"] is True
+            and claims["v4_live_correct_write_failed_missing_description"] is True
+            and claims["v4_live_repeated_delivery_early_end_results"] == 15
+            and claims["v4_live_selected_candidate"]
+            == "adaptive_harness_source_grounding_v3_9"
+            and claims["v4_live_paid_expansion_allowed"] is False
+        ),
+        "v4_1_gate_is_single_canary_only": claims["v4_1_gate_passed"] is True
+        and claims["v4_1_single_canary_allowed"] is True
+        and claims["v4_1_paid_expansion_allowed"] is False,
+        "v4_1_container_gate_cleared": claims["v4_1_candidate_variant"]
+        == "adaptive_harness_cross_type_artifact_v4_1"
+        and claims["v4_1_paid_canary_allowed"] is True
+        and claims["v4_1_source_hash_matches"] is True
+        and claims["v4_1_profile_fingerprint_matches"] is True
+        and claims["v4_1_delivery_batch_guard_enforced"] is True
+        and claims["v4_1_write_description_repair_enforced"] is True
+        and claims["v4_1_new_full_repo_lint_findings"] == 0
+        and claims["v4_1_readiness"] is True,
     }
     return {
         "schema_version": 1,
@@ -1260,6 +1347,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "and cross-type required-artifact, directory-observation, environment-observation, and "
             "no-progress failures. A56/A57 bind v4 required-target delivery, directory artifacts, "
             "OSError containment, and a two-violation early turn stop with zero model calls. "
+            "A58 records that the first v4 File replay still scored 0/5 at 337,994 Tokens: it "
+            "targeted the correct artifact but DeerFlow rejected the write because the model omitted "
+            "the non-semantic description field, and one model batch produced 15 rejected delivery "
+            "results. A59/A60 bind v4.1 compatibility argument repair and delivery-batch early stop. "
             "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),

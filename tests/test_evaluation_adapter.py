@@ -147,6 +147,8 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "required_directory_artifact_observed": True,
                 "turn_observation_oserror_fails_closed": True,
                 "delivery_violation_budget_enforced": True,
+                "delivery_batch_guard_enforced": True,
+                "write_description_repair_enforced": True,
                 "embedded_client_stream_exercised": True,
                 "executable_policy_profile_assembled": True,
                 "max_completion_turns_frozen": True,

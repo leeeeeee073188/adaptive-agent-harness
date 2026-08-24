@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "scope": "v4 required-artifact targeted Development revalidation",
+  "analysis_model_calls": 0,
+  "analysis_new_tokens": 0,
+  "task_id": "file-google-trends-data-quality-audit",
+  "baseline": {
+    "capacity_score": 0.0,
+    "elapsed_sec": 168.903,
+    "passed": false,
+    "run_id": "adaptive-harness-diagnostic4-v3-9-file-development",
+    "tool_calls": 43,
+    "total_tokens": 330962,
+    "variant": "adaptive_harness_source_grounding_v3_9"
+  },
+  "candidate": {
+    "capacity_score": 0.0,
+    "elapsed_sec": 334.19,
+    "ledger_event_count": 975,
+    "passed": false,
+    "run_id": "adaptive-harness-diagnostic4-v4-0-file-development",
+    "tool_calls": 45,
+    "total_tokens": 337994,
+    "turns": 2,
+    "variant": "adaptive_harness_cross_type_artifact_v4_0"
+  },
+  "controls": {
+    "model": true,
+    "runtime_image": true,
+    "seed": true,
+    "split": true,
+    "task_id": true
+  },
+  "model_visible_surface": {
+    "baseline_fingerprint": "315cd033086e54d24130725125a7919ba36adafa78795a08a7228ab37e71575b",
+    "candidate_fingerprint": "315cd033086e54d24130725125a7919ba36adafa78795a08a7228ab37e71575b",
+    "checks": {
+      "config_sha256": true,
+      "model": true,
+      "prompt_sha256": true,
+      "runtime_image": true
+    },
+    "equal": true
+  },
+  "cost": {
+    "architecture_increase_over_diagnostic_threshold": false,
+    "attributable_architecture_increase_fraction": 0.021247152241042778,
+    "attributable_architecture_token_delta": 7032,
+    "attribution": "candidate_policy_may_have_changed_model_work",
+    "attribution_confident": true,
+    "elapsed_delta_sec": 165.287,
+    "token_delta": 7032,
+    "token_diagnostic_threshold_fraction": 0.25,
+    "token_increase_fraction": 0.021247152241042778,
+    "token_increase_over_diagnostic_threshold": false,
+    "tool_call_delta": 2
+  },
+  "quality_non_regression": false,
+  "candidate_integrity": true,
+  "correct_required_target_attempted": true,
+  "correct_write_failed_missing_description": true,
+  "missing_description_failure_count": 1,
+  "repeated_delivery_early_end_results": 15,
+  "candidate_output_file_count": 0,
+  "decision": "keep_v4_shadow_and_stop_paid_expansion",
+  "selected_candidate_variant": "adaptive_harness_source_grounding_v3_9",
+  "paid_expansion_allowed": false,
+  "claim_boundary": "One File/easy Development revalidation only. v4 did not improve quality and does not support broader success-rate claims.",
+  "diagnosis": {
+    "analysis_model_calls": 0,
+    "analysis_new_tokens": 0,
+    "claim_boundary": "Signals are derived from public run summaries, adaptive ledgers, and workspace artifacts. No evaluation-private values or explanations are read.",
+    "run_count": 1,
+    "runs": [
+      {
+        "actions_by_intent": {
+          "discover": 4,
+          "read": 20,
+          "verify": 8,
+          "write": 4
+        },
+        "artifact_matches_non_output_files": [],
+        "audited_actions": 36,
+        "capacity_score": 0.0,
+        "context": {
+          "max_failure_layer_tokens": 727,
+          "max_history_dropped": 51,
+          "model_call_audits": 21
+        },
+        "failure_types": {
+          "LOOP": 6,
+          "NO_PROGRESS": 4
+        },
+        "passed": false,
+        "repeated_resources": [
+          {
+            "access_count": 7,
+            "resource": "workspace",
+            "tool_names": [
+              "bash",
+              "ls"
+            ]
+          },
+          {
+            "access_count": 5,
+            "resource": "workspace/readme.md",
+            "tool_names": [
+              "bash",
+              "read_file"
+            ]
+          },
+          {
+            "access_count": 4,
+            "resource": "workspace/handoff.md",
+            "tool_names": [
+              "read_file"
+            ]
+          },
+          {
+            "access_count": 4,
+            "resource": "snapshots/manifest.json",
+            "tool_names": [
+              "bash"
+            ]
+          },
+          {
+            "access_count": 4,
+            "resource": "outputs",
+            "tool_names": [
+              "bash"
+            ]
+          },
+          {
+            "access_count": 3,
+            "resource": "workspace/slack_excerpt.txt",
+            "tool_names": [
+              "read_file"
+            ]
+          },
+          {
+            "access_count": 2,
+            "resource": "workspace/analysis/results.json",
+            "tool_names": [
+              "read_file"
+            ]
+          },
+          {
+            "access_count": 2,
+            "resource": "workspace/snapshots/manifest.json",
+            "tool_names": [
+              "read_file"
+            ]
+          },
+          {
+            "access_count": 2,
+            "resource": "workspace/analysis/audit.py",
+            "tool_names": [
+              "read_file"
+            ]
+          }
+        ],
+        "required_contract_kinds": [
+          "artifact_exists",
+          "observation_equals"
+        ],
+        "run_id": "adaptive-harness-diagnostic4-v4-0-file-development",
+        "runtime_error_types": [],
+        "signals": {
+          "artifact_only_contract": false,
+          "cross_tool_repeated_resource_count": 2,
+          "durable_failure_state_missing_from_model_context": false,
+          "mutation_epoch_regression": false,
+          "repeated_resource_accesses": 24
+        },
+        "tool_calls": 45,
+        "total_tokens": 337994,
+        "variant": "adaptive_harness_cross_type_artifact_v4_0"
+      }
+    ],
+    "scope": "zero-model generic Runtime failure analysis",
+    "skipped_runs": [],
+    "task_id": "file-google-trends-data-quality-audit"
+  }
+}

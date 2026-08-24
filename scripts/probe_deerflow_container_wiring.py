@@ -260,6 +260,14 @@ def main() -> int:
                 "delivery_violation_budget_enforced"
             )
             is True,
+            "delivery_batch_guard_enforced": adaptive.get(
+                "delivery_batch_guard_enforced"
+            )
+            is True,
+            "write_description_repair_enforced": adaptive.get(
+                "write_description_repair_enforced"
+            )
+            is True,
             "textual_tool_errors_fail_closed": adaptive.get(
                 "textual_tool_errors_fail_closed"
             )

@@ -1,0 +1,19 @@
+{
+  "scope": "v4.1 tool compatibility and delivery-batch review",
+  "verdict": "approve_one_development_canary_only",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "verified": {
+    "repair_only_missing_description": true,
+    "semantic_arguments_preserved": true,
+    "explicit_description_preserved": true,
+    "delivery_batch_without_progress_ends": true,
+    "delivery_batch_with_required_write_continues": true,
+    "real_hook_jump_contract": true,
+    "thinking_request_effort": "high"
+  },
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false
+}

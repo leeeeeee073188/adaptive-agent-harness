@@ -13,7 +13,8 @@ from threading import Lock
 from typing import Any, override
 
 from langchain.agents.middleware import AgentMiddleware, ToolCallLimitMiddleware
-from langchain_core.messages import ToolMessage
+from langchain.agents.middleware.types import hook_config
+from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.graph import END
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
@@ -36,6 +37,7 @@ _ADVICE = (
     "[HARNESS VERIFICATION BUDGET] Equivalent verification is over budget without a successful "
     "intervening mutation. Use existing evidence, deliver, or change strategy."
 )
+_AUTO_DESCRIPTION_PREFIX = "Harness compatibility: "
 
 
 class DeerFlowToolCallLimitMiddleware(ToolCallLimitMiddleware):
@@ -206,6 +208,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                 "record": record.to_payload(),
                 "decision": decision.to_payload(),
                 "advice_applied": advice_applied,
+                "argument_repair_applied": _has_auto_description(call),
             }
         )
         if advice_applied:
@@ -219,6 +222,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         request: ToolCallRequest,
         handler: Callable[[ToolCallRequest], ToolMessage | Command],
     ) -> ToolMessage | Command:
+        request = _repair_compatibility_arguments(request)
         blocked = self._blocked_result(request)
         return self._observe(request, blocked if blocked is not None else handler(request))
 
@@ -228,11 +232,72 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         request: ToolCallRequest,
         handler: Callable[[ToolCallRequest], Awaitable[ToolMessage | Command]],
     ) -> ToolMessage | Command:
+        request = _repair_compatibility_arguments(request)
         blocked = self._blocked_result(request)
         return self._observe(
             request,
             blocked if blocked is not None else await handler(request),
         )
+
+    @hook_config(can_jump_to=["end"])
+    @override
+    def after_model(self, state: Any, runtime: Any) -> dict[str, Any] | None:
+        messages = state.get("messages") if isinstance(state, Mapping) else None
+        if not isinstance(messages, list):
+            return None
+        last_ai = next(
+            (
+                message
+                for message in reversed(messages)
+                if isinstance(message, AIMessage) and getattr(message, "tool_calls", None)
+            ),
+            None,
+        )
+        if last_ai is None:
+            return None
+        required_generation = _delivery_requirement_generation(state)
+        run_key = _runtime_run_key(runtime)
+        with self._state_lock:
+            satisfied_generation = self._delivery_satisfied_generation.get(run_key, 0)
+        if required_generation <= satisfied_generation:
+            return None
+        required_artifacts = _required_artifact_paths(state)
+        tool_calls = list(last_ai.tool_calls)
+        if len(tool_calls) < self._max_delivery_violations:
+            return None
+        for raw in tool_calls:
+            call = ToolCall(
+                str(raw.get("id") or "missing-id"),
+                str(raw.get("name") or "unknown"),
+                dict(raw.get("args") or {}),
+            )
+            if _advances_delivery(
+                call,
+                classify_tool_action(call.name, call.arguments),
+                required_artifacts,
+            ):
+                return None
+        target_hint = ", ".join(required_artifacts[:5]) or "the required artifact"
+        artificial = [
+            ToolMessage(
+                content=(
+                    "Harness ended this model batch because none of its tool calls advances "
+                    f"delivery. Required artifact paths: {target_hint}."
+                ),
+                tool_call_id=str(raw.get("id") or "missing-id"),
+                name=str(raw.get("name") or "unknown"),
+                status="error",
+            )
+            for raw in tool_calls
+        ]
+        artificial.append(
+            AIMessage(
+                content=(
+                    "Delivery batch rejected: no tool call targeted a required artifact."
+                )
+            )
+        )
+        return {"jump_to": "end", "messages": artificial}
 
     def _blocked_result(self, request: ToolCallRequest) -> ToolMessage | Command | None:
         session = current_policy_session()
@@ -387,10 +452,13 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
 def _run_key(request: ToolCallRequest) -> str:
     """Return the stable task-run key shared by all policy turns in one run."""
 
+    return _runtime_run_key(getattr(request, "runtime", None))
+
+
+def _runtime_run_key(runtime: Any) -> str:
     session = current_policy_session()
     if session is not None and session.run_id:
         return f"policy-session:{session.run_id}"
-    runtime = getattr(request, "runtime", None)
     context = getattr(runtime, "context", None)
     for key in ("run_id", "thread_id"):
         value = _context_value(context, key)
@@ -452,6 +520,27 @@ def _content_text(content: Any) -> str:
     if isinstance(content, str):
         return content
     return json.dumps(content, ensure_ascii=False, default=str)
+
+
+def _repair_compatibility_arguments(request: ToolCallRequest) -> ToolCallRequest:
+    raw = request.tool_call
+    name = str(raw.get("name") or "")
+    arguments = dict(raw.get("args") or {})
+    if name not in {"write_file", "str_replace"} or str(
+        arguments.get("description") or ""
+    ).strip():
+        return request
+    action = "Write" if name == "write_file" else "Update"
+    path = _normalize_artifact_path(str(arguments.get("path") or "task artifact"))
+    arguments["description"] = f"{_AUTO_DESCRIPTION_PREFIX}{action} {path}"[:160]
+    tool_call = {**raw, "args": arguments}
+    return request.override(tool_call=tool_call)
+
+
+def _has_auto_description(call: ToolCall) -> bool:
+    return str(call.arguments.get("description") or "").startswith(
+        _AUTO_DESCRIPTION_PREFIX
+    )
 
 
 _TEXTUAL_TOOL_ERROR = re.compile(

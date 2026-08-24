@@ -170,6 +170,8 @@ v3.8 live（A51）证明“首次交付”和“校验失败后的修复”不�
 
 Diagnostic4 live（A55）已完成且没有触发任务级即时优化：File 0/5、CLI vision 0/8、Browser 0/7、API 1/13，合计 1,206,127 Token、129 Tool。共同失败面不是某个业务答案，而是 Required Artifact lifecycle：错误输出路径也会满足 delivery、目录 Artifact 被 file-only Provider 判空、Observation HTTP 403 逸出边界，以及 delivery 违规仍可消耗十余次工具调用。v4 以 Contract 中的 required paths 约束交付写入，允许 required directory 的子文件，目录 Evidence 包含 visible file count，Observation `OSError` 转为失败事实，同一 generation 第二次错误交付直接结束 turn。A56/A57 已完成零模型与容器验证；尚未执行 v4 付费复验。
 
+v4 File/easy 复验（A58）仍为 0/5：Token 从 330,962 小幅升至 337,994，Tool 从 43 增至 45，且无最终产物。正向信号是模型已准确命中 required path；新失败是 DeerFlow 的 `write_file` 把非语义 `description` 设为 required，模型只提供 path/content，导致正确写入被 schema 拒绝，之后一个模型批次留下 15 个 delivery 终止结果。v4.1 只在 Tool Adapter 层补缺失 description，保留显式值和所有语义参数；after-model delivery batch guard 在整批无任何交付进展时直接结束本 turn。A59/A60 零模型门禁通过，尚未付费运行。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

@@ -129,4 +129,6 @@ v3.7 live（A48）正确进入 Artifact delivery recovery，但原门禁仍允�
 
 A55 已收齐四类首次样本：0/4 通过，Capacity 均值 0.0192，共 1,206,127 Token、129 Tool、1,129.8 秒；四项 integrity 全部通过且没有调用 LLM Judge。File/API 写了与 Contract 不匹配的输出路径，Browser 未交付 `answer.json`，API 已生成 `mock_audit/` 目录及文件却被 file-only Provider 判为不存在，CLI 的带鉴权 loopback observation 返回 403 后逸出 Provider 边界。v4 因此加入 required-artifact-aware delivery、目录 Artifact observation、turn observation OSError fail-closed，以及同一 delivery generation 两次违规后提前结束 turn；A56/A57 的 166 项核心 gate 和 pinned-container probe 均为零模型通过，暂不扩跑 MiniBench。
 
+A58 的单项 File/easy 复验显示 v4 仍为 0/5、337,994 Token、45 Tool：模型已经选择正确的 `outputs/quality_audit.json`，但 DeerFlow `write_file` 要求非语义 `description` 参数，模型遗漏后写入失败；随后同一模型批次产生 15 个 delivery 终止结果。v4.1 在 Tool Adapter 边界只补齐缺失的非语义 description（不改 path/content），显式 description 保持不变，并在 after-model 阶段提前结束完全不含交付进展的多工具批次。A59/A60 已用单测和 pinned container 零模型验证，尚未付费复验。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

@@ -22,6 +22,7 @@ def _install_fake_deerflow_tool_modules() -> None:
     langchain = types.ModuleType("langchain")
     agents = types.ModuleType("langchain.agents")
     middleware = types.ModuleType("langchain.agents.middleware")
+    middleware_types = types.ModuleType("langchain.agents.middleware.types")
     core = types.ModuleType("langchain_core")
     messages = types.ModuleType("langchain_core.messages")
     langgraph = types.ModuleType("langgraph")
@@ -38,17 +39,73 @@ def _install_fake_deerflow_tool_modules() -> None:
             self.args = args
             self.kwargs = kwargs
 
-    class ToolMessage:
-        def __init__(self, content: Any = "", tool_call_id: str = "", status: str | None = None) -> None:
+    class BaseMessage:
+        def __init__(self, content: Any = "", **kwargs: Any) -> None:
             self.content = content
+            self.additional_kwargs = dict(kwargs.get("additional_kwargs") or {})
+            self.response_metadata = dict(kwargs.get("response_metadata") or {})
+            self.name = kwargs.get("name")
+            self.id = kwargs.get("id")
+            self.type = kwargs.get("type", "base")
+
+    class HumanMessage(BaseMessage):
+        def __init__(self, content: Any = "", **kwargs: Any) -> None:
+            super().__init__(content, **kwargs)
+            self.type = "human"
+
+    class SystemMessage(BaseMessage):
+        def __init__(self, content: Any = "", **kwargs: Any) -> None:
+            super().__init__(content, **kwargs)
+            self.type = "system"
+
+    class ToolMessage(BaseMessage):
+        def __init__(
+            self,
+            content: Any = "",
+            tool_call_id: str = "",
+            status: str | None = None,
+            name: str | None = None,
+        ) -> None:
+            super().__init__(content, name=name)
             self.tool_call_id = tool_call_id
             self.status = status
+            self.name = name
+            self.type = "tool"
 
         def model_copy(self, *, update: dict[str, Any]) -> ToolMessage:
             copied = ToolMessage(self.content, self.tool_call_id, self.status)
             for key, value in update.items():
                 setattr(copied, key, value)
             return copied
+
+    class AIMessage(BaseMessage):
+        def __init__(
+            self,
+            content: Any = "",
+            tool_calls: list[dict[str, Any]] | None = None,
+        ) -> None:
+            super().__init__(content)
+            self.tool_calls = tool_calls or []
+            self.type = "ai"
+
+    def hook_config(**_kwargs: Any):
+        return lambda function: function
+
+    @dataclass(frozen=True)
+    class ModelRequest:
+        messages: list[Any]
+        system_message: Any | None = None
+        state: dict[str, Any] | None = None
+
+        def override(self, **overrides: Any):
+            return ModelRequest(
+                messages=overrides.get("messages", self.messages),
+                system_message=overrides.get("system_message", self.system_message),
+                state=overrides.get("state", self.state),
+            )
+
+    class ModelResponse:
+        pass
 
     class Command:
         def __init__(self, *, update: dict[str, Any] | None = None, goto: Any = None) -> None:
@@ -61,9 +118,24 @@ def _install_fake_deerflow_tool_modules() -> None:
         state: dict[str, Any]
         runtime: Any
 
+        def override(self, **overrides: Any):
+            return ToolCallRequest(
+                tool_call=overrides.get("tool_call", self.tool_call),
+                state=overrides.get("state", self.state),
+                runtime=self.runtime,
+            )
+
     middleware.AgentMiddleware = AgentMiddleware
     middleware.ToolCallLimitMiddleware = ToolCallLimitMiddleware
     messages.ToolMessage = ToolMessage
+    messages.AIMessage = AIMessage
+    messages.BaseMessage = BaseMessage
+    messages.HumanMessage = HumanMessage
+    messages.SystemMessage = SystemMessage
+    middleware_types.hook_config = hook_config
+    middleware_types.ModelRequest = ModelRequest
+    middleware_types.ModelResponse = ModelResponse
+    middleware_types.ModelCallResult = object
     graph.END = "__end__"
     graph_types.Command = Command
     tool_node.ToolCallRequest = ToolCallRequest
@@ -73,6 +145,7 @@ def _install_fake_deerflow_tool_modules() -> None:
             "langchain": langchain,
             "langchain.agents": agents,
             "langchain.agents.middleware": middleware,
+            "langchain.agents.middleware.types": middleware_types,
             "langchain_core": core,
             "langchain_core.messages": messages,
             "langgraph": langgraph,
@@ -86,7 +159,7 @@ def _install_fake_deerflow_tool_modules() -> None:
 
 _install_fake_deerflow_tool_modules()
 
-from langchain_core.messages import ToolMessage  # noqa: E402
+from langchain_core.messages import AIMessage, ToolMessage  # noqa: E402
 from langgraph.types import Command  # noqa: E402
 
 import adaptive_harness.integrations.deerflow_action_ledger as action_ledger_module  # noqa: E402
@@ -150,6 +223,110 @@ def _delivery_required_state(
 
 
 class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
+    def test_delivery_batch_without_progress_ends_before_tool_execution(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        state = _delivery_required_state(required_paths=("outputs/report.json",))
+        state["messages"].append(
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "id": "batch-read-1",
+                        "name": "read_file",
+                        "args": {"path": "workspace/a.txt"},
+                    },
+                    {
+                        "id": "batch-read-2",
+                        "name": "read_file",
+                        "args": {"path": "workspace/b.txt"},
+                    },
+                ],
+            )
+        )
+
+        update = middleware.after_model(state, _Runtime({"run_id": "batch-run"}))
+
+        self.assertIsNotNone(update)
+        assert update is not None
+        self.assertEqual(update["jump_to"], "end")
+        self.assertEqual(len(update["messages"]), 3)
+        self.assertIn("none of its tool calls", update["messages"][0].content)
+
+    def test_delivery_batch_with_required_write_is_not_ended(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        state = _delivery_required_state(required_paths=("outputs/report.json",))
+        state["messages"].append(
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "id": "batch-read",
+                        "name": "read_file",
+                        "args": {"path": "workspace/a.txt"},
+                    },
+                    {
+                        "id": "batch-write",
+                        "name": "write_file",
+                        "args": {"path": "outputs/report.json", "content": "{}"},
+                    },
+                ],
+            )
+        )
+
+        update = middleware.after_model(state, _Runtime({"run_id": "batch-run"}))
+
+        self.assertIsNone(update)
+
+    def test_missing_write_description_is_supplied_without_changing_semantics(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        observed: list[dict[str, Any]] = []
+        audits: list[dict[str, Any]] = []
+
+        def handler(request):
+            observed.append(dict(request.tool_call["args"]))
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(audits.append):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="missing-description",
+                    name="write_file",
+                    args={"path": "outputs/report.json", "content": "{}"},
+                    turn=1,
+                ),
+                handler,
+            )
+
+        self.assertIsNone(result.status)
+        self.assertEqual(observed[0]["path"], "outputs/report.json")
+        self.assertEqual(observed[0]["content"], "{}")
+        self.assertTrue(observed[0]["description"].startswith("Harness compatibility:"))
+        self.assertTrue(audits[0]["argument_repair_applied"])
+
+    def test_explicit_write_description_is_preserved(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        observed: list[dict[str, Any]] = []
+        audits: list[dict[str, Any]] = []
+
+        with bind_action_audit_sink(audits.append):
+            middleware.wrap_tool_call(
+                _request(
+                    call_id="explicit-description",
+                    name="write_file",
+                    args={
+                        "description": "Save the final report",
+                        "path": "outputs/report.json",
+                        "content": "{}",
+                    },
+                    turn=1,
+                ),
+                lambda request: observed.append(dict(request.tool_call["args"]))
+                or ToolMessage("written", tool_call_id=request.tool_call["id"]),
+            )
+
+        self.assertEqual(observed[0]["description"], "Save the final report")
+        self.assertFalse(audits[0]["argument_repair_applied"])
+
     def test_delivery_gate_blocks_non_output_script_write(self) -> None:
         middleware = DeerFlowToolActionLedgerMiddleware()
         called = False
