@@ -103,6 +103,11 @@ class KernelPolicySession:
         self.allow_unverified_completion = allow_unverified_completion
         self._resource_cursor = -1
         self._task_prompt = ""
+        self._turn_index = 0
+
+    @property
+    def turn_index(self) -> int:
+        return self._turn_index
 
     def prepare_context(
         self,
@@ -191,6 +196,7 @@ class KernelPolicySession:
         return contract
 
     def begin_turn(self, ledger: SessionLedger) -> ProgressSnapshot | None:
+        self._turn_index += 1
         if self.progress_detector is None:
             return None
         state = TaskStateProjector().project(ledger.events)

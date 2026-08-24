@@ -135,6 +135,7 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "adaptive_package_imported": True,
                 "action_scope_block_enforced": True,
                 "context_profile_session_bound": True,
+                "global_nonmutating_budget_enforced": True,
                 "embedded_client_stream_exercised": True,
                 "executable_policy_profile_assembled": True,
                 "ledger_persisted": True,

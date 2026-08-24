@@ -10,6 +10,7 @@ from typing import Any, override
 
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import ToolMessage
+from langgraph.graph import END
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
 
@@ -44,6 +45,11 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             mode=mode,
         )
         self._config = config
+        self._max_nonmutating_actions = int(
+            os.environ.get("ADAPTIVE_MAX_NONMUTATING_ACTIONS_PER_TURN", "20")
+        )
+        if self._max_nonmutating_actions < 1:
+            raise ValueError("ADAPTIVE_MAX_NONMUTATING_ACTIONS_PER_TURN must be positive")
         self._ledgers: OrderedDict[str, ToolActionLedger] = OrderedDict()
 
     def _ledger(self, request: ToolCallRequest) -> ToolActionLedger:
@@ -111,7 +117,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             blocked if blocked is not None else await handler(request),
         )
 
-    def _blocked_result(self, request: ToolCallRequest) -> ToolMessage | None:
+    def _blocked_result(self, request: ToolCallRequest) -> ToolMessage | Command | None:
         session = current_policy_session()
         if session is None:
             return None
@@ -121,8 +127,30 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             str(raw.get("name") or "unknown"),
             dict(raw.get("args") or {}),
         )
+        semantics = classify_tool_action(call.name, call.arguments)
+        records = self._ledger(request).records
+        mutation_epoch = records[-1].mutation_epoch if records else 0
+        nonmutating_count = sum(
+            record.mutation_epoch == mutation_epoch and not record.semantics.mutating
+            for record in records
+        )
+        if not semantics.mutating and nonmutating_count >= self._max_nonmutating_actions:
+            return Command(
+                update={
+                    "messages": [
+                        ToolMessage(
+                            content=(
+                                "Harness ended this turn after the non-mutating action budget "
+                                "was exhausted. Replan around unsatisfied criteria next turn."
+                            ),
+                            tool_call_id=call.id,
+                            status="error",
+                        )
+                    ]
+                },
+                goto=END,
+            )
         if not session.is_action_blocked(call):
-            semantics = classify_tool_action(call.name, call.arguments)
             threshold = (
                 self._config.max_same_scope_reads
                 if semantics.intent is ToolIntent.READ
@@ -154,7 +182,9 @@ def _run_key(request: ToolCallRequest) -> str:
     if isinstance(context, Mapping):
         for key in ("run_id", "thread_id"):
             if context.get(key):
-                return f"{key}:{context[key]}"
+                session = current_policy_session()
+                turn = session.turn_index if session is not None else 0
+                return f"{key}:{context[key]}:policy-turn:{turn}"
     return f"runtime:{id(runtime)}"
 
 

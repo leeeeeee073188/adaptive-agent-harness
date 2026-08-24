@@ -36,7 +36,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_runtime_evolution_v2",
+        "adaptive_harness_runtime_evolution_v2_1",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -48,6 +48,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                     "max_same_scope": 2,
                     "max_same_scope_reads": 3,
                     "max_total_since_mutation": 4,
+                    "max_nonmutating_actions_per_turn": 20,
                 },
                 "advice_gate": {
                     "classified_fraction": 1.0,
@@ -203,6 +204,7 @@ def _bridge_evidence_valid(
         "adaptive_package_imported",
         "action_scope_block_enforced",
         "context_profile_session_bound",
+        "global_nonmutating_budget_enforced",
         "embedded_client_stream_exercised",
         "executable_policy_profile_assembled",
         "ledger_persisted",

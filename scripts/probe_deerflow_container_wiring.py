@@ -186,6 +186,10 @@ def main() -> int:
                 "action_scope_block_enforced"
             )
             is True,
+            "global_nonmutating_budget_enforced": adaptive.get(
+                "global_nonmutating_budget_enforced"
+            )
+            is True,
             "context_middleware_request_shape_valid": (
                 adaptive.get("context_middleware_request_shape_valid") is True
             ),
