@@ -152,6 +152,8 @@ v3.3 的真实结果记录在 `evidence/a35-v3-3-live-canary/`：Final 错误文
 
 v3.4 修复 Completion 合取语义，并按 DeepSeek 官方 OpenAI-compatible 接口同时发送 `extra_body.thinking.type=enabled` 与顶层 `reasoning_effort=max`。`evidence/a36-v3-4-thinking-max-gate/` 锁定公共反事实与 137 项核心测试；`evidence/a37-v3-4-thinking-max-container/` 通过实际 DeerFlow model factory 验证 `PatchedChatDeepSeek.reasoning_effort == max`、thinking enabled、reasoning-content replay 和 assessments 保留。此次同时改变 Harness bug 与模型思考配置，因此只用于继续优化，不作为“max thinking 单变量提升”的因果实验。
 
+v3.4 的真实结果记录在 `evidence/a38-v3-4-thinking-max-live/`：思考模式确实输出 `reasoning_content`，但模型在三个 turn 内生成大量中间脚本并反复触发工具 schema/交付门禁，最终将产物回退为空集合；Capacity 仅 0.2，Token 719,574、Tool 64、耗时 1,043.6 秒，并因 `mutation epoch cannot move backwards` 结束。相对 Vanilla Token 增加 170.3%，因此 v2.6 继续作为历史最优 Shadow，thinking=max 不得扩跑。
+
 该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
 
 ## 测试规格摘要

@@ -1,0 +1,243 @@
+{
+  "baseline_run_id": "adaptive-deerflow-minibench16-development",
+  "claim_boundary": "One Development task only. The selected candidate did not pass; it remains Shadow and cannot justify more paid tasks, Transfer, Held-out, or MiniBench-wide success-rate claims.",
+  "completed_run_count": 7,
+  "full_107_run": false,
+  "incomplete_runs": [],
+  "observed_total_tokens": 2298712,
+  "paid_expansion_allowed": false,
+  "runs": [
+    {
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "decision": "reference",
+      "delta_vs_baseline": {
+        "capacity_score": 0.0,
+        "elapsed_sec": 0.0,
+        "token_fraction": 0.0,
+        "tool_calls": 0,
+        "total_tokens": 0
+      },
+      "elapsed_sec": 135.782,
+      "integrity_passed": true,
+      "ledger_event_count": 0,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 0,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 0,
+        "check_count": 0,
+        "dispositions": {}
+      },
+      "run_id": "adaptive-deerflow-minibench16-development",
+      "tool_calls": 18,
+      "total_tokens": 266169,
+      "variant": "vanilla_deerflow"
+    },
+    {
+      "capacity_score": 0.4,
+      "checks_passed": 2,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.4,
+        "elapsed_sec": -60.628000000000014,
+        "token_fraction": -0.11120378406200572,
+        "tool_calls": 24,
+        "total_tokens": -29599
+      },
+      "elapsed_sec": 75.154,
+      "integrity_passed": true,
+      "ledger_event_count": 2855,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 1,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 3,
+        "check_count": 32,
+        "dispositions": {
+          "allow": 13,
+          "block_scope": 6,
+          "record": 9,
+          "replan": 4
+        }
+      },
+      "run_id": "adaptive-harness-runtime-evolution-v2-6-development",
+      "tool_calls": 42,
+      "total_tokens": 236570,
+      "variant": "adaptive_harness_runtime_evolution_v2_6"
+    },
+    {
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.0,
+        "elapsed_sec": -55.84400000000001,
+        "token_fraction": 0.3178506888480627,
+        "tool_calls": 28,
+        "total_tokens": 84602
+      },
+      "elapsed_sec": 79.938,
+      "integrity_passed": true,
+      "ledger_event_count": 1699,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 0,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 3,
+        "check_count": 40,
+        "dispositions": {
+          "allow": 1,
+          "block_scope": 10,
+          "record": 21,
+          "replan": 8
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-development",
+      "tool_calls": 46,
+      "total_tokens": 350771,
+      "variant": "adaptive_harness_evidence_workspace_v3"
+    },
+    {
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.0,
+        "elapsed_sec": -79.45000000000002,
+        "token_fraction": -0.1859006871574075,
+        "tool_calls": 24,
+        "total_tokens": -49481
+      },
+      "elapsed_sec": 56.332,
+      "integrity_passed": true,
+      "ledger_event_count": 563,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 0,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 5,
+        "check_count": 34,
+        "dispositions": {
+          "allow": 1,
+          "record": 28,
+          "replan": 5
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-1-development",
+      "tool_calls": 42,
+      "total_tokens": 216688,
+      "variant": "adaptive_harness_evidence_workspace_v3_1"
+    },
+    {
+      "capacity_score": 0.2,
+      "checks_passed": 1,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.2,
+        "elapsed_sec": -25.316000000000017,
+        "token_fraction": -0.12876029890783675,
+        "tool_calls": 29,
+        "total_tokens": -34272
+      },
+      "elapsed_sec": 110.466,
+      "integrity_passed": true,
+      "ledger_event_count": 6561,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 1,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 5,
+        "check_count": 34,
+        "dispositions": {
+          "allow": 8,
+          "block_scope": 5,
+          "record": 15,
+          "replan": 6
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-2-development",
+      "tool_calls": 47,
+      "total_tokens": 231897,
+      "variant": "adaptive_harness_evidence_workspace_v3_2"
+    },
+    {
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.0,
+        "elapsed_sec": -68.04800000000002,
+        "token_fraction": 0.040853743298430695,
+        "tool_calls": 28,
+        "total_tokens": 10874
+      },
+      "elapsed_sec": 67.734,
+      "integrity_passed": true,
+      "ledger_event_count": 956,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 0,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 3,
+        "check_count": 39,
+        "dispositions": {
+          "allow": 1,
+          "block_scope": 4,
+          "record": 27,
+          "replan": 7
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-3-development",
+      "tool_calls": 46,
+      "total_tokens": 277043,
+      "variant": "adaptive_harness_evidence_workspace_v3_3"
+    },
+    {
+      "capacity_score": 0.2,
+      "checks_passed": 1,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.2,
+        "elapsed_sec": 907.7799999999999,
+        "token_fraction": 1.7034478094744316,
+        "tool_calls": 46,
+        "total_tokens": 453405
+      },
+      "elapsed_sec": 1043.562,
+      "integrity_passed": true,
+      "ledger_event_count": 1318,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 1,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 17,
+        "check_count": 40,
+        "dispositions": {
+          "allow": 10,
+          "block_scope": 3,
+          "record": 22,
+          "replan": 5
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-4-development",
+      "tool_calls": 64,
+      "total_tokens": 719574,
+      "variant": "adaptive_harness_evidence_workspace_v3_4"
+    }
+  ],
+  "scope": "paid single-task Development runtime evolution",
+  "selected_candidate_decision": "keep_shadow",
+  "selected_candidate_passed": false,
+  "selected_candidate_run_id": "adaptive-harness-runtime-evolution-v2-6-development",
+  "selected_candidate_variant": "adaptive_harness_runtime_evolution_v2_6",
+  "selection_reason": "highest public capacity score, then lower observed tokens and latency",
+  "task_id": "cli-google-trends-data-quality-audit"
+}

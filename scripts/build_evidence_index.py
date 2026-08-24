@@ -52,6 +52,7 @@ REQUIRED = tuple(
         (35, "v3-3-live-canary"),
         (36, "v3-4-thinking-max-gate"),
         (37, "v3-4-thinking-max-container"),
+        (38, "v3-4-thinking-max-live"),
     )
 )
 OPTIONAL = (
@@ -79,6 +80,8 @@ OPTIONAL = (
     "a37-v3-4-thinking-max-container/review.json",
     "a37-v3-4-thinking-max-container/verification.json",
     "a37-v3-4-thinking-max-container/readiness.json",
+    "a38-v3-4-thinking-max-live/pair.json",
+    "a38-v3-4-thinking-max-live/diagnosis.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -156,6 +159,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_4_gate = doc("a36-v3-4-thinking-max-gate/summary.json") if not missing else {}
     v3_4_conformance = doc("a37-v3-4-thinking-max-container/summary.json") if not missing else {}
     v3_4_wiring = documents.get("a37-v3-4-thinking-max-container/container-wiring.json", {})
+    v3_4_live = doc("a38-v3-4-thinking-max-live/summary.json") if not missing else {}
     selected_live_row = next(
         (
             row
@@ -498,6 +502,16 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "v3_4_completion_conjunction_verified": (
             v3_4_wiring.get("checks") or {}
         ).get("completion_conjunction_preserves_assessments"),
+        "v3_4_live_selected_candidate": v3_4_live.get("selected_candidate_variant"),
+        "v3_4_live_paid_expansion_allowed": v3_4_live.get("paid_expansion_allowed"),
+        "v3_4_live_row": next(
+            (
+                row
+                for row in v3_4_live.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_evidence_workspace_v3_4"
+            ),
+            None,
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -667,6 +681,15 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v3_4_profile_fingerprint_matches"] is True
         and claims["v3_4_thinking_max_configured"] is True
         and claims["v3_4_completion_conjunction_verified"] is True,
+        "v3_4_thinking_max_regression_not_promoted": (
+            (claims["v3_4_live_row"] or {}).get("passed") is False
+            and (claims["v3_4_live_row"] or {}).get("capacity_score") == 0.2
+            and (claims["v3_4_live_row"] or {}).get("total_tokens") == 719574
+            and (claims["v3_4_live_row"] or {}).get("output_file_count") == 1
+            and claims["v3_4_live_selected_candidate"]
+            == "adaptive_harness_runtime_evolution_v2_6"
+            and claims["v3_4_live_paid_expansion_allowed"] is False
+        ),
     }
     return {
         "schema_version": 1,
@@ -703,8 +726,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "one replacement Development canary. A35 records that v3.3 correctly rejected the empty "
             "completion but lost Evidence assessments behind the Response gate and produced no artifact. "
             "A36/A37 preserve those assessments and bind DeepSeek thinking=enabled with reasoning_effort=max "
-            "through the actual pinned-container model factory for v3.4. Transfer, Held-out, and further "
-            "task expansion remain disabled."
+            "through the actual pinned-container model factory for v3.4. A38 records that max thinking "
+            "still reached only 1/5 while consuming 719,574 Tokens and ending on a mutation-epoch "
+            "regression, so v2.6 remains selected. Transfer, Held-out, and further task expansion remain "
+            "disabled."
         ),
     }
 

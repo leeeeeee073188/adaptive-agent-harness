@@ -151,6 +151,10 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertTrue(index["claims"]["v3_4_profile_fingerprint_matches"])
         self.assertTrue(index["claims"]["v3_4_thinking_max_configured"])
         self.assertTrue(index["claims"]["v3_4_completion_conjunction_verified"])
+        self.assertEqual(index["claims"]["v3_4_live_row"]["capacity_score"], 0.2)
+        self.assertEqual(index["claims"]["v3_4_live_row"]["total_tokens"], 719574)
+        self.assertEqual(index["claims"]["v3_4_live_row"]["tool_calls"], 64)
+        self.assertFalse(index["claims"]["v3_4_live_paid_expansion_allowed"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

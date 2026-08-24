@@ -113,6 +113,6 @@ RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能�
 
 v3.3 针对这条真实失败链加入四项通用修复：仅由公共任务中的强完整性措辞和 JSON 示例结构派生集合 non-vacuity 约束（不保留示例值，且显式允许空集合时不启用）；拒绝运行时控制/错误文本作为 Final；把直接执行任务提供的 Python 脚本识别为 synthesis transform，使其可穿过 delivery recovery；把文本错误 envelope 记为失败，禁止伪造 mutation epoch。真实 canary 正确阻止了空产物，却暴露了新的组合错误：Response Gate 拒绝后覆盖了 Evidence assessments，Phase 从 synthesis 回退，最终 0/5、无产物、277,043 Token。
 
-v3.4 将 Response 与 Evidence Completion 改为真正的合取，响应拒绝不再丢失 Artifact/Source assessments；同时按 [DeepSeek 官方思考模式](https://api-docs.deepseek.com/zh-cn/guides/thinking_mode) 为 OpenAI-compatible 请求冻结 `thinking.type=enabled` 与 `reasoning_effort=max`。A36/A37 在 137 项核心测试和 pinned-container 实际模型工厂中验证了 max 字段、reasoning-content 兼容层和 completion 合取，但仍只授权同一 Development 任务的一次 canary；不能把后续结果单独归因于 thinking，因为 Harness 组合逻辑也发生了修复。
+v3.4 将 Response 与 Evidence Completion 改为真正的合取，响应拒绝不再丢失 Artifact/Source assessments；同时按 [DeepSeek 官方思考模式](https://api-docs.deepseek.com/zh-cn/guides/thinking_mode) 为 OpenAI-compatible 请求冻结 `thinking.type=enabled` 与 `reasoning_effort=max`。A36/A37 在 137 项核心测试和 pinned-container 实际模型工厂中验证了 max 字段、reasoning-content 兼容层和 completion 合取。真实 A38 canary 中 reasoning tokens 和请求字段均可见，但最终仍仅 1/5、719,574 Token、64 Tool、1,043.6 秒，并以 `mutation epoch cannot move backwards` 结束；相对 Vanilla Token 增加 170.3%，因此禁止扩跑且不能声称 max thinking 提升了能力。
 
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。
