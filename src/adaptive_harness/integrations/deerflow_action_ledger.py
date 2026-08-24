@@ -8,7 +8,7 @@ from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Mapping
 from typing import Any, override
 
-from langchain.agents.middleware import AgentMiddleware
+from langchain.agents.middleware import AgentMiddleware, ToolCallLimitMiddleware
 from langchain_core.messages import ToolMessage
 from langgraph.graph import END
 from langgraph.prebuilt.tool_node import ToolCallRequest
@@ -32,6 +32,16 @@ _ADVICE = (
     "[HARNESS VERIFICATION BUDGET] Equivalent verification is over budget without a successful "
     "intervening mutation. Use existing evidence, deliver, or change strategy."
 )
+
+
+class DeerFlowToolCallLimitMiddleware(ToolCallLimitMiddleware):
+    """Zero-argument, per-stream hard stop before excess tools execute."""
+
+    def __init__(self) -> None:
+        maximum = int(os.environ.get("ADAPTIVE_MAX_TOOL_CALLS_PER_TURN", "20"))
+        if maximum < 1:
+            raise ValueError("ADAPTIVE_MAX_TOOL_CALLS_PER_TURN must be positive")
+        super().__init__(run_limit=maximum, exit_behavior="end")
 
 
 class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):

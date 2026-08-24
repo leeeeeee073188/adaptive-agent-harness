@@ -179,6 +179,14 @@ def main() -> int:
             "action_ledger_middleware_imported": (
                 adaptive.get("action_ledger_middleware_imported") is True
             ),
+            "tool_call_limit_middleware_imported": adaptive.get(
+                "tool_call_limit_middleware_imported"
+            )
+            is True,
+            "tool_call_limit_request_shape_valid": adaptive.get(
+                "tool_call_limit_request_shape_valid"
+            )
+            is True,
             "action_ledger_request_shape_valid": (
                 adaptive.get("action_ledger_request_shape_valid") is True
             ),

@@ -141,6 +141,8 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "ledger_persisted": True,
                 "policy_bridge_enabled": True,
                 "policy_profile_fingerprint_matches": True,
+                "tool_call_limit_middleware_imported": True,
+                "tool_call_limit_request_shape_valid": True,
             },
         }
         _write_json(path, payload)
