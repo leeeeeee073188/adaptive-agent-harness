@@ -138,6 +138,20 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             dict(raw.get("args") or {}),
         )
         semantics = classify_tool_action(call.name, call.arguments)
+        ledger = self._ledger(request)
+        delivery_required = _delivery_required(request.state) and not any(
+            record.semantics.mutating and record.error_type is None
+            for record in ledger.records
+        )
+        if delivery_required and not semantics.mutating:
+            return ToolMessage(
+                content=(
+                    "[HARNESS DELIVERY REQUIRED] Read-only action blocked. Write a required "
+                    "artifact before further inspection."
+                ),
+                tool_call_id=call.id,
+                status="error",
+            )
         if not self._turn_budget.admit(
             _run_key(request),
             mutating=semantics.mutating,
@@ -171,7 +185,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                     cluster.scope_key == semantics.scope_key
                     and cluster.attempts >= threshold
                     and cluster.repeated_unchanged
-                    for cluster in self._ledger(request).clusters()
+                    for cluster in ledger.clusters()
                 )
             )
             if not exhausted:
@@ -210,3 +224,15 @@ def _content_text(content: Any) -> str:
     if isinstance(content, str):
         return content
     return json.dumps(content, ensure_ascii=False, default=str)
+
+
+def _delivery_required(state: Any) -> bool:
+    if not isinstance(state, Mapping):
+        return False
+    messages = state.get("messages")
+    if not isinstance(messages, list):
+        return False
+    return any(
+        "[HARNESS DELIVERY REQUIRED]" in _content_text(getattr(message, "content", ""))
+        for message in messages
+    )

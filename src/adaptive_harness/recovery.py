@@ -232,6 +232,7 @@ class RuleBasedTaskRecoveryExecutor:
         action: TaskRecoveryAction,
         missing: Sequence[str],
     ) -> RecoveryActionEffect:
+        missing_text = "; ".join(missing) if missing else "a required task artifact"
         mapping: dict[TaskRecoveryAction, tuple[dict[str, object], str]] = {
             TaskRecoveryAction.REFRESH_STATE: (
                 {"recovery.refresh_state_requested": True},
@@ -255,7 +256,10 @@ class RuleBasedTaskRecoveryExecutor:
             ),
             TaskRecoveryAction.WRITE_PARTIAL: (
                 {"recovery.partial_delivery_requested": True},
-                "Persist valid partial artifacts before further risky work.",
+                (
+                    "[HARNESS DELIVERY REQUIRED] The next successful tool action must write "
+                    f"{missing_text}. Do not perform more reads until a required artifact exists."
+                ),
             ),
             TaskRecoveryAction.STOP_REPEATED_ACTION: (
                 {"recovery.repeated_action_blocked": True},

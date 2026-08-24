@@ -74,6 +74,8 @@ class TaskRecoveryTests(unittest.TestCase):
         )
         self.assertTrue(execution.state_delta["recovery.partial_delivery_requested"])
         self.assertEqual(len(execution.directives), 2)
+        self.assertIn("[HARNESS DELIVERY REQUIRED]", execution.directives[1])
+        self.assertIn("outputs/report.csv", execution.directives[1])
 
     def test_outcome_requires_semantic_progress_or_completion(self) -> None:
         execution = RecoveryExecution(

@@ -172,12 +172,21 @@ class AgentDriver:
                         )
                         task_writer = TaskEventWriter(ledger)
                         semantics = classify_tool_action(call.name, call.arguments)
+                        delivery_required = bool(
+                            TaskStateProjector()
+                            .project(ledger.events)
+                            .values.get("recovery.partial_delivery_requested")
+                        ) and not any(
+                            record.semantics.mutating and record.error_type is None
+                            for record in action_ledger.records
+                        )
                         budget_blocked = not turn_budget.admit(
                             "agent-turn-1",
                             mutating=semantics.mutating,
                         )
                         scope_blocked = session.is_action_blocked(call)
-                        if budget_blocked or scope_blocked:
+                        delivery_blocked = delivery_required and not semantics.mutating
+                        if budget_blocked or scope_blocked or delivery_blocked:
                             if budget_blocked:
                                 ledger.append(
                                     "resource/turn-budget-blocked",
@@ -195,17 +204,31 @@ class AgentDriver:
                                     turn=1,
                                     step=step,
                                 )
+                            if delivery_blocked:
+                                ledger.append(
+                                    "resource/delivery-first-blocked",
+                                    {"call_id": call.id},
+                                    turn=1,
+                                    step=step,
+                                )
                             result = ToolResult(
                                 call.id,
                                 (
                                     "Harness ended this turn after the non-mutating action budget "
                                     "was exhausted."
                                     if budget_blocked
-                                    else "Harness blocked this repeated no-progress Action Scope."
+                                    else (
+                                        "[HARNESS DELIVERY REQUIRED] Read-only action blocked. "
+                                        "Write a required artifact before further inspection."
+                                        if delivery_blocked
+                                        else "Harness blocked this repeated no-progress Action Scope."
+                                    )
                                 ),
                                 error_type=(
                                     "HARNESS_TURN_BUDGET"
                                     if budget_blocked
+                                    else "HARNESS_DELIVERY_REQUIRED"
+                                    if delivery_blocked
                                     else "HARNESS_SCOPE_BLOCKED"
                                 ),
                                 metadata={"executed": False},

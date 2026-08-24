@@ -12,6 +12,10 @@ from adaptive_harness.capabilities import (
 )
 from adaptive_harness.context import ContextBudget, TaskAwareContextManager
 from adaptive_harness.kernel import Kernel, PluginContext
+from adaptive_harness.recovery import (
+    RuleBasedTaskRecoveryExecutor,
+    RuleBasedTaskRecoveryPolicy,
+)
 from adaptive_harness.resource_guardrail import ResourceGuardrail
 from adaptive_harness.runtime import AgentDriver
 from adaptive_harness.services import (
@@ -22,6 +26,8 @@ from adaptive_harness.services import (
     RESOURCE_GUARDRAIL,
     TASK_COMPLETION_GATE,
     TASK_CONTRACT_BUILDER,
+    TASK_RECOVERY_EXECUTOR,
+    TASK_RECOVERY_POLICY,
     TOOL_RUNTIME,
 )
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder
@@ -202,6 +208,74 @@ class GuardrailRuntimePlugin:
         )
 
 
+class DeliveryRecoveryModel:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def complete(self, request):
+        self.calls += 1
+        if self.calls == 1:
+            return ModelResponse(content="done too early")
+        if self.calls == 2:
+            return ModelResponse(
+                tool_calls=(ToolCall("read-after-recovery", "read_file", {}),)
+            )
+        if self.calls == 3:
+            return ModelResponse(
+                tool_calls=(ToolCall("write-after-recovery", "write_artifact", {}),)
+            )
+        return ModelResponse(content="done with artifact")
+
+
+class DeliveryRecoveryPlugin:
+    name = "delivery-recovery-runtime"
+    requires = ()
+
+    def __init__(self) -> None:
+        self.read_executions = 0
+        self.write_executions = 0
+
+    async def mount(self, context: PluginContext) -> None:
+        context.provide(ENVIRONMENT, FakeEnvironment())
+        context.provide(MODEL, DeliveryRecoveryModel())
+        context.provide(CONTEXT_MANAGER, PassthroughContextManager())
+        context.provide(COMPLETION_POLICY, AcceptFinalCompletion())
+        context.provide(TASK_CONTRACT_BUILDER, RuleBasedTaskContractBuilder())
+        context.provide(TASK_COMPLETION_GATE, EvidenceCompletionGate())
+        context.provide(TASK_RECOVERY_POLICY, RuleBasedTaskRecoveryPolicy())
+        context.provide(TASK_RECOVERY_EXECUTOR, RuleBasedTaskRecoveryExecutor())
+
+        def read_file() -> str:
+            self.read_executions += 1
+            return "should not execute"
+
+        def write_artifact() -> ToolResult:
+            self.write_executions += 1
+            return ToolResult(
+                "write-after-recovery",
+                "written",
+                metadata={
+                    "evidence": [
+                        {
+                            "kind": "artifact",
+                            "subject": "outputs/report.csv",
+                            "value": {"exists": True},
+                        }
+                    ]
+                },
+            )
+
+        context.provide(
+            TOOL_RUNTIME,
+            ToolRuntime(
+                (
+                    ToolDefinition("read_file", "read", read_file),
+                    ToolDefinition("write_artifact", "write", write_artifact),
+                )
+            ),
+        )
+
+
 class TaskAwareRuntimePlugin:
     name = "task-aware-runtime"
     requires = ()
@@ -221,6 +295,27 @@ class TaskAwareRuntimePlugin:
 
 
 class RuntimeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_recovery_blocks_reads_until_required_artifact_write(self) -> None:
+        kernel = Kernel()
+        plugin = DeliveryRecoveryPlugin()
+        await kernel.mount(plugin)
+
+        result = await AgentDriver(kernel, max_steps=5).run(
+            "Write outputs/report.csv.",
+            run_id="run-delivery-recovery",
+        )
+
+        self.assertTrue(result.completed)
+        self.assertEqual(plugin.read_executions, 0)
+        self.assertEqual(plugin.write_executions, 1)
+        self.assertEqual(
+            sum(
+                event.type == "resource/delivery-first-blocked"
+                for event in result.ledger.events
+            ),
+            1,
+        )
+
     async def test_task_aware_context_selection_is_audited_before_each_request(self) -> None:
         kernel = Kernel()
         await kernel.mount(TaskAwareRuntimePlugin())

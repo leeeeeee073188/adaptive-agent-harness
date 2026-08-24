@@ -198,6 +198,10 @@ def main() -> int:
                 "global_nonmutating_budget_enforced"
             )
             is True,
+            "delivery_first_gate_enforced": adaptive.get(
+                "delivery_first_gate_enforced"
+            )
+            is True,
             "context_middleware_request_shape_valid": (
                 adaptive.get("context_middleware_request_shape_valid") is True
             ),
