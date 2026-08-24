@@ -7,7 +7,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from adaptive_harness.capabilities import CompletionDecision, ModelRequest
+from adaptive_harness.capabilities import CompletionDecision, ModelRequest, PreparedContext
+from adaptive_harness.context import CONTEXT_SELECTED
 from adaptive_harness.kernel import Kernel
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.lifecycle import AGENT_PRE_STEP, AGENT_REQUEST, AGENT_TURN_STOPPING, RUN_STARTED, RUN_STOPPED
@@ -81,11 +82,21 @@ class AgentDriver:
                 task_projection = TaskStateProjector().project(ledger.events)
                 if task_projection.contract is not None:
                     task_state["task"] = task_projection.to_context()
-                messages = context_manager.prepare(
+                prepared = context_manager.prepare(
                     ledger.derive_messages(),
                     environment_state=environment.state(),
                     task_state=task_state,
                 )
+                if isinstance(prepared, PreparedContext):
+                    messages = list(prepared.messages)
+                    ledger.append(
+                        CONTEXT_SELECTED,
+                        dict(prepared.audit),
+                        turn=1,
+                        step=step,
+                    )
+                else:
+                    messages = list(prepared)
                 messages = await self.kernel.events.dispatch(AGENT_PRE_STEP, list(messages))
                 request = ModelRequest(messages, tool_runtime.schemas(), {"run_id": run_id, "turn": 1, "step": step})
                 request = await self.kernel.events.dispatch(AGENT_REQUEST, request)
@@ -102,7 +113,18 @@ class AgentDriver:
                 response = await model.complete(request)
                 ledger.append(
                     "assistant/message",
-                    {"content": response.content, "usage": dict(response.usage)},
+                    {
+                        "content": response.content,
+                        "usage": dict(response.usage),
+                        "tool_calls": [
+                            {
+                                "id": call.id,
+                                "name": call.name,
+                                "arguments": dict(call.arguments),
+                            }
+                            for call in response.tool_calls
+                        ],
+                    },
                     turn=1,
                     step=step,
                 )

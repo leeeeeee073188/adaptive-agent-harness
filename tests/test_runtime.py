@@ -10,6 +10,7 @@ from adaptive_harness.capabilities import (
     ToolDefinition,
     ToolResult,
 )
+from adaptive_harness.context import ContextBudget, TaskAwareContextManager
 from adaptive_harness.kernel import Kernel, PluginContext
 from adaptive_harness.runtime import AgentDriver
 from adaptive_harness.services import (
@@ -155,7 +156,47 @@ class ReliabilityRuntimePlugin:
         )
 
 
+class TaskAwareRuntimePlugin:
+    name = "task-aware-runtime"
+    requires = ()
+
+    async def mount(self, context: PluginContext) -> None:
+        context.provide(ENVIRONMENT, FakeEnvironment())
+        context.provide(MODEL, FakeModel())
+        context.provide(
+            CONTEXT_MANAGER,
+            TaskAwareContextManager(budget=ContextBudget(max_input_tokens=256)),
+        )
+        context.provide(COMPLETION_POLICY, AcceptFinalCompletion())
+        context.provide(
+            TOOL_RUNTIME,
+            ToolRuntime([ToolDefinition("echo", "echo a value", lambda value: value)]),
+        )
+
+
 class RuntimeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_task_aware_context_selection_is_audited_before_each_request(self) -> None:
+        kernel = Kernel()
+        await kernel.mount(TaskAwareRuntimePlugin())
+
+        result = await AgentDriver(kernel).run("do the task", run_id="run-context")
+
+        events = result.ledger.events
+        selections = [event for event in events if event.type == "context/selected"]
+        headers = [event for event in events if event.type == "request/header"]
+        self.assertEqual(len(selections), len(headers))
+        self.assertEqual(len(selections), 2)
+        for selection in selections:
+            self.assertLessEqual(selection.payload["estimated_input_tokens"], 256)
+            self.assertEqual(len(selection.payload["surface_sha256"]), 64)
+            self.assertNotIn("do the task", str(selection.payload))
+            header_index = next(
+                index
+                for index, event in enumerate(events)
+                if event.type == "request/header" and event.step == selection.step
+            )
+            self.assertLess(events.index(selection), header_index)
+
     async def test_driver_records_reconstructable_tool_turn(self) -> None:
         kernel = Kernel()
         await kernel.mount(RuntimePlugin())

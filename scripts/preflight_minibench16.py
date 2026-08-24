@@ -26,12 +26,25 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         seed,
     )
     candidate = VariantSpec(
-        "adaptive_harness_a3",
+        "adaptive_harness_context_v1",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
-                "policies": ["task_contract", "tool_reliability", "evidence_completion"],
+                "policies": [
+                    "task_contract",
+                    "tool_reliability",
+                    "evidence_completion",
+                    "durable_recovery",
+                    "semantic_progress",
+                    "task_aware_context",
+                ],
                 "tool_reliability": {"max_attempts": 2},
+                "task_aware_context": {
+                    "policy": "task-aware-v1",
+                    "max_input_tokens": 4096,
+                    "history_fraction": 0.20,
+                    "authority_separated": True,
+                },
             }
         ),
         baseline.model,

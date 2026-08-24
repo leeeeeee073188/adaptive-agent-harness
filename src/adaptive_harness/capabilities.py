@@ -61,6 +61,14 @@ class ModelResponse:
     usage: Mapping[str, int] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class PreparedContext:
+    """Model messages plus a content-free audit record of their selection."""
+
+    messages: tuple[Mapping[str, Any], ...]
+    audit: Mapping[str, Any]
+
+
 class ModelAdapter(Protocol):
     async def complete(self, request: ModelRequest) -> ModelResponse: ...
 
@@ -72,7 +80,7 @@ class ContextManager(Protocol):
         *,
         environment_state: Mapping[str, Any],
         task_state: Mapping[str, Any],
-    ) -> Sequence[Mapping[str, Any]]: ...
+    ) -> Sequence[Mapping[str, Any]] | PreparedContext: ...
 
 
 @dataclass(frozen=True)

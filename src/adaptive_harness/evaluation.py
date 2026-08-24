@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
@@ -106,7 +107,15 @@ class ExperienceAdmissibilityFilter:
     )
 
     def admit(self, candidate: ExperienceCandidate) -> bool:
-        content = "\n".join((candidate.situation, candidate.strategy, candidate.anti_pattern))
+        content = "\n".join(
+            (
+                candidate.situation,
+                candidate.strategy,
+                candidate.anti_pattern,
+                *candidate.provenance,
+                json.dumps(candidate.metadata, ensure_ascii=False, sort_keys=True),
+            )
+        )
         return bool(candidate.provenance) and not any(pattern.search(content) for pattern in self._FORBIDDEN)
 
 

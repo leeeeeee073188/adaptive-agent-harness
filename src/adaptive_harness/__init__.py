@@ -1,6 +1,7 @@
 """Adaptive Agent Harness public API."""
 
 from adaptive_harness.config import Bundle, PluginSpec, Profile
+from adaptive_harness.context import ContextBudget, TaskAwareContextManager
 from adaptive_harness.evolution import (
     EvolutionCandidate,
     EvolutionGate,
@@ -29,6 +30,7 @@ from adaptive_harness.tool_reliability import ToolReliabilityConfig
 __all__ = [
     "AgentDriver",
     "Bundle",
+    "ContextBudget",
     "EvidenceCompletionGate",
     "EvolutionCandidate",
     "EvolutionGate",
@@ -49,6 +51,7 @@ __all__ = [
     "ServiceKey",
     "ShadowEvaluation",
     "TaskContract",
+    "TaskAwareContextManager",
     "TaskState",
     "TaskStateProjector",
     "ToolReliabilityConfig",

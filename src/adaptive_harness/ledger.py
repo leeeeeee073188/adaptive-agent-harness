@@ -69,7 +69,15 @@ class SessionLedger:
             if event.type == "user/message":
                 messages.append({"role": "user", "content": event.payload["content"]})
             elif event.type == "assistant/message":
-                messages.append({"role": "assistant", "content": event.payload.get("content", "")})
+                message: dict[str, Any] = {
+                    "role": "assistant",
+                    "content": event.payload.get("content", ""),
+                }
+                if event.payload.get("tool_calls"):
+                    message["tool_calls"] = [
+                        dict(item) for item in event.payload["tool_calls"]
+                    ]
+                messages.append(message)
             elif event.type == "tool/result":
                 messages.append(
                     {

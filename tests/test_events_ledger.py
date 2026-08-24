@@ -33,12 +33,21 @@ class EventLedgerTests(unittest.IsolatedAsyncioTestCase):
             path = Path(tmp) / "events.jsonl"
             ledger = SessionLedger("run-1", path)
             ledger.append("user/message", {"content": "hello"}, turn=1)
-            ledger.append("assistant/message", {"content": "working"}, turn=1, step=1)
+            ledger.append(
+                "assistant/message",
+                {
+                    "content": "working",
+                    "tool_calls": [{"id": "c1", "name": "work", "arguments": {}}],
+                },
+                turn=1,
+                step=1,
+            )
             ledger.append("tool/result", {"call_id": "c1", "content": "done"}, turn=1, step=1)
             ledger.append("state/updated", {"delta": {"artifact": "a.json"}})
 
             replayed = SessionLedger.replay(path)
 
         self.assertEqual([event.seq for event in replayed.events], [0, 1, 2, 3])
+        self.assertEqual(replayed.derive_messages()[1]["tool_calls"][0]["id"], "c1")
         self.assertEqual(replayed.derive_messages()[-1]["tool_call_id"], "c1")
         self.assertEqual(replayed.project_state(), {"artifact": "a.json"})

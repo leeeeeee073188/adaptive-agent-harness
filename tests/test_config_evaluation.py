@@ -36,6 +36,14 @@ class ConfigEvaluationTests(unittest.TestCase):
             "",
             ("run-2",),
         )
+        metadata_leak = ExperienceCandidate(
+            "A generic task failed.",
+            "Retry with a safer tool.",
+            "",
+            ("run-3",),
+            {"expected_answer": "private"},
+        )
 
         self.assertTrue(filter_.admit(safe))
         self.assertFalse(filter_.admit(leaked))
+        self.assertFalse(filter_.admit(metadata_leak))

@@ -34,6 +34,7 @@ def main() -> int:
     sys.path.insert(0, str(realreplica_root))
     from real_replica_bench.harnesses.deerflow.runner import (  # noqa: PLC0415
         _adaptive_deerflow_invocation_script,
+        build_deerflow_config,
     )
 
     dataset = RealReplicaMiniBenchAdapter().load(realreplica_root)
@@ -50,8 +51,13 @@ def main() -> int:
         prompt_path = tmp_path / "prompt.md"
         result_path = tmp_path / "result.json"
         ledger_path = tmp_path / "ledger.jsonl"
+        context_config_path = tmp_path / "context-config.yaml"
         generated_script.write_text(_adaptive_deerflow_invocation_script() + "\n")
         prompt_path.write_text("帮我把商品发上线，发品系统打开后提交。\n")
+        context_config_path.write_text(
+            build_deerflow_config(adaptive_context_enabled=True).to_yaml(),
+            encoding="utf-8",
+        )
         try:
             _run(
                 "docker",
@@ -81,6 +87,12 @@ def main() -> int:
             _run("docker", "cp", str(source_dir), f"{container}:/tmp/adaptive-src/adaptive_harness")
             _run("docker", "cp", str(generated_script), f"{container}:/tmp/adaptive-runner.py")
             _run("docker", "cp", str(prompt_path), f"{container}:/tmp/prompt.md")
+            _run(
+                "docker",
+                "cp",
+                str(context_config_path),
+                f"{container}:/tmp/context-config.yaml",
+            )
             source_sha = _run(
                 "docker",
                 "exec",
@@ -95,7 +107,9 @@ def main() -> int:
                 "-e",
                 "PYTHONPATH=/tmp/adaptive-src",
                 "-e",
-                "DEER_FLOW_CONFIG_PATH=/opt/deer-flow/config.example.yaml",
+                "DEER_FLOW_CONFIG_PATH=/tmp/context-config.yaml",
+                "-e",
+                "DEERFLOW_MODEL_API_KEY=dummy",
                 "-e",
                 "ADAPTIVE_HARNESS_WIRING_PROBE=1",
                 "-w",
@@ -106,7 +120,7 @@ def main() -> int:
                 "/tmp/prompt.md",
                 "/tmp/adaptive-probe/result.json",
                 "/tmp/adaptive-probe/ledger.jsonl",
-                "/opt/deer-flow/config.example.yaml",
+                "/tmp/context-config.yaml",
                 "deepseek-v4-flash",
                 "probe-thread",
                 "disabled",
@@ -135,7 +149,13 @@ def main() -> int:
             "embedded_client_stream_exercised": adaptive.get("turns") == 2,
             "ledger_persisted": ledger_path.is_file() and ledger_path.stat().st_size > 0,
             "policy_bridge_enabled": adaptive.get("completed") is True,
+            "context_middleware_imported": adaptive.get("context_middleware_imported") is True,
+            "context_middleware_request_shape_valid": (
+                adaptive.get("context_middleware_request_shape_valid") is True
+            ),
+            "pinned_candidate_config_loaded": True,
             "realreplica_candidate_config_enabled": "adaptive_policy_enabled: true" in config_text,
+            "realreplica_context_profile_wired": "adaptive_context_enabled=adaptive_source is not None" in runner_text,
             "realreplica_runner_copies_source": "/tmp/adaptive-src/adaptive_harness" in runner_text,
             "realreplica_runner_persists_ledger": "adaptive-ledger.jsonl" in runner_text,
             "runner_probe_used_zero_models": adaptive.get("model_calls") == 0,
@@ -144,6 +164,7 @@ def main() -> int:
             checks[key]
             for key in (
                 "realreplica_candidate_config_enabled",
+                "realreplica_context_profile_wired",
                 "realreplica_runner_copies_source",
                 "realreplica_runner_persists_ledger",
                 "runner_probe_used_zero_models",
