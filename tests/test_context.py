@@ -183,7 +183,11 @@ class TaskAwareContextTests(unittest.TestCase):
                     {
                         "id": "read-1",
                         "name": "read_file",
-                        "arguments": {"path": "/task/input.json", "api_key": "sk-not-safe-123456"},
+                        "arguments": {
+                            "path": "/task/input.json",
+                            "api_key": "sk-not-safe-123456",
+                            "description": "First wording",
+                        },
                     }
                 ],
             },
@@ -195,7 +199,11 @@ class TaskAwareContextTests(unittest.TestCase):
                     {
                         "id": "read-2",
                         "name": "read_file",
-                        "arguments": {"path": "/task/input.json", "api_key": "sk-not-safe-123456"},
+                        "arguments": {
+                            "path": "/task/input.json",
+                            "api_key": "sk-not-safe-123456",
+                            "description": "Different wording",
+                        },
                     }
                 ],
             },
@@ -214,6 +222,11 @@ class TaskAwareContextTests(unittest.TestCase):
         rendered = str(prepared.messages)
         self.assertIn("tool:read_file:", rendered)
         self.assertIn('"attempts":2', rendered)
+        self.assertIn('"distinct_result_hashes":1', rendered)
+        self.assertIn('"repeated_unchanged":true', rendered)
+        self.assertIn("explicit no-progress signal", rendered)
+        self.assertNotIn("First wording", rendered)
+        self.assertNotIn("Different wording", rendered)
         self.assertIn("/task/input.json", rendered)
         self.assertIn("<redacted>", rendered)
         self.assertNotIn("sk-not-safe", rendered)
