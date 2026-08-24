@@ -127,4 +127,6 @@ v3.7 live（A48）正确进入 Artifact delivery recovery，但原门禁仍允�
 
 为避免继续围绕单个困难 CLI 任务低效迭代，后续真实模型反馈先走与 MiniBench16 完全互斥的 Development `Diagnostic4`：File/easy、CLI/easy+vision、Browser/medium、API/medium 各一项，按固定 seed 和最低成本代理选择，一次只跑一个 index，但收齐四种类型的首次样本后才做架构修改。优化按规划、上下文、工具、环境、Artifact、Verification/Grounding、Recovery、多模态、离线 Experience 和成本十个维度聚类，禁止 task-id 特判。A54 零模型 preflight 已验证四类覆盖、难度/能力切片、MiniBench16 隔离及默认 `thinking=enabled/high`；详细流程见 [`docs/diagnostic4-evolution-loop.zh-CN.md`](docs/diagnostic4-evolution-loop.zh-CN.md)。
 
+A55 已收齐四类首次样本：0/4 通过，Capacity 均值 0.0192，共 1,206,127 Token、129 Tool、1,129.8 秒；四项 integrity 全部通过且没有调用 LLM Judge。File/API 写了与 Contract 不匹配的输出路径，Browser 未交付 `answer.json`，API 已生成 `mock_audit/` 目录及文件却被 file-only Provider 判为不存在，CLI 的带鉴权 loopback observation 返回 403 后逸出 Provider 边界。v4 因此加入 required-artifact-aware delivery、目录 Artifact observation、turn observation OSError fail-closed，以及同一 delivery generation 两次违规后提前结束 turn；A56/A57 的 166 项核心 gate 和 pinned-container probe 均为零模型通过，暂不扩跑 MiniBench。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

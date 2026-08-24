@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Mapping
+from pathlib import Path
 from threading import Lock
 from typing import Any, override
 
@@ -26,7 +28,7 @@ from adaptive_harness.action_ledger import (
     classify_tool_action,
 )
 from adaptive_harness.capabilities import ToolCall, ToolResult
-from adaptive_harness.policy_session import current_policy_session
+from adaptive_harness.policy_session import current_policy_session, current_policy_task_state
 from adaptive_harness.resource_guardrail import NonMutatingTurnBudget
 
 _MAX_RUN_LEDGERS = 128
@@ -66,8 +68,14 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         self._max_reads_per_resource = int(os.environ.get("ADAPTIVE_MAX_READS_PER_RESOURCE", "3"))
         if self._max_reads_per_resource < 1:
             raise ValueError("ADAPTIVE_MAX_READS_PER_RESOURCE must be positive")
+        self._max_delivery_violations = int(
+            os.environ.get("ADAPTIVE_MAX_DELIVERY_VIOLATIONS", "2")
+        )
+        if self._max_delivery_violations < 1:
+            raise ValueError("ADAPTIVE_MAX_DELIVERY_VIOLATIONS must be positive")
         self._turn_budget = NonMutatingTurnBudget(self._max_nonmutating_actions)
         self._delivery_satisfied_generation: dict[str, int] = {}
+        self._delivery_violations: dict[str, int] = {}
         self._read_counts: dict[str, dict[str, int]] = {}
         self._read_inflight: dict[str, dict[str, tuple[tuple[str, ...], int]]] = {}
         self._resource_epochs: dict[str, int] = {}
@@ -88,6 +96,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             if len(self._ledgers) > _MAX_RUN_LEDGERS:
                 evicted_key, _ = self._ledgers.popitem(last=False)
                 self._delivery_satisfied_generation.pop(evicted_key, None)
+                self._discard_delivery_violations_locked(evicted_key)
                 self._read_counts.pop(evicted_key, None)
                 self._read_inflight.pop(evicted_key, None)
                 self._resource_epochs.pop(evicted_key, None)
@@ -141,6 +150,12 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             if key.startswith(prefix):
                 self._local_cache_blocks.pop(key, None)
 
+    def _discard_delivery_violations_locked(self, run_key: str) -> None:
+        prefix = f"{run_key}:delivery-generation:"
+        for key in tuple(self._delivery_violations):
+            if key.startswith(prefix):
+                self._delivery_violations.pop(key, None)
+
     def _observe(
         self,
         request: ToolCallRequest,
@@ -155,6 +170,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         tool_result = _tool_result(call.id, result)
         run_key = _run_key(request)
         semantics = classify_tool_action(call.name, call.arguments)
+        required_artifacts = _required_artifact_paths(request.state)
         with self._state_lock:
             ledger = self._ledger_locked(run_key)
             record, decision = ledger.observe(call, tool_result)
@@ -168,12 +184,16 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                     counts = self._read_counts.setdefault(run_key, {})
                     for resource in resources:
                         counts[resource] = counts.get(resource, 0) + 1
-            if tool_result.error_type is None and _is_delivery_write(call):
+            if tool_result.error_type is None and _is_delivery_write(
+                call,
+                required_artifacts,
+            ):
                 generation = _delivery_requirement_generation(request.state)
                 self._delivery_satisfied_generation[run_key] = max(
                     generation,
                     self._delivery_satisfied_generation.get(run_key, 0),
                 )
+                self._discard_delivery_violations_locked(run_key)
         advice_applied = bool(
             self._config.mode is VerificationMode.ADVISE
             and decision.disposition is VerificationDisposition.WARN
@@ -224,17 +244,55 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         )
         semantics = classify_tool_action(call.name, call.arguments)
         run_key = _run_key(request)
+        required_artifacts = _required_artifact_paths(request.state)
         required_generation = _delivery_requirement_generation(request.state)
         with self._state_lock:
             self._ledger_locked(run_key)
             satisfied_generation = self._delivery_satisfied_generation.get(run_key, 0)
         delivery_required = required_generation > satisfied_generation
-        if delivery_required and not _advances_delivery(call, semantics):
-            blocked_kind = "non-output write" if semantics.mutating else "plain read"
+        if delivery_required and not _advances_delivery(
+            call,
+            semantics,
+            required_artifacts,
+        ):
+            attempted_output = "outputs/" in _content_text(call.arguments).replace("\\", "/")
+            blocked_kind = (
+                "wrong-target write"
+                if semantics.mutating and attempted_output and required_artifacts
+                else "non-output write"
+                if semantics.mutating
+                else "plain read"
+            )
+            target_hint = (
+                " Required artifact paths: " + ", ".join(required_artifacts[:5]) + "."
+                if required_artifacts
+                else ""
+            )
+            violation_key = f"{run_key}:delivery-generation:{required_generation}"
+            with self._state_lock:
+                violations = self._delivery_violations.get(violation_key, 0) + 1
+                self._delivery_violations[violation_key] = violations
+            if violations >= self._max_delivery_violations:
+                return Command(
+                    update={
+                        "messages": [
+                            ToolMessage(
+                                content=(
+                                    "Harness ended this turn after repeated delivery violations."
+                                    f"{target_hint} Replan only the required artifact write."
+                                ),
+                                tool_call_id=call.id,
+                                status="error",
+                            )
+                        ]
+                    },
+                    goto=END,
+                )
             return ToolMessage(
                 content=(
                     f"[HARNESS DELIVERY REQUIRED] {blocked_kind} blocked. Write a required artifact or "
-                    "run a direct task-provided synthesis script. Do not create an empty placeholder "
+                    f"run a direct task-provided synthesis script.{target_hint} "
+                    "Do not create an empty placeholder "
                     "solely to unlock inspection."
                 ),
                 tool_call_id=call.id,
@@ -437,34 +495,126 @@ def _is_user_message(message: Any) -> bool:
     return kind in {"human", "user"}
 
 
-def _is_delivery_write(call: ToolCall) -> bool:
+def _is_delivery_write(
+    call: ToolCall,
+    required_artifacts: tuple[str, ...] = (),
+) -> bool:
     path = str(call.arguments.get("path") or "").replace("\\", "/")
     output_path = path.startswith(("/task/outputs/", "outputs/"))
     if call.name in {"write_file", "str_replace"}:
-        return output_path
+        return output_path and _matches_required_artifact(path, required_artifacts)
     if call.name != "bash":
         return False
     command = str(call.arguments.get("command") or "")
-    if not re.search(r"(?:/task/outputs/|\boutputs/)", command):
-        return False
-    return bool(
-        re.search(
-            r"(?:>{1,2}|\btee\b|\bcp\b|\bmv\b|write_text|write_bytes|"
-            r"json\.dump|to_csv|open\s*\([^\n]{0,200}['\"](?:w|a|x))",
-            command,
-            re.IGNORECASE,
+    write_targets = tuple(
+        target
+        for target in _bash_write_targets(command)
+        if target.startswith("outputs/")
+    )
+    return bool(write_targets) and (
+        not required_artifacts
+        or any(
+            _matches_required_artifact(target, required_artifacts)
+            for target in write_targets
         )
     )
 
 
-def _advances_delivery(call: ToolCall, semantics: Any) -> bool:
-    if _is_delivery_write(call):
+def _advances_delivery(
+    call: ToolCall,
+    semantics: Any,
+    required_artifacts: tuple[str, ...] = (),
+) -> bool:
+    if _is_delivery_write(call, required_artifacts):
         return True
     return semantics.intent in {
         ToolIntent.NAVIGATE,
         ToolIntent.TRANSFORM,
         ToolIntent.INTERACT,
     }
+
+
+def _required_artifact_paths(state: Any) -> tuple[str, ...]:
+    for candidate in (current_policy_task_state(), state):
+        if not isinstance(candidate, Mapping):
+            continue
+        task = candidate.get("task")
+        if isinstance(task, Mapping):
+            candidate = task
+        criteria = candidate.get("criteria")
+        if not isinstance(criteria, (list, tuple)):
+            continue
+        paths = []
+        for criterion in criteria:
+            if not isinstance(criterion, Mapping) or criterion.get("kind") != "artifact_exists":
+                continue
+            parameters = criterion.get("parameters")
+            if not isinstance(parameters, Mapping):
+                continue
+            path = str(parameters.get("path") or "")
+            if path:
+                paths.append(_normalize_artifact_path(path))
+        if paths:
+            return tuple(dict.fromkeys(paths))
+    return ()
+
+
+def _normalize_artifact_path(path: str) -> str:
+    normalized = path.replace("\\", "/").removeprefix("/task/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized
+
+
+def _matches_required_artifact(path: str, required_artifacts: tuple[str, ...]) -> bool:
+    if not required_artifacts:
+        return True
+    normalized = _normalize_artifact_path(path)
+    return any(
+        normalized.startswith(required.rstrip("/") + "/")
+        if required.endswith("/")
+        else normalized == required
+        for required in required_artifacts
+    )
+
+
+def _bash_write_targets(command: str) -> tuple[str, ...]:
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars="|&;<>")
+        lexer.whitespace_split = True
+        lexer.commenters = "#"
+        tokens = list(lexer)
+    except ValueError:
+        return ()
+    targets: list[str] = []
+    separators = {"|", "||", "&", "&&", ";"}
+    for index, token in enumerate(tokens[:-1]):
+        if token in {">", ">>"}:
+            targets.append(tokens[index + 1])
+    start = 0
+    for index in range(len(tokens) + 1):
+        if index != len(tokens) and tokens[index] not in separators:
+            continue
+        segment = tokens[start:index]
+        start = index + 1
+        if not segment:
+            continue
+        command_name = Path(segment[0]).name
+        if command_name in {"cp", "mv"}:
+            operands = [token for token in segment[1:] if not token.startswith("-")]
+            if len(operands) >= 2:
+                targets.append(operands[-1])
+        elif command_name == "tee":
+            targets.extend(token for token in segment[1:] if not token.startswith("-"))
+    uncommented = " ".join(tokens)
+    patterns = (
+        r"Path\s*\(\s*['\"]([^'\"]+)['\"]\s*\)\s*\.write_(?:text|bytes)",
+        r"open\s*\(\s*['\"]([^'\"]+)['\"]\s*,\s*['\"](?:w|a|x)",
+        r"\.to_csv\s*\(\s*['\"]([^'\"]+)['\"]",
+    )
+    for pattern in patterns:
+        targets.extend(re.findall(pattern, uncommented, re.IGNORECASE))
+    return tuple(dict.fromkeys(_normalize_artifact_path(target) for target in targets))
 
 
 def _cacheable_local_resources(semantics) -> tuple[str, ...]:

@@ -168,6 +168,8 @@ v3.8 live（A51）证明“首次交付”和“校验失败后的修复”不�
 
 连续单题 canary 只用于关闭已知失败链，不是综合能力评测。下一轮改用与 MiniBench16 完全互斥的 Development Diagnostic4：File/easy/text、CLI/easy/vision、Browser/medium/text、API/medium/text 各一项；一次只跑一个 index，但普通单题失败不阻断剩余类型的首次采样，收齐四种类型后才允许修改架构。A54 已用零模型 preflight 锁定四类、easy/medium、text/browser/vision、`max_actions=60`、Dev-only、MiniBench16-disjoint 和 thinking=enabled/high。优化必须同时评估规划、上下文、工具、环境、Artifact、Verification/Grounding、Recovery、多模态、离线 Experience 和成本层，优先修复跨类型失败簇。通过后再进入 MiniBench16 Development，冻结 Profile/Experience Store，最后分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用。完整规则见 `docs/diagnostic4-evolution-loop.zh-CN.md`。
 
+Diagnostic4 live（A55）已完成且没有触发任务级即时优化：File 0/5、CLI vision 0/8、Browser 0/7、API 1/13，合计 1,206,127 Token、129 Tool。共同失败面不是某个业务答案，而是 Required Artifact lifecycle：错误输出路径也会满足 delivery、目录 Artifact 被 file-only Provider 判空、Observation HTTP 403 逸出边界，以及 delivery 违规仍可消耗十余次工具调用。v4 以 Contract 中的 required paths 约束交付写入，允许 required directory 的子文件，目录 Evidence 包含 visible file count，Observation `OSError` 转为失败事实，同一 generation 第二次错误交付直接结束 turn。A56/A57 已完成零模型与容器验证；尚未执行 v4 付费复验。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

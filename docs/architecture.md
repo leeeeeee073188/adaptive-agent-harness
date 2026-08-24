@@ -380,6 +380,17 @@ messages cannot manufacture a new generation. A valid output write satisfies
 only the currently observed generation, so a later failed validation re-arms
 delivery without reopening an unbounded retry loop.
 
+Delivery admission is also Contract-aware. When the bound TaskState exposes
+`artifact_exists` criteria, a write advances delivery only if it targets an
+exact required file or a child of a required output directory. Writes to other
+`outputs/` paths remain auditable but cannot satisfy the generation; the error
+returns the bounded required-path manifest. Two violations in one generation
+end the turn, cutting wrong-target retry storms without imposing a global Token
+growth cap. Artifact observation accepts both files and directories and reports
+the visible file count for directories. Runtime observation providers contain
+`OSError`/HTTP failures as `OBSERVATION_SNAPSHOT_FAILED` facts instead of
+crashing the Agent loop.
+
 Execution remains deliberately split: `RecoveryExecutor` applies auditable
 Harness control-state deltas and next-turn directives, while external browser,
 API, and file mutations remain ordinary tools. This prevents a control policy

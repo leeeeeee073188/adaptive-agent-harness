@@ -111,6 +111,75 @@ def _summary() -> DeerFlowReplaySummary:
 
 
 class FileArtifactJsonShapeObservationTests(unittest.TestCase):
+    def test_required_directory_is_observed_as_an_artifact(self) -> None:
+        contract = TaskContract(
+            "directory-artifact",
+            "Write audit files under outputs/mock_audit/.",
+            (
+                Criterion(
+                    id="artifact:outputs-mock-audit",
+                    description="Required output directory exists",
+                    kind=CriterionKind.ARTIFACT_EXISTS,
+                    source=CriterionSource.TASK_PROMPT,
+                    parameters={"path": "outputs/mock_audit/"},
+                ),
+            ),
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "outputs/mock_audit"
+            output.mkdir(parents=True)
+            (output / "slack.json").write_text("{}", encoding="utf-8")
+            evidence = FileArtifactObservationProvider(root).observe(
+                contract,
+                _summary(),
+                turn=1,
+            )
+
+        self.assertEqual(len(evidence), 1)
+        self.assertTrue(evidence[0].value["exists"])
+        self.assertEqual(evidence[0].value["kind"], "directory")
+        self.assertEqual(evidence[0].value["visible_file_count"], 1)
+        self.assertFalse(evidence[0].value["visible_file_count_truncated"])
+        self.assertEqual(evidence[0].value["skipped_entry_count"], 0)
+
+    def test_required_directory_inventory_is_bounded_and_skips_symlinks(self) -> None:
+        contract = TaskContract(
+            "directory-artifact-bound",
+            "Write audit files under outputs/audit/.",
+            (
+                Criterion(
+                    id="artifact:outputs-audit",
+                    description="Required output directory exists",
+                    kind=CriterionKind.ARTIFACT_EXISTS,
+                    source=CriterionSource.TASK_PROMPT,
+                    parameters={"path": "outputs/audit/"},
+                ),
+            ),
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "outputs/audit"
+            output.mkdir(parents=True)
+            for index in range(FileArtifactObservationProvider.MAX_ARTIFACT_DIRECTORY_FILES + 1):
+                (output / f"{index:04d}.json").write_text("{}", encoding="utf-8")
+            target = root / "outside.txt"
+            target.write_text("private", encoding="utf-8")
+            (output / "leak.txt").symlink_to(target)
+            evidence = FileArtifactObservationProvider(root).observe(
+                contract,
+                _summary(),
+                turn=1,
+            )
+
+        value = evidence[0].value
+        self.assertEqual(
+            value["visible_file_count"],
+            FileArtifactObservationProvider.MAX_ARTIFACT_DIRECTORY_FILES,
+        )
+        self.assertTrue(value["visible_file_count_truncated"])
+        self.assertGreaterEqual(value["skipped_entry_count"], 0)
+
     def test_exact_copy_of_public_provisional_file_fails_grounding(self) -> None:
         prompt = """`workspace/analysis/results.json` is a starting point, not truth.
 Verify it against the raw source before writing outputs/audit.json.
@@ -491,6 +560,42 @@ class DeerFlowPolicyBridgeSourceCriterionTests(unittest.TestCase):
 
 
 class PublicSourceAccessObservationProviderTests(unittest.TestCase):
+    def test_turn_observation_http_failure_is_recorded_without_crashing_runtime(self) -> None:
+        class FailingProvider:
+            def supports(self, _criterion: Any) -> bool:
+                return True
+
+            def observe(
+                self,
+                _contract: Any,
+                _summary: Any,
+                *,
+                turn: int,
+            ) -> tuple[Any, ...]:
+                raise OSError("HTTP Error 403: Forbidden")
+
+        ledger = SessionLedger("turn-observation-http-error")
+        bridge = DeerFlowPolicyBridge(
+            contract_builder=_StaticContractBuilder(_source_contract()),
+            observation_providers=(FailingProvider(),),
+        )
+        contract = bridge.start(
+            ledger,
+            task_id="source-only",
+            task_prompt="Open http://127.0.0.1:8123/data",
+            public_schema=None,
+        )
+
+        bridge.observe_turn(ledger, contract, _summary(), turn=1)
+
+        failure = next(
+            event.payload["failure"]
+            for event in ledger.events
+            if event.type == "failure/classified"
+        )
+        self.assertEqual(failure["error_type"], "OBSERVATION_SNAPSHOT_FAILED")
+        self.assertIn("403", failure["message"])
+
     def test_loopback_source_is_materialized_before_completion_check(self) -> None:
         provider = PublicSourceAccessObservationProvider(
             fetch_bytes=lambda _url: (

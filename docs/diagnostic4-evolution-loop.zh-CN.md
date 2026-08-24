@@ -91,7 +91,7 @@ Diagnostic4 无明显 Regression 后，才进入：
 # 每次只运行一个 index；默认 thinking=enabled/high
 python -m real_replica_bench.cli run \
   --config configs/realreplicabench_adaptive_diagnostic4.yaml \
-  --run-id adaptive-harness-diagnostic4-v3-9-file \
+  --run-id adaptive-harness-diagnostic4-v4-0-file \
   --start-index 1 --limit 1
 
 # 后续依次改为 2、3、4，并为 CLI/Browser/API 使用独立 run-id；

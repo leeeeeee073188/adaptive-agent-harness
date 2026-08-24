@@ -1,0 +1,19 @@
+{
+  "scope": "independent v4 pre-execution verification",
+  "verdict": "pass_normalized_legacy_lint_delta",
+  "adaptive_tests_passed": 334,
+  "realreplica_tests_passed": 77,
+  "adaptive_ruff_passed": true,
+  "real_scoped_ruff_passed": true,
+  "real_full_ruff_baseline_findings": 509,
+  "real_full_ruff_current_findings": 509,
+  "real_full_ruff_new_findings": 0,
+  "compile_passed": true,
+  "diff_check_passed": true,
+  "evidence_index_verified": true,
+  "readiness": true,
+  "thinking_request_effort": "high",
+  "model_calls": 0,
+  "paid_v4_runs": 0,
+  "execution_blocker": null
+}

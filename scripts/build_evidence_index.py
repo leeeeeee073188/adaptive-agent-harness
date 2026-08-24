@@ -11,6 +11,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+ROOT = Path(__file__).resolve().parents[1]
+
 REQUIRED = tuple(
     f"a{stage}-{name}/summary.json"
     for stage, name in (
@@ -69,6 +71,9 @@ REQUIRED = tuple(
         (52, "v3-9-artifact-repair-gate"),
         (53, "v3-9-artifact-repair-container"),
         (54, "diagnostic4-preflight"),
+        (55, "diagnostic4-live"),
+        (56, "v4-cross-type-gate"),
+        (57, "v4-cross-type-container"),
     )
 )
 OPTIONAL = (
@@ -131,6 +136,11 @@ OPTIONAL = (
     "a54-diagnostic4-preflight/review.json",
     "a54-diagnostic4-preflight/verification.json",
     "a54-diagnostic4-preflight/readiness.json",
+    "a57-v4-cross-type-container/container-wiring.json",
+    "a57-v4-cross-type-container/lint-delta.json",
+    "a57-v4-cross-type-container/review.json",
+    "a57-v4-cross-type-container/verification.json",
+    "a57-v4-cross-type-container/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -241,6 +251,12 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     diagnostic4_readiness = documents.get(
         "a54-diagnostic4-preflight/readiness.json", {}
     )
+    diagnostic4_live = doc("a55-diagnostic4-live/summary.json") if not missing else {}
+    v4_gate = doc("a56-v4-cross-type-gate/summary.json") if not missing else {}
+    v4_conformance = doc("a57-v4-cross-type-container/summary.json") if not missing else {}
+    v4_wiring = documents.get("a57-v4-cross-type-container/container-wiring.json", {})
+    v4_lint_delta = documents.get("a57-v4-cross-type-container/lint-delta.json", {})
+    v4_readiness = documents.get("a57-v4-cross-type-container/readiness.json", {})
     selected_live_row = next(
         (
             row
@@ -249,6 +265,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         ),
         None,
     )
+    current_adaptive_source_sha256 = _adaptive_source_sha256()
     claims = {
         "zero_model_unit_tests": (runtime_review.get("verification") or {}).get(
             "adaptive_unit_tests"
@@ -809,6 +826,57 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "new_finding_count"
         ),
         "diagnostic4_readiness": diagnostic4_readiness.get("ready"),
+        "diagnostic4_live_run_count": diagnostic4_live.get("run_count"),
+        "diagnostic4_live_category_counts": diagnostic4_live.get("category_counts"),
+        "diagnostic4_live_all_integrity_passed": diagnostic4_live.get(
+            "all_integrity_passed"
+        ),
+        "diagnostic4_live_passed_runs": diagnostic4_live.get("passed_runs"),
+        "diagnostic4_live_capacity_score_mean": diagnostic4_live.get(
+            "capacity_score_mean"
+        ),
+        "diagnostic4_live_cost": diagnostic4_live.get("cost"),
+        "diagnostic4_live_cross_type_signals": diagnostic4_live.get(
+            "cross_type_signals"
+        ),
+        "diagnostic4_live_paid_expansion_allowed": diagnostic4_live.get(
+            "paid_expansion_allowed"
+        ),
+        "v4_gate_passed": v4_gate.get("passed"),
+        "v4_single_canary_allowed": v4_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v4_paid_expansion_allowed": v4_gate.get("paid_expansion_allowed"),
+        "v4_candidate_variant": (
+            ((v4_conformance.get("profiles") or {}).get("candidate") or {}).get("name")
+        ),
+        "v4_paid_canary_allowed": (
+            v4_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v4_source_hash_matches": bool(v4_gate.get("adaptive_source_sha256"))
+        and v4_gate.get("adaptive_source_sha256")
+        == v4_wiring.get("adaptive_source_sha256")
+        == current_adaptive_source_sha256,
+        "v4_current_adaptive_source_sha256": current_adaptive_source_sha256,
+        "v4_profile_fingerprint_matches": bool(
+            v4_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v4_gate.get("executable_policy_profile_fingerprint")
+        == v4_wiring.get("executable_policy_profile_fingerprint"),
+        "v4_required_artifact_target_enforced": (
+            v4_wiring.get("checks") or {}
+        ).get("required_artifact_target_enforced"),
+        "v4_required_directory_artifact_observed": (
+            v4_wiring.get("checks") or {}
+        ).get("required_directory_artifact_observed"),
+        "v4_turn_observation_oserror_fails_closed": (
+            v4_wiring.get("checks") or {}
+        ).get("turn_observation_oserror_fails_closed"),
+        "v4_delivery_violation_budget_enforced": (
+            v4_wiring.get("checks") or {}
+        ).get("delivery_violation_budget_enforced"),
+        "v4_new_full_repo_lint_findings": v4_lint_delta.get("new_finding_count"),
+        "v4_readiness": v4_readiness.get("ready"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -1108,6 +1176,29 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["diagnostic4_new_lint_findings"] == 0
         and claims["diagnostic4_readiness"] is True
         and claims["diagnostic4_paid_expansion_allowed"] is False,
+        "diagnostic4_live_is_cross_type_failure_evidence_only": (
+            claims["diagnostic4_live_run_count"] == 4
+            and claims["diagnostic4_live_category_counts"]
+            == {"api": 1, "browser": 1, "cli": 1, "file": 1}
+            and claims["diagnostic4_live_all_integrity_passed"] is True
+            and claims["diagnostic4_live_passed_runs"] == 0
+            and (claims["diagnostic4_live_cost"] or {}).get("total_tokens") == 1206127
+            and claims["diagnostic4_live_paid_expansion_allowed"] is False
+        ),
+        "v4_gate_is_single_canary_only": claims["v4_gate_passed"] is True
+        and claims["v4_single_canary_allowed"] is True
+        and claims["v4_paid_expansion_allowed"] is False,
+        "v4_container_gate_cleared": claims["v4_candidate_variant"]
+        == "adaptive_harness_cross_type_artifact_v4_0"
+        and claims["v4_paid_canary_allowed"] is True
+        and claims["v4_source_hash_matches"] is True
+        and claims["v4_profile_fingerprint_matches"] is True
+        and claims["v4_required_artifact_target_enforced"] is True
+        and claims["v4_required_directory_artifact_observed"] is True
+        and claims["v4_turn_observation_oserror_fails_closed"] is True
+        and claims["v4_delivery_violation_budget_enforced"] is True
+        and claims["v4_new_full_repo_lint_findings"] == 0
+        and claims["v4_readiness"] is True,
     }
     return {
         "schema_version": 1,
@@ -1165,6 +1256,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "v3.9 run has been performed. "
             "A54 freezes a MiniBench16-disjoint Diagnostic4 with one low-cost Development task per "
             "file/CLI/browser/API type and high thinking as the breadth-first feedback stage. "
+            "A55 records all four first samples: 0/4 passed, 1,206,127 total Tokens, 129 Tool calls, "
+            "and cross-type required-artifact, directory-observation, environment-observation, and "
+            "no-progress failures. A56/A57 bind v4 required-target delivery, directory artifacts, "
+            "OSError containment, and a two-violation early turn stop with zero model calls. "
             "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),
@@ -1179,6 +1274,21 @@ def _git_head(root: Path) -> str | None:
         text=True,
     )
     return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _adaptive_source_sha256() -> str:
+    source_root = ROOT / "src/adaptive_harness"
+    digest = hashlib.sha256()
+    for path in sorted(
+        candidate
+        for candidate in source_root.rglob("*.py")
+        if candidate.is_file() and "__pycache__" not in candidate.parts
+    ):
+        digest.update(path.relative_to(source_root).as_posix().encode())
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 if __name__ == "__main__":

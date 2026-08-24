@@ -118,8 +118,12 @@ def _request(
     )
 
 
-def _delivery_required_state(count: int = 1) -> dict[str, Any]:
-    return {
+def _delivery_required_state(
+    count: int = 1,
+    *,
+    required_paths: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    state: dict[str, Any] = {
         "messages": [
             types.SimpleNamespace(
                 content=(
@@ -132,6 +136,17 @@ def _delivery_required_state(count: int = 1) -> dict[str, Any]:
             for index in range(count)
         ]
     }
+    if required_paths:
+        state["task"] = {
+            "criteria": [
+                {
+                    "kind": "artifact_exists",
+                    "parameters": {"path": path},
+                }
+                for path in required_paths
+            ]
+        }
+    return state
 
 
 class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
@@ -159,6 +174,303 @@ class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
         self.assertFalse(called)
         self.assertEqual(result.status, "error")
         self.assertIn("non-output write blocked", result.content)
+
+    def test_delivery_gate_blocks_wrong_output_path(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="wrong-output",
+                    name="write_file",
+                    args={"path": "outputs/helper.py", "content": "print('helper')"},
+                    turn=2,
+                    state=_delivery_required_state(
+                        required_paths=("outputs/report.json",)
+                    ),
+                ),
+                handler,
+            )
+
+        self.assertFalse(called)
+        self.assertEqual(result.status, "error")
+        self.assertIn("wrong-target write blocked", result.content)
+        self.assertIn("outputs/report.json", result.content)
+
+    def test_bound_policy_task_state_supplies_required_artifact_paths(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        session = KernelPolicySession()
+        called = False
+        task_state = {
+            "task": {
+                "criteria": [
+                    {
+                        "kind": "artifact_exists",
+                        "parameters": {"path": "outputs/report.json"},
+                    }
+                ]
+            }
+        }
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with (
+            bind_policy_session(session, task_state=task_state),
+            bind_action_audit_sink(lambda _payload: None),
+        ):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="wrong-output-bound-state",
+                    name="write_file",
+                    args={"path": "outputs/helper.py", "content": "print('helper')"},
+                    turn=2,
+                    state=_delivery_required_state(),
+                ),
+                handler,
+            )
+
+        self.assertFalse(called)
+        self.assertEqual(result.status, "error")
+        self.assertIn("outputs/report.json", result.content)
+
+    def test_delivery_gate_allows_file_inside_required_directory(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="directory-output",
+                    name="write_file",
+                    args={"path": "outputs/audit/trace.json", "content": "{}"},
+                    turn=2,
+                    state=_delivery_required_state(
+                        required_paths=("outputs/audit/",)
+                    ),
+                ),
+                handler,
+            )
+
+        self.assertTrue(called)
+        self.assertIsNone(result.status)
+
+    def test_bash_delivery_rejects_required_filename_prefix_only(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="prefix-output",
+                    name="bash",
+                    args={"command": "echo '{}' > outputs/report.json.bak"},
+                    turn=2,
+                    state=_delivery_required_state(
+                        required_paths=("outputs/report.json",)
+                    ),
+                ),
+                handler,
+            )
+
+        self.assertFalse(called)
+        self.assertEqual(result.status, "error")
+
+    def test_bash_delivery_allows_exact_required_file(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="exact-output",
+                    name="bash",
+                    args={"command": "printf '%s' '{}' > /task/outputs/report.json"},
+                    turn=2,
+                    state=_delivery_required_state(
+                        required_paths=("outputs/report.json",)
+                    ),
+                ),
+                handler,
+            )
+
+        self.assertTrue(called)
+        self.assertIsNone(result.status)
+
+    def test_bash_delivery_ignores_required_path_mentions_and_comments(self) -> None:
+        for index, command in enumerate(
+            (
+                "echo '{}' > outputs/helper.json && echo outputs/report.json",
+                "echo '{}' > outputs/report.json.tmp # outputs/report.json",
+            ),
+            start=1,
+        ):
+            with self.subTest(command=command):
+                middleware = DeerFlowToolActionLedgerMiddleware()
+                called = False
+
+                def handler(request):
+                    nonlocal called
+                    called = True
+                    return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+                with bind_action_audit_sink(lambda _payload: None):
+                    result = middleware.wrap_tool_call(
+                        _request(
+                            call_id=f"misleading-output-{index}",
+                            name="bash",
+                            args={"command": command},
+                            turn=2,
+                            state=_delivery_required_state(
+                                required_paths=("outputs/report.json",)
+                            ),
+                        ),
+                        handler,
+                    )
+
+                self.assertFalse(called)
+                self.assertEqual(result.status, "error")
+
+    def test_bash_delivery_extracts_python_path_write_target(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        command = (
+            "python3 -c \"from pathlib import Path; "
+            "Path('outputs/report.json').write_text('{}')\""
+        )
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="python-path-output",
+                    name="bash",
+                    args={"command": command},
+                    turn=2,
+                    state=_delivery_required_state(
+                        required_paths=("outputs/report.json",)
+                    ),
+                ),
+                handler,
+            )
+
+        self.assertTrue(called)
+        self.assertIsNone(result.status)
+
+    def test_bash_delivery_normalizes_dot_relative_required_target(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="dot-relative-output",
+                    name="bash",
+                    args={"command": "echo '{}' > ./outputs/report.json"},
+                    turn=2,
+                    state=_delivery_required_state(
+                        required_paths=("outputs/report.json",)
+                    ),
+                ),
+                handler,
+            )
+
+        self.assertTrue(called)
+        self.assertIsNone(result.status)
+
+    def test_bash_delivery_without_contract_still_requires_outputs_directory(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="tmp-output",
+                    name="bash",
+                    args={"command": "echo '{}' > /tmp/report.json"},
+                    turn=2,
+                    state=_delivery_required_state(),
+                ),
+                handler,
+            )
+
+        self.assertFalse(called)
+        self.assertEqual(result.status, "error")
+
+    def test_repeated_delivery_violations_end_turn_without_more_tool_calls(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        state = _delivery_required_state(required_paths=("outputs/report.json",))
+        with bind_action_audit_sink(lambda _payload: None):
+            first = middleware.wrap_tool_call(
+                _request(
+                    call_id="wrong-output-1",
+                    name="write_file",
+                    args={"path": "outputs/helper-1.py", "content": ""},
+                    turn=2,
+                    state=state,
+                ),
+                handler,
+            )
+            second = middleware.wrap_tool_call(
+                _request(
+                    call_id="wrong-output-2",
+                    name="write_file",
+                    args={"path": "outputs/helper-2.py", "content": ""},
+                    turn=2,
+                    state=state,
+                ),
+                handler,
+            )
+
+        self.assertFalse(called)
+        self.assertEqual(first.status, "error")
+        self.assertIsInstance(second, Command)
+        self.assertEqual(second.goto, "__end__")
+        self.assertIn("repeated delivery violations", second.update["messages"][0].content)
 
     def test_delivery_gate_keeps_environment_interaction_available(self) -> None:
         middleware = DeerFlowToolActionLedgerMiddleware()

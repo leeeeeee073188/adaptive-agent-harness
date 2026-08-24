@@ -123,6 +123,7 @@ class FileArtifactObservationProvider:
 
     MAX_GROUNDING_FILES = 512
     MAX_GROUNDING_FILE_BYTES = 2 * 1024 * 1024
+    MAX_ARTIFACT_DIRECTORY_FILES = 512
 
     def __init__(self, task_root: Path) -> None:
         self.task_root = task_root.resolve()
@@ -147,11 +148,32 @@ class FileArtifactObservationProvider:
             if criterion.kind is CriterionKind.ARTIFACT_EXISTS:
                 relative = str(criterion.parameters["path"]).removeprefix("/task/")
                 path = self._artifact_path(relative)
-                exists = path.is_file()
+                is_file = path.is_file()
+                is_directory = path.is_dir()
+                exists = is_file or is_directory
+                directory_inventory = (
+                    self._directory_inventory(path) if is_directory else None
+                )
                 value = {
                     "exists": exists,
-                    "size": path.stat().st_size if exists else None,
-                    "sha256": _file_sha256(path) if exists else None,
+                    "kind": "file" if is_file else "directory" if is_directory else None,
+                    "size": path.stat().st_size if is_file else None,
+                    "sha256": _file_sha256(path) if is_file else None,
+                    "visible_file_count": (
+                        directory_inventory["visible_file_count"]
+                        if directory_inventory is not None
+                        else None
+                    ),
+                    "visible_file_count_truncated": (
+                        directory_inventory["truncated"]
+                        if directory_inventory is not None
+                        else None
+                    ),
+                    "skipped_entry_count": (
+                        directory_inventory["skipped_entry_count"]
+                        if directory_inventory is not None
+                        else None
+                    ),
                 }
                 evidence.append(
                     Evidence(
@@ -202,6 +224,34 @@ class FileArtifactObservationProvider:
                 )
             )
         return tuple(evidence)
+
+    def _directory_inventory(self, path: Path) -> dict[str, int | bool]:
+        count = 0
+        skipped = 0
+        truncated = False
+        for candidate in path.rglob("*"):
+            try:
+                relative = candidate.relative_to(path)
+                if candidate.is_symlink() or any(
+                    part.startswith(".") for part in relative.parts
+                ):
+                    skipped += 1
+                    continue
+                resolved = candidate.resolve(strict=True)
+                if not resolved.is_relative_to(path) or not resolved.is_file():
+                    continue
+            except OSError:
+                skipped += 1
+                continue
+            if count >= self.MAX_ARTIFACT_DIRECTORY_FILES:
+                truncated = True
+                break
+            count += 1
+        return {
+            "visible_file_count": count,
+            "truncated": truncated,
+            "skipped_entry_count": skipped,
+        }
 
     def _artifact_path(self, relative: str) -> Path:
         path = (self.task_root / relative).resolve()
@@ -589,6 +639,16 @@ class DeerFlowPolicyBridge:
             try:
                 for evidence in provider.observe(contract, summary, turn=turn):
                     writer.add_evidence(evidence)
+            except OSError as error:
+                writer.classify_failure(
+                    Failure(
+                        id=f"deerflow:t{turn}:observation-provider:{provider_index + 1}",
+                        error_type="OBSERVATION_SNAPSHOT_FAILED",
+                        message=str(error),
+                        source=EvidenceSource.RUNTIME_OBSERVATION,
+                        metadata={"provider": type(provider).__name__},
+                    )
+                )
             except (KeyError, TypeError, ValueError) as error:
                 writer.classify_failure(
                     Failure(

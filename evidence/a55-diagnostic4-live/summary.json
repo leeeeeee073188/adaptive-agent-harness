@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "scope": "Diagnostic4 public cross-type failure synthesis",
+  "analysis_model_calls": 0,
+  "analysis_new_tokens": 0,
+  "run_count": 4,
+  "category_counts": {
+    "api": 1,
+    "browser": 1,
+    "cli": 1,
+    "file": 1
+  },
+  "all_integrity_passed": true,
+  "passed_runs": 0,
+  "capacity_score_mean": 0.019230769230769232,
+  "cost": {
+    "input_tokens": 1149656,
+    "output_tokens": 56471,
+    "total_tokens": 1206127,
+    "input_fraction": 0.9531798890166624,
+    "tool_calls": 129,
+    "elapsed_sec": 1129.763
+  },
+  "cross_type_signals": {
+    "missing_required_artifact_runs": [
+      "adaptive-harness-diagnostic4-v3-9-file-development",
+      "adaptive-harness-diagnostic4-v3-9-browser-development",
+      "adaptive-harness-diagnostic4-v3-9-api-development"
+    ],
+    "wrong_target_output_runs": [
+      "adaptive-harness-diagnostic4-v3-9-file-development",
+      "adaptive-harness-diagnostic4-v3-9-api-development"
+    ],
+    "required_directory_semantics_runs": [
+      "adaptive-harness-diagnostic4-v3-9-api-development"
+    ],
+    "runtime_error_runs": [
+      "adaptive-harness-diagnostic4-v3-9-cli-development"
+    ],
+    "tool_error_count": 31,
+    "no_progress_failure_count": 13,
+    "loop_failure_count": 8
+  },
+  "ranked_architecture_gaps": [
+    {
+      "rank": 1,
+      "dimension": "artifact_synthesis",
+      "evidence": "required artifacts remained missing in multiple task types despite unrelated output writes",
+      "affected_runs": [
+        "adaptive-harness-diagnostic4-v3-9-file-development",
+        "adaptive-harness-diagnostic4-v3-9-api-development"
+      ]
+    },
+    {
+      "rank": 2,
+      "dimension": "artifact_contract",
+      "evidence": "a required output directory existed with files but remained unsatisfied",
+      "affected_runs": [
+        "adaptive-harness-diagnostic4-v3-9-api-development"
+      ]
+    },
+    {
+      "rank": 3,
+      "dimension": "environment_observation",
+      "evidence": "a turn observation HTTP error escaped the provider boundary before completion; the vision capability therefore remains unmeasured",
+      "affected_runs": [
+        "adaptive-harness-diagnostic4-v3-9-cli-development"
+      ]
+    },
+    {
+      "rank": 4,
+      "dimension": "tool_and_loop_control",
+      "evidence": "tool failures and no-progress events consumed model calls without completing required artifacts",
+      "affected_runs": [
+        "adaptive-harness-diagnostic4-v3-9-file-development",
+        "adaptive-harness-diagnostic4-v3-9-browser-development",
+        "adaptive-harness-diagnostic4-v3-9-api-development"
+      ]
+    }
+  ],
+  "claim_boundary": "Four first-sample Development diagnostics only. These results identify cross-type failure surfaces; they do not estimate MiniBench or full-benchmark success rate.",
+  "paid_expansion_allowed": false,
+  "runs": [
+    {
+      "run_id": "adaptive-harness-diagnostic4-v3-9-file-development",
+      "task_id": "file-google-trends-data-quality-audit",
+      "category": "file",
+      "modality": "text_only",
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "elapsed_sec": 168.903,
+      "usage": {
+        "input_tokens": 312539,
+        "output_tokens": 18423,
+        "total_tokens": 330962
+      },
+      "tool_calls": 43,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 833,
+      "model_call_audits": 24,
+      "turns": 2,
+      "action_intents": {
+        "discover": 4,
+        "read": 20,
+        "transform": 2,
+        "verify": 7,
+        "write": 2
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 9
+      },
+      "dispositions": {
+        "allow": 35
+      },
+      "failure_types": {
+        "NO_PROGRESS": 8
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 57,
+      "max_context_tokens": 4095,
+      "required_artifacts": [
+        "outputs/quality_audit.json"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/quality_audit.json"
+      ],
+      "output_inventory": [
+        {
+          "path": "outputs/synthesize.py",
+          "bytes": 1259,
+          "sha256": "15e505a9d9856e26497c963d9aff63ac9157b4d8417d3c3190b34c51fa0cfd40"
+        }
+      ],
+      "unrelated_output_paths": [
+        "outputs/synthesize.py"
+      ],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "acceptable final response",
+        "Artifact does not exist: outputs/quality_audit.json",
+        "Blocked by unsatisfied dependencies: artifact:outputs-quality-audit-json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-quality-audit-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:artifact-json-shape-outputs-quality-audit-json",
+          "status": "blocked"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "adaptive-harness-diagnostic4-v3-9-cli-development",
+      "task_id": "cli-alibaba-silicone-kitchenware-publish",
+      "category": "cli",
+      "modality": "vision",
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 8,
+      "elapsed_sec": 31.255,
+      "usage": {
+        "input_tokens": 51382,
+        "output_tokens": 1411,
+        "total_tokens": 52793
+      },
+      "tool_calls": 21,
+      "agent_exec_returncode": 1,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 206,
+      "model_call_audits": 6,
+      "turns": 1,
+      "action_intents": {
+        "discover": 2,
+        "read": 14
+      },
+      "tool_errors": {},
+      "dispositions": {
+        "allow": 16
+      },
+      "failure_types": {},
+      "recovery_primaries": {},
+      "recovery_actions": {},
+      "max_history_dropped": 17,
+      "max_context_tokens": 3789,
+      "required_artifacts": [],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [],
+      "output_inventory": [
+        {
+          "path": "outputs/mock_alibaba_publish_final_state.json",
+          "bytes": 40,
+          "sha256": "6da1ccb52fc1db64045dd86589cf01924f6943e051dec1120f33f74cea9a6112"
+        }
+      ],
+      "unrelated_output_paths": [
+        "outputs/mock_alibaba_publish_final_state.json"
+      ],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [],
+      "completion_assessments": [],
+      "runtime_errors": [
+        {
+          "type": "HTTPError",
+          "message": "HTTP Error 403: Forbidden"
+        }
+      ]
+    },
+    {
+      "run_id": "adaptive-harness-diagnostic4-v3-9-browser-development",
+      "task_id": "browser-reddit-auth-browse",
+      "category": "browser",
+      "modality": "browser_textcapable",
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 7,
+      "elapsed_sec": 707.194,
+      "usage": {
+        "input_tokens": 451627,
+        "output_tokens": 12512,
+        "total_tokens": 464139
+      },
+      "tool_calls": 23,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 605,
+      "model_call_audits": 21,
+      "turns": 2,
+      "action_intents": {
+        "navigate": 7,
+        "observe": 2,
+        "read": 7,
+        "verify": 3,
+        "write": 1
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 4
+      },
+      "dispositions": {
+        "allow": 20
+      },
+      "failure_types": {
+        "OBSERVATION_SNAPSHOT_FAILED": 1
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 35,
+      "max_context_tokens": 4096,
+      "required_artifacts": [
+        "outputs/answer.json"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/answer.json"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/answer.json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-answer-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:source-access-http-localhost-3001-session-source",
+          "status": "satisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "adaptive-harness-diagnostic4-v3-9-api-development",
+      "task_id": "api-slack-contacts-sourcing-project-status-brief",
+      "category": "api",
+      "modality": "text_only",
+      "passed": false,
+      "capacity_score": 0.07692307692307693,
+      "checks_passed": 1,
+      "checks_total": 13,
+      "elapsed_sec": 222.411,
+      "usage": {
+        "input_tokens": 334108,
+        "output_tokens": 24125,
+        "total_tokens": 358233
+      },
+      "tool_calls": 42,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 864,
+      "model_call_audits": 25,
+      "turns": 2,
+      "action_intents": {
+        "discover": 3,
+        "read": 29,
+        "verify": 3,
+        "write": 3
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 18
+      },
+      "dispositions": {
+        "allow": 36,
+        "warn": 2
+      },
+      "failure_types": {
+        "LOOP": 8,
+        "NO_PROGRESS": 5
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 55,
+      "max_context_tokens": 4096,
+      "required_artifacts": [
+        "outputs/answer.json",
+        "outputs/atlas_status_report.md",
+        "outputs/mock_audit/"
+      ],
+      "matched_required_artifacts": [
+        "outputs/mock_audit/"
+      ],
+      "missing_required_artifacts": [
+        "outputs/answer.json",
+        "outputs/atlas_status_report.md"
+      ],
+      "output_inventory": [
+        {
+          "path": "outputs/mock_audit/contacts_audit.json",
+          "bytes": 383,
+          "sha256": "487cfeba1600af5156b0f82682caa4ec92e3b3b061396486010a607b35d7bace"
+        },
+        {
+          "path": "outputs/mock_audit/slack_audit.json",
+          "bytes": 386,
+          "sha256": "2891d22df8cc854d2eb82b50f8f0ae8fa355a23eeb31231402b0d267f585a00d"
+        },
+        {
+          "path": "outputs/mock_state/contacts_final.json",
+          "bytes": 1791,
+          "sha256": "5509242d56ee2f0c3566a8f92c46d9c7a1b37191304853e99d28e741b63b74cd"
+        },
+        {
+          "path": "outputs/mock_state/slack_final.json",
+          "bytes": 4473,
+          "sha256": "6089166bfa8ed9cfd195280149603c5afb5ce2bb4f964af1fc29351c0de4a174"
+        },
+        {
+          "path": "outputs/scratch_api_root.json",
+          "bytes": 32,
+          "sha256": "242aadac5c304364169f4590895ddf0e04e04112bf9f049a6f35e67c39464c91"
+        }
+      ],
+      "unrelated_output_paths": [
+        "outputs/mock_state/contacts_final.json",
+        "outputs/mock_state/slack_final.json",
+        "outputs/scratch_api_root.json"
+      ],
+      "required_directory_exists_but_unsatisfied": [
+        "outputs/mock_audit/"
+      ],
+      "completion_missing": [
+        "acceptable final response",
+        "Artifact does not exist: outputs/answer.json",
+        "Artifact does not exist: outputs/atlas_status_report.md",
+        "Artifact does not exist: outputs/mock_audit/"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-answer-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-atlas-status-report-md",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-mock-audit",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-9110",
+          "status": "satisfied"
+        },
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-9103",
+          "status": "satisfied"
+        }
+      ],
+      "runtime_errors": []
+    }
+  ]
+}

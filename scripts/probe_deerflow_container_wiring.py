@@ -244,6 +244,22 @@ def main() -> int:
                 "invalid_artifact_recovery_rewrites_output"
             )
             is True,
+            "required_artifact_target_enforced": adaptive.get(
+                "required_artifact_target_enforced"
+            )
+            is True,
+            "required_directory_artifact_observed": adaptive.get(
+                "required_directory_artifact_observed"
+            )
+            is True,
+            "turn_observation_oserror_fails_closed": adaptive.get(
+                "turn_observation_oserror_fails_closed"
+            )
+            is True,
+            "delivery_violation_budget_enforced": adaptive.get(
+                "delivery_violation_budget_enforced"
+            )
+            is True,
             "textual_tool_errors_fail_closed": adaptive.get(
                 "textual_tool_errors_fail_closed"
             )

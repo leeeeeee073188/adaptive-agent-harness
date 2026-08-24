@@ -123,6 +123,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | v3.7 live / v3.8 gate | v3.7 0/5、439,869 Token；v3.8 阻止 delivery recovery 写非输出脚本 |
 | v3.8 live / v3.9 offline | v3.8 1/5、858,909 Token；A52/A53 验证独立 artifact-repair budget 与 delivery re-arm |
 | Diagnostic4 preflight | A54：4 类任务、2 easy/2 medium、text/browser/vision、与 MiniBench16 完全互斥 |
+| Diagnostic4 live / v4 gate | A55：0/4、1,206,127 Token；A56/A57 修复跨类型 Artifact/Observation 生命周期 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

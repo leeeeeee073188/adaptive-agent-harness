@@ -37,7 +37,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_source_grounding_v3_9",
+        "adaptive_harness_cross_type_artifact_v4_0",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -64,6 +64,8 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                     "delivery_blocks_non_output_writes": True,
                     "artifact_validation_failure_is_artifact_error": True,
                     "delivery_directive_generation_rearms_after_invalid_artifact": True,
+                    "required_artifact_aware_delivery": True,
+                    "directory_artifact_observation": True,
                 },
                 "phase": {"policy": "evidence-driven-soft-phase-v1"},
                 "model_reasoning": {
@@ -93,6 +95,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                     "max_total_tool_calls_per_turn": 20,
                     "delivery_first_recovery": True,
                     "bounded_artifact_write_attempts": {"initial": 1, "repair": 1},
+                    "max_delivery_violations_per_generation": 2,
                     "direct_synthesis_transform_allowed": True,
                     "empty_placeholder_discouraged": True,
                     "task_run_ledger_state": True,
@@ -101,6 +104,9 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                 },
                 "response_completion": {
                     "runtime_control_messages_rejected": True,
+                },
+                "observation_boundary": {
+                    "turn_oserror_fails_closed_without_runtime_crash": True,
                 },
                 "advice_gate": {
                     "classified_fraction": 1.0,
@@ -264,6 +270,10 @@ def _bridge_evidence_valid(
         "delivery_non_output_write_blocked",
         "delivery_rearmed_after_invalid_artifact",
         "invalid_artifact_recovery_rewrites_output",
+        "required_artifact_target_enforced",
+        "required_directory_artifact_observed",
+        "turn_observation_oserror_fails_closed",
+        "delivery_violation_budget_enforced",
         "embedded_client_stream_exercised",
         "executable_policy_profile_assembled",
         "max_completion_turns_frozen",

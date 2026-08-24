@@ -1,0 +1,20 @@
+{
+  "scope": "v4 cross-type artifact and observation review",
+  "verdict": "approve_zero_model_and_container_only",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "verified": {
+    "evidence_bound_to_current_source": true,
+    "bash_actual_write_targets_enforced": true,
+    "bash_mentions_comments_and_suffixes_rejected": true,
+    "dot_relative_output_normalized": true,
+    "bash_without_contract_still_requires_outputs": true,
+    "diagnostic_analyzer_skips_symlinks": true,
+    "directory_inventory_bounded": true,
+    "turn_observation_oserror_contained": true,
+    "thinking_request_effort": "high"
+  },
+  "paid_expansion_allowed": false
+}

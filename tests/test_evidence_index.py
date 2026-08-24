@@ -261,6 +261,38 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertEqual(index["claims"]["diagnostic4_new_lint_findings"], 0)
         self.assertTrue(index["claims"]["diagnostic4_readiness"])
         self.assertFalse(index["claims"]["diagnostic4_paid_expansion_allowed"])
+        self.assertEqual(index["claims"]["diagnostic4_live_run_count"], 4)
+        self.assertEqual(
+            index["claims"]["diagnostic4_live_category_counts"],
+            {"api": 1, "browser": 1, "cli": 1, "file": 1},
+        )
+        self.assertTrue(index["claims"]["diagnostic4_live_all_integrity_passed"])
+        self.assertEqual(index["claims"]["diagnostic4_live_passed_runs"], 0)
+        self.assertEqual(
+            index["claims"]["diagnostic4_live_cost"]["total_tokens"],
+            1206127,
+        )
+        self.assertFalse(index["claims"]["diagnostic4_live_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["v4_gate_passed"])
+        self.assertTrue(index["claims"]["v4_single_canary_allowed"])
+        self.assertFalse(index["claims"]["v4_paid_expansion_allowed"])
+        self.assertEqual(
+            index["claims"]["v4_candidate_variant"],
+            "adaptive_harness_cross_type_artifact_v4_0",
+        )
+        self.assertTrue(index["claims"]["v4_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["v4_source_hash_matches"])
+        self.assertEqual(
+            len(index["claims"]["v4_current_adaptive_source_sha256"]),
+            64,
+        )
+        self.assertTrue(index["claims"]["v4_profile_fingerprint_matches"])
+        self.assertTrue(index["claims"]["v4_required_artifact_target_enforced"])
+        self.assertTrue(index["claims"]["v4_required_directory_artifact_observed"])
+        self.assertTrue(index["claims"]["v4_turn_observation_oserror_fails_closed"])
+        self.assertTrue(index["claims"]["v4_delivery_violation_budget_enforced"])
+        self.assertEqual(index["claims"]["v4_new_full_repo_lint_findings"], 0)
+        self.assertTrue(index["claims"]["v4_readiness"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:
@@ -278,6 +310,27 @@ class EvidenceIndexTests(unittest.TestCase):
 
         self.assertFalse(index["verified"])
         self.assertFalse(index["invariants"]["live_candidate_has_partial_measured_gain"])
+
+    def test_rejects_matching_v4_evidence_hashes_when_both_are_stale(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            copied = Path(tmp) / "evidence"
+            shutil.copytree(root / "evidence", copied)
+            stale = "0" * 64
+            for relative in (
+                "a56-v4-cross-type-gate/summary.json",
+                "a57-v4-cross-type-container/container-wiring.json",
+            ):
+                path = copied / relative
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                payload["adaptive_source_sha256"] = stale
+                path.write_text(json.dumps(payload), encoding="utf-8")
+
+            index = build_index(copied)
+
+        self.assertFalse(index["claims"]["v4_source_hash_matches"])
+        self.assertFalse(index["invariants"]["v4_container_gate_cleared"])
+        self.assertFalse(index["verified"])
 
 
 if __name__ == "__main__":
