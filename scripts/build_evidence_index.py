@@ -49,6 +49,9 @@ REQUIRED = tuple(
         (32, "v3-2-live-canary"),
         (33, "v3-3-gate"),
         (34, "v3-3-container-conformance"),
+        (35, "v3-3-live-canary"),
+        (36, "v3-4-thinking-max-gate"),
+        (37, "v3-4-thinking-max-container"),
     )
 )
 OPTIONAL = (
@@ -69,6 +72,13 @@ OPTIONAL = (
     "a34-v3-3-container-conformance/review.json",
     "a34-v3-3-container-conformance/verification.json",
     "a34-v3-3-container-conformance/readiness.json",
+    "a35-v3-3-live-canary/pair.json",
+    "a35-v3-3-live-canary/diagnosis.json",
+    "a37-v3-4-thinking-max-container/container-wiring.json",
+    "a36-v3-4-thinking-max-gate/deepseek-thinking-contract.json",
+    "a37-v3-4-thinking-max-container/review.json",
+    "a37-v3-4-thinking-max-container/verification.json",
+    "a37-v3-4-thinking-max-container/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -142,6 +152,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_3_gate = doc("a33-v3-3-gate/summary.json") if not missing else {}
     v3_3_conformance = doc("a34-v3-3-container-conformance/summary.json") if not missing else {}
     v3_3_wiring = documents.get("a34-v3-3-container-conformance/container-wiring.json", {})
+    v3_3_live = doc("a35-v3-3-live-canary/summary.json") if not missing else {}
+    v3_4_gate = doc("a36-v3-4-thinking-max-gate/summary.json") if not missing else {}
+    v3_4_conformance = doc("a37-v3-4-thinking-max-container/summary.json") if not missing else {}
+    v3_4_wiring = documents.get("a37-v3-4-thinking-max-container/container-wiring.json", {})
     selected_live_row = next(
         (
             row
@@ -449,6 +463,41 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         )
         and v3_3_gate.get("executable_policy_profile_fingerprint")
         == v3_3_wiring.get("executable_policy_profile_fingerprint"),
+        "v3_3_live_selected_candidate": v3_3_live.get("selected_candidate_variant"),
+        "v3_3_live_paid_expansion_allowed": v3_3_live.get("paid_expansion_allowed"),
+        "v3_3_live_row": next(
+            (
+                row
+                for row in v3_3_live.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_evidence_workspace_v3_3"
+            ),
+            None,
+        ),
+        "v3_4_gate_passed": v3_4_gate.get("passed"),
+        "v3_4_single_canary_allowed": v3_4_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v3_4_paid_expansion_allowed": v3_4_gate.get("paid_expansion_allowed"),
+        "v3_4_candidate_variant": (
+            (v3_4_conformance.get("profiles") or {}).get("candidate") or {}
+        ).get("name"),
+        "v3_4_paid_canary_allowed": (
+            v3_4_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v3_4_source_hash_matches": bool(v3_4_gate.get("adaptive_source_sha256"))
+        and v3_4_gate.get("adaptive_source_sha256")
+        == v3_4_wiring.get("adaptive_source_sha256"),
+        "v3_4_profile_fingerprint_matches": bool(
+            v3_4_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v3_4_gate.get("executable_policy_profile_fingerprint")
+        == v3_4_wiring.get("executable_policy_profile_fingerprint"),
+        "v3_4_thinking_max_configured": (
+            v3_4_wiring.get("checks") or {}
+        ).get("thinking_max_request_configured"),
+        "v3_4_completion_conjunction_verified": (
+            v3_4_wiring.get("checks") or {}
+        ).get("completion_conjunction_preserves_assessments"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -600,6 +649,24 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v3_3_paid_canary_allowed"] is True
         and claims["v3_3_source_hash_matches"] is True
         and claims["v3_3_profile_fingerprint_matches"] is True,
+        "v3_3_regression_not_promoted": (
+            (claims["v3_3_live_row"] or {}).get("passed") is False
+            and (claims["v3_3_live_row"] or {}).get("capacity_score") == 0.0
+            and (claims["v3_3_live_row"] or {}).get("output_file_count") == 0
+            and claims["v3_3_live_selected_candidate"]
+            == "adaptive_harness_runtime_evolution_v2_6"
+            and claims["v3_3_live_paid_expansion_allowed"] is False
+        ),
+        "v3_4_gate_is_single_canary_only": claims["v3_4_gate_passed"] is True
+        and claims["v3_4_single_canary_allowed"] is True
+        and claims["v3_4_paid_expansion_allowed"] is False,
+        "v3_4_container_gate_cleared": claims["v3_4_candidate_variant"]
+        == "adaptive_harness_evidence_workspace_v3_4"
+        and claims["v3_4_paid_canary_allowed"] is True
+        and claims["v3_4_source_hash_matches"] is True
+        and claims["v3_4_profile_fingerprint_matches"] is True
+        and claims["v3_4_thinking_max_configured"] is True
+        and claims["v3_4_completion_conjunction_verified"] is True,
     }
     return {
         "schema_version": 1,
@@ -633,8 +700,11 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only "
             "reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error "
             "completion rejection, direct synthesis transforms, and fail-closed textual tool errors to "
-            "one replacement Development canary. Transfer, Held-out, and further task expansion remain "
-            "disabled."
+            "one replacement Development canary. A35 records that v3.3 correctly rejected the empty "
+            "completion but lost Evidence assessments behind the Response gate and produced no artifact. "
+            "A36/A37 preserve those assessments and bind DeepSeek thinking=enabled with reasoning_effort=max "
+            "through the actual pinned-container model factory for v3.4. Transfer, Held-out, and further "
+            "task expansion remain disabled."
         ),
     }
 

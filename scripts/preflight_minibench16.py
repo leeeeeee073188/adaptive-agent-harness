@@ -36,7 +36,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_evidence_workspace_v3_3",
+        "adaptive_harness_evidence_workspace_v3_4",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -53,6 +53,15 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                     "private_evaluator_data": False,
                 },
                 "phase": {"policy": "evidence-driven-soft-phase-v1"},
+                "model_reasoning": {
+                    "thinking": "enabled",
+                    "reasoning_effort": "max",
+                    "wire_format": "openai-chat-completions",
+                },
+                "completion": {
+                    "response_and_evidence_are_conjunctive": True,
+                    "evidence_assessments_preserved_on_response_rejection": True,
+                },
                 "max_completion_turns": 3,
                 "public_source_materializer": {
                     "loopback_get_only": True,
@@ -233,6 +242,7 @@ def _bridge_evidence_valid(
         "adaptive_package_imported",
         "action_scope_block_enforced",
         "context_profile_session_bound",
+        "completion_conjunction_preserves_assessments",
         "global_nonmutating_budget_enforced",
         "delivery_first_gate_enforced",
         "delivery_synthesis_transform_allowed",
@@ -249,6 +259,7 @@ def _bridge_evidence_valid(
         "policy_profile_fingerprint_matches",
         "tool_call_limit_middleware_imported",
         "tool_call_limit_request_shape_valid",
+        "thinking_max_request_configured",
     }
     return bool(
         isinstance(value, dict)

@@ -1,0 +1,22 @@
+{
+  "scope": "v3.4 thinking-max pre-canary code and security review",
+  "verdict": "approve_single_development_canary",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 1,
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "model_calls": 0,
+  "paid_expansion_allowed": false,
+  "verified": {
+    "deepseek_openai_thinking_fields": true,
+    "deerflow_factory_reasoning_effort_max": true,
+    "reasoning_content_replay": true,
+    "response_evidence_completion_conjunction": true,
+    "version_isolation": true,
+    "secret_findings": 0
+  },
+  "remaining_low_risk": "Rebuild the evidence index after adding the official DeepSeek thinking contract artifact.",
+  "prohibited": ["additional Development tasks", "Transfer", "Held-out", "full 107-task run"]
+}

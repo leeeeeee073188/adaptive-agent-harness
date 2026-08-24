@@ -96,7 +96,7 @@ class RuleBasedPhaseController:
             if assessment.status is not CriterionStatus.SATISFIED
         )
         unmet_obligations = _summarize_unmet(required_by_id, relevant)
-        if completion.passed and not unmet:
+        if required_by_id and len(relevant) == len(required_by_id) and not unmet:
             return PhaseDecision(
                 Phase.READY,
                 (),

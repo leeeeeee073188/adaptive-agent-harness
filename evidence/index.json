@@ -176,6 +176,21 @@
       "sha256": "7692bbb723210543adfebaf3b623de3994e5cad53d41388991041e66ba949185"
     },
     {
+      "bytes": 6352,
+      "path": "a35-v3-3-live-canary/summary.json",
+      "sha256": "b13a77e25d742e6b94d0122d8f0ebcee146cb4f463923f15cf549cacd80f4b55"
+    },
+    {
+      "bytes": 3874,
+      "path": "a36-v3-4-thinking-max-gate/summary.json",
+      "sha256": "eba4af16fccda71860b1a51b1b51e6d2d94032998f9aeb62c23ffa448971bfbd"
+    },
+    {
+      "bytes": 3642,
+      "path": "a37-v3-4-thinking-max-container/summary.json",
+      "sha256": "0a23054aea27c94dc1efaf7f27137c37c57c3280929d2bb2d9eca11be1d40a24"
+    },
+    {
       "bytes": 2236,
       "path": "a20-runtime-evolution/container-wiring.json",
       "sha256": "8d02498ecf0c47547b8fea221d73edf6f6c94690e16e4a8a42cdac98259e2171"
@@ -259,9 +274,44 @@
       "bytes": 1719,
       "path": "a34-v3-3-container-conformance/readiness.json",
       "sha256": "a3b2d04a712c676f528515aacfca4568d9d8cbb4cea778fec96af64c340150bb"
+    },
+    {
+      "bytes": 2936,
+      "path": "a35-v3-3-live-canary/pair.json",
+      "sha256": "b78d168ea3f004c38405d95e098c9db12a8ea928271edcf0f7d2c4237f8dacfd"
+    },
+    {
+      "bytes": 6391,
+      "path": "a35-v3-3-live-canary/diagnosis.json",
+      "sha256": "c0127f7c37dc36daf9ae4385635fd74d2ff5b14d2821812d68cad13be5d65c03"
+    },
+    {
+      "bytes": 2770,
+      "path": "a37-v3-4-thinking-max-container/container-wiring.json",
+      "sha256": "5f33966575f05e70cf9709c1211bb605e4d9e210d96be8ed8961a6eb1a811a0c"
+    },
+    {
+      "bytes": 476,
+      "path": "a36-v3-4-thinking-max-gate/deepseek-thinking-contract.json",
+      "sha256": "d8a1b64e784377f25c5a953a52b15f877b1c60222e3d2b79b2fcca65b8127a43"
+    },
+    {
+      "bytes": 789,
+      "path": "a37-v3-4-thinking-max-container/review.json",
+      "sha256": "039e709ee53a3ff5337ea5c8698e8fe6bddd6b2008e35b4619ed78a847e7d33c"
+    },
+    {
+      "bytes": 945,
+      "path": "a37-v3-4-thinking-max-container/verification.json",
+      "sha256": "bf36408a18b2ab1002912b2b60eda7b107abb6044256a8361d627f1621f61c6f"
+    },
+    {
+      "bytes": 1746,
+      "path": "a37-v3-4-thinking-max-container/readiness.json",
+      "sha256": "8349aa174f435ddbad0376717ffbf53d178a2f9ee88e23426cc9ece9a07b48ac"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and latency but still produced no artifact. A30/A31 bind the loopback public-source materializer and early cache-block turn termination to one v3.2 canary. A32 records that source access and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error completion rejection, direct synthesis transforms, and fail-closed textual tool errors to one replacement Development canary. Transfer, Held-out, and further task expansion remain disabled.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and latency but still produced no artifact. A30/A31 bind the loopback public-source materializer and early cache-block turn termination to one v3.2 canary. A32 records that source access and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error completion rejection, direct synthesis transforms, and fail-closed textual tool errors to one replacement Development canary. A35 records that v3.3 correctly rejected the empty completion but lost Evidence assessments behind the Response gate and produced no artifact. A36/A37 preserve those assessments and bind DeepSeek thinking=enabled with reasoning_effort=max through the actual pinned-container model factory for v3.4. Transfer, Held-out, and further task expansion remain disabled.",
   "claims": {
     "action_ledger_classified_fraction": 0.8049999999999999,
     "action_ledger_enforcement_ready": false,
@@ -450,6 +500,41 @@
     "v3_3_historical_artifact_diagnostics": [
       "all_collections_empty"
     ],
+    "v3_3_live_paid_expansion_allowed": false,
+    "v3_3_live_row": {
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.0,
+        "elapsed_sec": -68.04800000000002,
+        "token_fraction": 0.040853743298430695,
+        "tool_calls": 28,
+        "total_tokens": 10874
+      },
+      "elapsed_sec": 67.734,
+      "integrity_passed": true,
+      "ledger_event_count": 956,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 0,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 3,
+        "check_count": 39,
+        "dispositions": {
+          "allow": 1,
+          "block_scope": 4,
+          "record": 27,
+          "replan": 7
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-3-development",
+      "tool_calls": 46,
+      "total_tokens": 277043,
+      "variant": "adaptive_harness_evidence_workspace_v3_3"
+    },
+    "v3_3_live_selected_candidate": "adaptive_harness_runtime_evolution_v2_6",
     "v3_3_non_vacuity_present": true,
     "v3_3_paid_canary_allowed": true,
     "v3_3_paid_expansion_allowed": false,
@@ -457,6 +542,15 @@
     "v3_3_runtime_limit_response_rejected": true,
     "v3_3_single_canary_allowed": true,
     "v3_3_source_hash_matches": true,
+    "v3_4_candidate_variant": "adaptive_harness_evidence_workspace_v3_4",
+    "v3_4_completion_conjunction_verified": true,
+    "v3_4_gate_passed": true,
+    "v3_4_paid_canary_allowed": true,
+    "v3_4_paid_expansion_allowed": false,
+    "v3_4_profile_fingerprint_matches": true,
+    "v3_4_single_canary_allowed": true,
+    "v3_4_source_hash_matches": true,
+    "v3_4_thinking_max_configured": true,
     "v3_candidate_variant": "adaptive_harness_evidence_workspace_v3",
     "v3_live_paid_expansion_allowed": false,
     "v3_live_row": {
@@ -500,7 +594,7 @@
     "v3_zero_model_passed": true,
     "zero_model_unit_tests": 179
   },
-  "git_head": "4bfef1fd19ebd2ead90aa3b21796bf7f0f6e5406",
+  "git_head": "47bc4bc02c53ab64da978eae6a3f1c2d6d92889c",
   "invariants": {
     "action_ledger_observe_only": true,
     "action_ledger_stable_controls_unwarned": true,
@@ -550,6 +644,9 @@
     "v3_3_container_gate_cleared": true,
     "v3_3_gate_is_single_canary_only": true,
     "v3_3_public_completion_regressions_closed": true,
+    "v3_3_regression_not_promoted": true,
+    "v3_4_container_gate_cleared": true,
+    "v3_4_gate_is_single_canary_only": true,
     "v3_container_and_candidate_gate_cleared": true,
     "v3_evidence_bound_to_current_source": true,
     "v3_regression_not_promoted": true

@@ -444,22 +444,15 @@ class KernelPolicySession:
             if self.response_completion_policy is not None and response is not None
             else None
         )
-        if response_decision is not None and not response_decision.passed:
-            result = ContractCompletionResult(
-                False,
-                (),
-                ("acceptable final response",),
-                "Response completion policy rejected the final response.",
-            )
-        elif self.completion_gate is None and self.allow_unverified_completion:
-            result = ContractCompletionResult(
+        if self.completion_gate is None and self.allow_unverified_completion:
+            evidence_result = ContractCompletionResult(
                 True,
                 (),
                 (),
                 "Explicit legacy mode allows completion without an Evidence Gate.",
             )
         elif self.completion_gate is None:
-            result = ContractCompletionResult(
+            evidence_result = ContractCompletionResult(
                 False,
                 (),
                 ("completion gate",),
@@ -470,7 +463,7 @@ class KernelPolicySession:
             and state.contract is not None
             and not any(criterion.required for criterion in state.contract.criteria)
         ):
-            result = ContractCompletionResult(
+            evidence_result = ContractCompletionResult(
                 self.allow_unverified_completion,
                 (),
                 (() if self.allow_unverified_completion else ("provider-backed criteria",)),
@@ -481,16 +474,36 @@ class KernelPolicySession:
                 ),
             )
         else:
-            result = self.completion_gate.verify(state)
-        feedback = response_decision.feedback if response_decision is not None else None
-        if (
-            not result.passed
-            and (response_decision is None or response_decision.passed)
-            and self.completion_gate is not None
-        ):
-            feedback = self.completion_gate.feedback(result)
-        elif not result.passed and feedback is None:
-            feedback = result.reason
+            evidence_result = self.completion_gate.verify(state)
+
+        response_rejected = response_decision is not None and not response_decision.passed
+        if response_rejected:
+            result = ContractCompletionResult(
+                False,
+                evidence_result.assessments,
+                tuple(dict.fromkeys(("acceptable final response", *evidence_result.missing))),
+                (
+                    "Response completion policy rejected the final response; "
+                    f"evidence status: {evidence_result.reason}"
+                ),
+            )
+        else:
+            result = evidence_result
+
+        feedback_parts: list[str] = []
+        if response_decision is not None and response_decision.feedback:
+            feedback_parts.append(response_decision.feedback)
+        if not evidence_result.passed:
+            evidence_feedback = (
+                self.completion_gate.feedback(evidence_result)
+                if self.completion_gate is not None
+                else evidence_result.reason
+            )
+            if evidence_feedback and evidence_feedback not in feedback_parts:
+                feedback_parts.append(evidence_feedback)
+        if not result.passed and not feedback_parts:
+            feedback_parts.append(result.reason)
+        feedback = "\n".join(feedback_parts) or None
         ledger.append("completion/checked", {**result.to_payload(), "feedback": feedback})
         self._evaluate_phase(ledger, TaskStateProjector().project(ledger.events))
         self._evaluate_pending_recovery(ledger, result)

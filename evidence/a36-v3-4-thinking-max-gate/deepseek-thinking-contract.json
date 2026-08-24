@@ -1,0 +1,13 @@
+{
+  "source": "https://api-docs.deepseek.com/zh-cn/guides/thinking_mode",
+  "accessed_at": "2026-08-24",
+  "wire_format": "openai-chat-completions",
+  "thinking": {
+    "transport": "extra_body",
+    "value": {"type": "enabled"}
+  },
+  "reasoning_effort": "max",
+  "documented_effort_mapping": {"max": "max"},
+  "model": "deepseek-v4-flash-vision-exp",
+  "claim_boundary": "This records public request configuration only; it does not prove task quality or a causal uplift."
+}

@@ -47,6 +47,41 @@ class PolicySessionTests(unittest.TestCase):
 
         self.assertTrue(decision.passed)
 
+    def test_rejected_runtime_final_preserves_evidence_assessments_for_recovery(self) -> None:
+        ledger = SessionLedger("policy-runtime-final-with-missing-artifact")
+        session = KernelPolicySession(
+            response_completion_policy=AcceptFinalCompletion(),
+            completion_gate=EvidenceCompletionGate(),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+        )
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Write outputs/report.json.",
+            public_schema=None,
+        )
+
+        result, feedback, recovery = session.check_completion(
+            ledger,
+            response=ModelResponse(
+                content="Tool call limit reached: run limit exceeded (21/20 calls)."
+            ),
+        )
+
+        self.assertFalse(result.passed)
+        self.assertEqual(len(result.assessments), 1)
+        self.assertIn("acceptable final response", result.missing)
+        self.assertTrue(any("outputs/report.json" in item for item in result.missing))
+        self.assertIn("runtime control", feedback or "")
+        self.assertIn("outputs/report.json", feedback or "")
+        self.assertIsNotNone(recovery)
+        assert recovery is not None
+        self.assertIn(TaskRecoveryAction.WRITE_PARTIAL, recovery.actions)
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(state.recoveries[-1].primary, TaskFailureCategory.ARTIFACT_ERROR)
+        self.assertEqual(state.values["phase.current"], Phase.SYNTHESIZING.value)
+
     def test_response_and_evidence_completion_are_one_session_decision(self) -> None:
         ledger = SessionLedger("policy-response")
         session = KernelPolicySession(

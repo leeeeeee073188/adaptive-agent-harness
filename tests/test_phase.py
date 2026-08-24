@@ -68,12 +68,19 @@ def _contract() -> TaskContract:
     )
 
 
-def _state_with(*assessments: CriterionAssessment) -> object:
+def _state_with(
+    *assessments: CriterionAssessment,
+    completion_passed: bool | None = None,
+) -> object:
     ledger = SessionLedger("phase-unit")
     writer = TaskEventWriter(ledger)
     writer.create_contract(_contract())
     result = ContractCompletionResult(
-        all(item.status is CriterionStatus.SATISFIED for item in assessments),
+        (
+            all(item.status is CriterionStatus.SATISFIED for item in assessments)
+            if completion_passed is None
+            else completion_passed
+        ),
         tuple(assessments),
         tuple(item.criterion_id for item in assessments if item.status is not CriterionStatus.SATISFIED),
         "phase fixture",
@@ -147,6 +154,20 @@ def _state_for_with_evidence(contract: TaskContract, *evidence: Evidence) -> obj
 
 
 class RuleBasedPhaseControllerTests(unittest.TestCase):
+
+    def test_contract_ready_phase_survives_non_contract_completion_rejection(self) -> None:
+        state = _state_with(
+            *(
+                CriterionAssessment(criterion.id, CriterionStatus.SATISFIED, "satisfied")
+                for criterion in _contract().criteria
+            ),
+            completion_passed=False,
+        )
+
+        decision = RuleBasedPhaseController().evaluate(state)  # type: ignore[arg-type]
+
+        self.assertEqual(decision.phase, Phase.READY)
+        self.assertEqual(decision.action_intents, ("deliver",))
 
     def test_no_completion_with_before_run_source_evidence_routes_to_synthesizing(self) -> None:
         state = _state_for_with_evidence(

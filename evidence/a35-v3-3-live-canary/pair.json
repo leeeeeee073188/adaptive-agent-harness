@@ -1,0 +1,105 @@
+{
+  "analysis_model_calls": 0,
+  "analysis_new_tokens": 0,
+  "baseline": {
+    "capacity_score": 0.0,
+    "elapsed_sec": 135.782,
+    "passed": false,
+    "run_id": "adaptive-deerflow-minibench16-development",
+    "tool_calls": 18,
+    "total_tokens": 266169,
+    "variant": "vanilla_deerflow"
+  },
+  "candidate": {
+    "capacity_score": 0.0,
+    "elapsed_sec": 67.734,
+    "ledger_event_count": 956,
+    "passed": false,
+    "run_id": "adaptive-harness-evidence-workspace-v3-3-development",
+    "tool_calls": 46,
+    "total_tokens": 277043,
+    "turns": 2,
+    "variant": "adaptive_harness_evidence_workspace_v3_3"
+  },
+  "continue_block": false,
+  "controls": {
+    "model": true,
+    "runtime_image": true,
+    "seed": true,
+    "split": true,
+    "task_id": true
+  },
+  "cost": {
+    "architecture_increase_over_diagnostic_threshold": false,
+    "attributable_architecture_increase_fraction": 0.040853743298430695,
+    "attributable_architecture_token_delta": 10874,
+    "attribution": "candidate_policy_may_have_changed_model_work",
+    "attribution_confident": true,
+    "elapsed_delta_sec": -68.04800000000002,
+    "token_delta": 10874,
+    "token_diagnostic_threshold_fraction": 0.25,
+    "token_increase_fraction": 0.040853743298430695,
+    "token_increase_over_diagnostic_threshold": false,
+    "tool_call_delta": 28
+  },
+  "counterfactual_projection": {
+    "checks": {
+      "response": true,
+      "tool_calls": true,
+      "tool_results": true,
+      "usage": false
+    },
+    "exact": false,
+    "source_event_count": 855
+  },
+  "decision": "stop before remaining Block 1 tasks because a quality or integrity gate failed",
+  "gates": {
+    "baseline_integrity": true,
+    "candidate_integrity": true,
+    "candidate_ledger_present": true,
+    "completion_evidence_passed": false,
+    "no_uncontrolled_no_progress_loop": false,
+    "paired_controls": true,
+    "quality_non_regression": false,
+    "semantic_outputs_equal": true
+  },
+  "historical_vanilla_distribution": {
+    "coefficient_of_variation": null,
+    "max": 266169,
+    "mean": 266169.0,
+    "median": 266169,
+    "min": 266169,
+    "sample_count": 1,
+    "sample_stdev": null,
+    "tokens": [
+      266169
+    ]
+  },
+  "model_visible_surface": {
+    "baseline_fingerprint": "fd9015445144149da95382dee9892c7438c1ef54cb82a07fcd7b2a8d56de8d12",
+    "candidate_fingerprint": null,
+    "checks": {
+      "config_sha256": false,
+      "model": true,
+      "prompt_sha256": true,
+      "runtime_image": true
+    },
+    "equal": false
+  },
+  "output_comparison": {
+    "baseline_hashes": {},
+    "candidate_hashes": {},
+    "file_count": 0,
+    "same_paths": true,
+    "semantic_equal": true
+  },
+  "pair_valid": false,
+  "resource_guardrail": {
+    "block_scope_count": 4,
+    "check_count": 39,
+    "replan_count": 7,
+    "uncontrolled_no_progress_loop": true
+  },
+  "scope": "MiniBench fresh paired canary",
+  "task_id": "cli-google-trends-data-quality-audit"
+}

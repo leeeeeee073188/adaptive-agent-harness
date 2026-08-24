@@ -1,0 +1,18 @@
+{
+  "scope": "independent v3.4 thinking-max pre-canary verification",
+  "verdict": "pass_single_development_canary",
+  "adaptive_tests_passed": 293,
+  "realreplica_tests_passed": 70,
+  "adaptive_source_sha256": "088a42f10754472017d4827ae94e0e133d5707464c996404f6c49b15ea73e89f",
+  "executable_policy_profile_fingerprint": "1d6ecca4685b3a93fb93297b14b1cb55db0f8687e7687f78c595c97057bed946",
+  "candidate_profile_fingerprint": "bca5a1f1872277942c04a9f3676955a9d1b1696b259063e6af74150a315f6118",
+  "runner_source_sha256": "7d4888d6674d4a9d62b893788eed675afb5b956111bd8a1bbf4f269b9b725972",
+  "thinking_max_request_configured": true,
+  "completion_conjunction_preserves_assessments": true,
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false,
+  "execution_blocker": "Commit and clean the RealReplicaBench worktree before the formal canary."
+}

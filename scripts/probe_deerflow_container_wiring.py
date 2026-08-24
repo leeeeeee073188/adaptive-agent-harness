@@ -63,6 +63,7 @@ def main() -> int:
             build_deerflow_config(
                 adaptive_context_enabled=True,
                 adaptive_action_ledger_enabled=True,
+                thinking_effort="max",
             ).to_yaml(),
             encoding="utf-8",
         )
@@ -131,7 +132,7 @@ def main() -> int:
                 "/tmp/context-config.yaml",
                 PRIMARY_MODEL,
                 "probe-thread",
-                "disabled",
+                "enabled",
                 "100",
                 "/tmp/adaptive-probe/task",
                 "{}",
@@ -196,6 +197,10 @@ def main() -> int:
                 "tool_call_limit_request_shape_valid"
             )
             is True,
+            "thinking_max_request_configured": adaptive.get(
+                "thinking_max_request_configured"
+            )
+            is True,
             "action_ledger_request_shape_valid": (
                 adaptive.get("action_ledger_request_shape_valid") is True
             ),
@@ -221,6 +226,10 @@ def main() -> int:
             is True,
             "runtime_limit_response_rejected": adaptive.get(
                 "runtime_limit_response_rejected"
+            )
+            is True,
+            "completion_conjunction_preserves_assessments": adaptive.get(
+                "completion_conjunction_preserves_assessments"
             )
             is True,
             "public_non_vacuity_gate_enforced": adaptive.get(

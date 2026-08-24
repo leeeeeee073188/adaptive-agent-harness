@@ -135,6 +135,7 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "adaptive_package_imported": True,
                 "action_scope_block_enforced": True,
                 "context_profile_session_bound": True,
+                "completion_conjunction_preserves_assessments": True,
                 "global_nonmutating_budget_enforced": True,
                 "delivery_first_gate_enforced": True,
                 "delivery_synthesis_transform_allowed": True,
@@ -151,6 +152,7 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "policy_profile_fingerprint_matches": True,
                 "tool_call_limit_middleware_imported": True,
                 "tool_call_limit_request_shape_valid": True,
+                "thinking_max_request_configured": True,
             },
         }
         _write_json(path, payload)

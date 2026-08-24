@@ -148,6 +148,10 @@ v3.2 的真实结果记录在 `evidence/a32-v3-2-live-canary/`：公共来源 ma
 
 v3.3 的 A33/A34 零模型门禁关闭上述两个伪完成路径，并允许任务提供的直接 Python synthesis transform 穿过 delivery recovery；文本形式的工具错误不会再推进 mutation epoch。A33 使用 v3.2 公共产物反事实证明全空集合被拒绝，A34 在 pinned DeerFlow 容器中验证接线与零模型行为。当前仍只允许同一 Development 任务的一次替代 canary。
 
+v3.3 的真实结果记录在 `evidence/a35-v3-3-live-canary/`：Final 错误文本被正确拒绝，但 Response Completion 的早返回用空 assessments 覆盖了 Evidence Gate，导致 Phase 从 `synthesizing` 回退为 `contracted`，Recovery 只修“acceptable final response”而看不到缺失 Artifact；结果 0/5、无产物、277,043 Token、46 Tool。
+
+v3.4 修复 Completion 合取语义，并按 DeepSeek 官方 OpenAI-compatible 接口同时发送 `extra_body.thinking.type=enabled` 与顶层 `reasoning_effort=max`。`evidence/a36-v3-4-thinking-max-gate/` 锁定公共反事实与 137 项核心测试；`evidence/a37-v3-4-thinking-max-container/` 通过实际 DeerFlow model factory 验证 `PatchedChatDeepSeek.reasoning_effort == max`、thinking enabled、reasoning-content replay 和 assessments 保留。此次同时改变 Harness bug 与模型思考配置，因此只用于继续优化，不作为“max thinking 单变量提升”的因果实验。
+
 该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
 
 ## 测试规格摘要
