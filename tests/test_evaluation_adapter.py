@@ -139,6 +139,8 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "delivery_first_gate_enforced": True,
                 "embedded_client_stream_exercised": True,
                 "executable_policy_profile_assembled": True,
+                "max_completion_turns_frozen": True,
+                "local_resource_read_budget_frozen": True,
                 "ledger_persisted": True,
                 "policy_bridge_enabled": True,
                 "policy_profile_fingerprint_matches": True,

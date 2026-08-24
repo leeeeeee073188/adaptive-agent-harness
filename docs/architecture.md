@@ -263,6 +263,17 @@ the paid-canary gate use matching source/Profile fingerprints and zero model
 calls. They authorize one Development canary, not Transfer, Held-out, further
 tasks, or a benchmark-wide uplift claim.
 
+That v3 canary falsified the assumption that visibility alone changes action
+choice: it retained failure/phase context but still produced 46 tool calls,
+350,771 Tokens, and no artifact. The remaining loop used relative paths,
+case variants, and differently batched shell reads to evade exact-scope
+blocking. v3.1 therefore makes source acquisition the initial phase when the
+public contract declares source obligations, exposes their public URLs in
+phase/recovery feedback, canonicalizes local resource aliases, applies a
+task-run resource read budget across tools and turns, and reserves a third
+turn for the source → artifact → validation progression. This replacement is
+also single-canary-only.
+
 Later Context Shadows are separate Profile versions and are not merged with
 that pair. A reused historical Vanilla result is exploratory only. Context v1.1
 remains rejected historical evidence because the run used the superseded cost

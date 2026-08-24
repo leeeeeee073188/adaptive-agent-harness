@@ -120,6 +120,31 @@ class PolicySessionTests(unittest.TestCase):
         self.assertEqual(context["values"]["phase.action_intents"], ["write_artifact", "synthesize"])
         self.assertIn("artifact evidence is still missing", context["values"]["phase.reason"])
         self.assertIn("validate immediately", context["values"]["phase.budget_semantics"])
+        self.assertEqual(context["values"]["phase.unmet_obligations"][0]["resource"], "outputs/report.csv")
+
+    def test_begin_turn_with_source_access_contract_exposes_public_unmet_obligation(self) -> None:
+        ledger = SessionLedger("policy-phase-source-access-begin")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Read https://public.example.com/data before writing outputs/report.md.",
+            public_schema=None,
+        )
+
+        session.begin_turn(ledger)
+
+        phase_events = [event for event in ledger.events if event.type == PHASE_EVALUATED]
+        self.assertEqual(len(phase_events), 1)
+        self.assertEqual(phase_events[0].payload["phase"], Phase.ACQUIRING.value)
+        state = TaskStateProjector().project(ledger.events)
+        context = state.to_context()
+        unmet = context["values"]["phase.unmet_obligations"]
+        rendered = str(unmet)
+        self.assertIn("https://public.example.com/data", rendered)
+        self.assertIn("observation_equals", rendered)
+        self.assertIn("pending", rendered)
+        self.assertNotIn("private", rendered.lower())
 
     def test_begin_turn_evaluates_contracted_phase_without_progress_detector(self) -> None:
         ledger = SessionLedger("policy-phase-begin")
@@ -278,7 +303,7 @@ class PolicySessionTests(unittest.TestCase):
         result, feedback, _recovery = session.check_completion(ledger)
 
         self.assertFalse(result.passed)
-        self.assertIn("source.access", feedback or "")
+        self.assertIn("https://public.example.com/data", feedback or "")
 
     def test_failed_source_tool_result_does_not_satisfy_access(self) -> None:
         ledger = SessionLedger("policy-source-failed")

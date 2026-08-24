@@ -8,9 +8,10 @@ budget semantics as guidance without treating them as hard workflow gates.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol
+from typing import Any, Protocol
 
 from adaptive_harness.task_contract import Criterion, CriterionKind
 from adaptive_harness.task_state import CriterionAssessment, CriterionStatus, TaskState
@@ -35,6 +36,7 @@ class PhaseDecision:
     reason: str
     action_intents: tuple[str, ...]
     budget_semantics: str
+    unmet_obligations: tuple[dict[str, object], ...] = ()
 
     def to_payload(self) -> dict[str, object]:
         return {
@@ -43,6 +45,7 @@ class PhaseDecision:
             "reason": self.reason,
             "action_intents": list(self.action_intents),
             "budget_semantics": self.budget_semantics,
+            "unmet_obligations": [dict(item) for item in self.unmet_obligations],
         }
 
 
@@ -55,7 +58,6 @@ class RuleBasedPhaseController:
 
     def evaluate(self, state: TaskState) -> PhaseDecision:
         contract = state.contract
-        completion = state.latest_completion
         if contract is None:
             return PhaseDecision(
                 Phase.UNCONTRACTED,
@@ -64,16 +66,38 @@ class RuleBasedPhaseController:
                 ("compile_contract",),
                 "Spend only enough budget to derive verifiable public obligations.",
             )
+
+        required_by_id = {criterion.id: criterion for criterion in contract.criteria if criterion.required}
+        artifact_ids = {
+            criterion.id
+            for criterion in required_by_id.values()
+            if criterion.kind is CriterionKind.ARTIFACT_EXISTS
+        }
+        completion = state.latest_completion
         if completion is None or not completion.assessments:
+            unmet = tuple(required_by_id)
+            synthetic = tuple(
+                CriterionAssessment(criterion_id, CriterionStatus.PENDING, "No evidence assessment yet.")
+                for criterion_id in unmet
+            )
+            if any(_is_source_obligation(required_by_id[item.criterion_id], artifact_ids) for item in synthetic):
+                return PhaseDecision(
+                    Phase.ACQUIRING,
+                    unmet,
+                    "source access obligations exist before the first evidence assessment.",
+                    ("observe", "inspect", "gather_evidence"),
+                    "Acquire required public source evidence before synthesis; avoid blind artifact retries.",
+                    _summarize_unmet(required_by_id, synthetic),
+                )
             return PhaseDecision(
                 Phase.CONTRACTED,
-                tuple(criterion.id for criterion in contract.criteria if criterion.required),
+                unmet,
                 "Task contract exists but has no evidence assessment yet.",
                 ("assess_contract", "observe"),
                 "Take one bounded assessment step before planning more work.",
+                _summarize_unmet(required_by_id, synthetic),
             )
 
-        required_by_id = {criterion.id: criterion for criterion in contract.criteria if criterion.required}
         relevant = tuple(
             assessment
             for assessment in completion.assessments
@@ -84,6 +108,7 @@ class RuleBasedPhaseController:
             for assessment in relevant
             if assessment.status is not CriterionStatus.SATISFIED
         )
+        unmet_obligations = _summarize_unmet(required_by_id, relevant)
         if completion.passed and not unmet:
             return PhaseDecision(
                 Phase.READY,
@@ -91,13 +116,9 @@ class RuleBasedPhaseController:
                 "All required contract obligations are satisfied.",
                 ("deliver",),
                 "Stop spending task budget except for final delivery bookkeeping.",
+                (),
             )
 
-        artifact_ids = {
-            criterion.id
-            for criterion in required_by_id.values()
-            if criterion.kind is CriterionKind.ARTIFACT_EXISTS
-        }
         artifacts = tuple(
             assessment
             for assessment in relevant
@@ -111,17 +132,32 @@ class RuleBasedPhaseController:
         source_obligations = tuple(
             assessment
             for assessment in relevant
-            if _criterion(required_by_id, assessment).kind is not CriterionKind.ARTIFACT_EXISTS
-            and not _is_artifact_validation(_criterion(required_by_id, assessment), artifact_ids)
+            if _is_source_obligation(_criterion(required_by_id, assessment), artifact_ids)
         )
 
-        if any(assessment.status is CriterionStatus.UNSATISFIED for assessment in relevant):
+        if any(assessment.status is CriterionStatus.UNSATISFIED for assessment in validations):
             return PhaseDecision(
                 Phase.REPAIRING,
                 unmet,
-                "A contract obligation has explicit contradictory evidence.",
-                ("repair_artifact", "repair_state", "validate_contract"),
-                "Repair the failed obligation with a bounded novel action; avoid repeating no-progress retries.",
+                "Artifact shape or validation evidence is explicitly unsatisfied.",
+                ("repair_artifact", "validate_contract"),
+                "Repair the failed artifact validation with a bounded novel action; avoid no-progress retries.",
+                unmet_obligations,
+            )
+
+        unsatisfied_source = tuple(
+            assessment
+            for assessment in source_obligations
+            if assessment.status is CriterionStatus.UNSATISFIED
+        )
+        if unsatisfied_source:
+            return PhaseDecision(
+                Phase.REPAIRING,
+                unmet,
+                "A source or runtime observation contradicts a required public obligation.",
+                ("repair_state", "validate_contract"),
+                "Repair only the contradicted obligation and avoid broad replanning.",
+                unmet_obligations,
             )
 
         pending_source = tuple(
@@ -136,6 +172,7 @@ class RuleBasedPhaseController:
                 "source or runtime observation obligations are still pending.",
                 ("observe", "inspect", "gather_evidence"),
                 "Prefer novel evidence acquisition over synthesis; stop repeated no-progress probes.",
+                unmet_obligations,
             )
 
         artifact_not_satisfied = tuple(
@@ -145,9 +182,10 @@ class RuleBasedPhaseController:
             return PhaseDecision(
                 Phase.SYNTHESIZING,
                 unmet,
-                "Non-artifact source obligations are satisfied; required artifact evidence is still missing.",
+                "Required artifact evidence is still missing.",
                 ("write_artifact", "synthesize"),
                 "Spend budget on producing the deliverable once, then validate immediately.",
+                unmet_obligations,
             )
 
         if any(assessment.status in {CriterionStatus.PENDING, CriterionStatus.BLOCKED} for assessment in validations):
@@ -157,6 +195,7 @@ class RuleBasedPhaseController:
                 "Artifact exists but artifact validation evidence is pending.",
                 ("inspect_artifact", "validate_contract"),
                 "Spend a bounded validation step before further edits.",
+                unmet_obligations,
             )
 
         return PhaseDecision(
@@ -165,6 +204,7 @@ class RuleBasedPhaseController:
             "Contract evidence is incomplete but does not identify a more specific phase.",
             ("assess_contract",),
             "Spend only enough budget to produce a more specific evidence state.",
+            unmet_obligations,
         )
 
 
@@ -179,3 +219,44 @@ def _is_artifact_validation(criterion: Criterion, artifact_ids: set[str]) -> boo
         or (criterion.kind is CriterionKind.OBSERVATION_EQUALS and subject.startswith("artifact."))
         or any(dependency in artifact_ids for dependency in criterion.depends_on)
     )
+
+
+def _is_source_obligation(criterion: Criterion, artifact_ids: set[str]) -> bool:
+    return (
+        criterion.kind is not CriterionKind.ARTIFACT_EXISTS
+        and not _is_artifact_validation(criterion, artifact_ids)
+    )
+
+
+def _summarize_unmet(
+    criteria: dict[str, Criterion],
+    assessments: tuple[CriterionAssessment, ...],
+) -> tuple[dict[str, object], ...]:
+    summaries: list[dict[str, object]] = []
+    for assessment in assessments:
+        if assessment.status is CriterionStatus.SATISFIED or assessment.criterion_id not in criteria:
+            continue
+        criterion = criteria[assessment.criterion_id]
+        summary: dict[str, object] = {
+            "criterion_id": criterion.id,
+            "description": criterion.description,
+            "kind": criterion.kind.value,
+            "status": assessment.status.value,
+        }
+        resource = _public_resource(criterion.parameters)
+        if resource is not None:
+            summary["resource"] = resource
+        summaries.append(summary)
+    return tuple(summaries)
+
+
+def _public_resource(parameters: Any) -> str | None:
+    if not isinstance(parameters, Mapping):
+        return None
+    raw = parameters.get("resource")
+    if isinstance(raw, str) and raw.startswith(("http://", "https://")):
+        return raw
+    path = parameters.get("path")
+    if isinstance(path, str) and path and not path.startswith(("/", "~")) and ":" not in path:
+        return path
+    return None

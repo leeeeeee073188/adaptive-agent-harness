@@ -63,8 +63,14 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         )
         if self._max_nonmutating_actions < 1:
             raise ValueError("ADAPTIVE_MAX_NONMUTATING_ACTIONS_PER_TURN must be positive")
+        self._max_reads_per_resource = int(os.environ.get("ADAPTIVE_MAX_READS_PER_RESOURCE", "3"))
+        if self._max_reads_per_resource < 1:
+            raise ValueError("ADAPTIVE_MAX_READS_PER_RESOURCE must be positive")
         self._turn_budget = NonMutatingTurnBudget(self._max_nonmutating_actions)
         self._delivery_satisfied: set[str] = set()
+        self._read_counts: dict[str, dict[str, int]] = {}
+        self._read_inflight: dict[str, dict[str, tuple[tuple[str, ...], int]]] = {}
+        self._resource_epochs: dict[str, int] = {}
         self._ledgers: OrderedDict[str, ToolActionLedger] = OrderedDict()
         self._state_lock = Lock()
 
@@ -81,9 +87,46 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             if len(self._ledgers) > _MAX_RUN_LEDGERS:
                 evicted_key, _ = self._ledgers.popitem(last=False)
                 self._delivery_satisfied.discard(evicted_key)
+                self._read_counts.pop(evicted_key, None)
+                self._read_inflight.pop(evicted_key, None)
+                self._resource_epochs.pop(evicted_key, None)
         else:
             self._ledgers.move_to_end(key)
         return ledger
+
+    def _reserve_read_resources_locked(
+        self,
+        run_key: str,
+        call_id: str,
+        resources: tuple[str, ...],
+    ) -> bool:
+        counts = self._read_counts.setdefault(run_key, {})
+        inflight = self._read_inflight.setdefault(run_key, {})
+        reservations: dict[str, int] = {}
+        for reserved_resources, _epoch in inflight.values():
+            for resource in reserved_resources:
+                reservations[resource] = reservations.get(resource, 0) + 1
+        exhausted = all(
+            counts.get(resource, 0) + reservations.get(resource, 0) >= self._max_reads_per_resource
+            for resource in resources
+        )
+        if exhausted:
+            return False
+        inflight[call_id] = (resources, self._resource_epochs.get(run_key, 0))
+        return True
+
+    def _release_read_reservation_locked(
+        self,
+        run_key: str,
+        call_id: str,
+    ) -> tuple[tuple[str, ...], int] | None:
+        inflight = self._read_inflight.get(run_key)
+        if inflight is None:
+            return None
+        reserved = inflight.pop(call_id, None)
+        if not inflight:
+            self._read_inflight.pop(run_key, None)
+        return reserved
 
     def _observe(
         self,
@@ -98,9 +141,20 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         )
         tool_result = _tool_result(call.id, result)
         run_key = _run_key(request)
+        semantics = classify_tool_action(call.name, call.arguments)
         with self._state_lock:
             ledger = self._ledger_locked(run_key)
             record, decision = ledger.observe(call, tool_result)
+            reserved = self._release_read_reservation_locked(run_key, call.id)
+            if tool_result.error_type is None and semantics.mutating:
+                self._read_counts.pop(run_key, None)
+                self._resource_epochs[run_key] = self._resource_epochs.get(run_key, 0) + 1
+            elif tool_result.error_type is None and reserved is not None:
+                resources, epoch = reserved
+                if epoch == self._resource_epochs.get(run_key, 0):
+                    counts = self._read_counts.setdefault(run_key, {})
+                    for resource in resources:
+                        counts[resource] = counts.get(resource, 0) + 1
             if tool_result.error_type is None and _is_delivery_write(call):
                 self._delivery_satisfied.add(run_key)
         advice_applied = bool(
@@ -185,6 +239,24 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                 },
                 goto=END,
             )
+        local_resources = _cacheable_local_resources(semantics)
+        if local_resources:
+            with self._state_lock:
+                budget_exhausted = not self._reserve_read_resources_locked(
+                    run_key,
+                    call.id,
+                    local_resources,
+                )
+            if budget_exhausted:
+                return ToolMessage(
+                    content=(
+                        "[HARNESS LOCAL RESOURCE CACHE REQUIRED] Read-only access blocked because "
+                        "all local resources in this call already reached the task-run read budget. "
+                        "Use the Visible Evidence Workspace, deliver from existing evidence, or change strategy."
+                    ),
+                    tool_call_id=call.id,
+                    status="error",
+                )
         if session is None or not session.is_action_blocked(call):
             threshold = (
                 self._config.max_same_scope_reads
@@ -206,6 +278,12 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             )
             if not exhausted:
                 return None
+            if local_resources:
+                with self._state_lock:
+                    self._release_read_reservation_locked(run_key, call.id)
+        if local_resources:
+            with self._state_lock:
+                self._release_read_reservation_locked(run_key, call.id)
         return ToolMessage(
             content="Harness blocked this repeated no-progress Action Scope.",
             tool_call_id=call.id,
@@ -287,4 +365,14 @@ def _is_delivery_write(call: ToolCall) -> bool:
             command,
             re.IGNORECASE,
         )
+    )
+
+
+def _cacheable_local_resources(semantics) -> tuple[str, ...]:
+    if semantics.intent is not ToolIntent.READ:
+        return ()
+    return tuple(
+        resource
+        for resource in semantics.resources
+        if not resource.startswith(("http://", "https://")) and not re.search(r"[*?{}\[\]]", resource)
     )

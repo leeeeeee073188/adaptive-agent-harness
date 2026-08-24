@@ -24,6 +24,7 @@ from adaptive_harness.task_state import (
     COMPLETION_CHECKED,
     CriterionStatus,
     Evidence,
+    EvidenceCompletionGate,
     EvidenceKind,
     EvidenceSource,
     Failure,
@@ -257,6 +258,47 @@ class TaskContractStateTests(unittest.TestCase):
         self.assertEqual(result.missing, ("verifiable criteria",))
 
 
+
+
+    def test_source_access_missing_feedback_uses_public_url_not_only_hash(self) -> None:
+        url = "https://public.example.com/data"
+        contract = RuleBasedTaskContractBuilder().build(
+            "source-feedback",
+            f"Open {url} before writing outputs/report.md.",
+        )
+        ledger = SessionLedger("source-feedback")
+        writer = TaskEventWriter(ledger)
+        writer.create_contract(contract)
+
+        result = writer.check_completion()
+        feedback = EvidenceCompletionGate().feedback(result)
+
+        self.assertIn(f"Missing public source access: {url}", feedback)
+        self.assertIn(url, " ".join(result.missing))
+        self.assertNotIn("source.access:", feedback)
+
+    def test_regular_observation_missing_feedback_keeps_subject(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "generic-feedback",
+            "Create the required output.",
+            {
+                "criteria": [
+                    {
+                        "id": "generic-observation",
+                        "kind": "observation_equals",
+                        "description": "Generic observation",
+                        "parameters": {"subject": "artifact.validation", "expected": True},
+                    }
+                ]
+            },
+        )
+        ledger = SessionLedger("generic-feedback")
+        writer = TaskEventWriter(ledger)
+        writer.create_contract(contract)
+
+        result = writer.check_completion()
+
+        self.assertIn("Missing runtime observation: artifact.validation", " ".join(result.missing))
 
     def test_non_source_observation_with_resource_keeps_subject_match_semantics(self) -> None:
         contract = RuleBasedTaskContractBuilder().build(

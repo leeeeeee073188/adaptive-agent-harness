@@ -79,7 +79,145 @@ def _state_with(*assessments: CriterionAssessment) -> object:
     return TaskStateProjector().project(ledger.events)
 
 
+def _source_access_contract(*, with_shape: bool = False) -> TaskContract:
+    criteria = [
+        Criterion(
+            "artifact:outputs-audit-json",
+            "Artifact exists",
+            CriterionKind.ARTIFACT_EXISTS,
+            CriterionSource.TASK_PROMPT,
+            {"path": "outputs/audit.json"},
+        ),
+        Criterion(
+            "source-access:public-help",
+            "Public source URL must be read",
+            CriterionKind.OBSERVATION_EQUALS,
+            CriterionSource.TASK_PROMPT,
+            {
+                "subject": "source.access:https://public.example.test/api/help",
+                "resource": "https://public.example.test/api/help",
+                "expected": True,
+                "private_note": "must-not-leak",
+            },
+        ),
+    ]
+    if with_shape:
+        criteria.append(
+            Criterion(
+                "shape:outputs-audit-json",
+                "Artifact JSON shape is valid",
+                CriterionKind.OBSERVATION_EQUALS,
+                CriterionSource.TASK_PROMPT,
+                {
+                    "subject": "artifact.json_shape:outputs/audit.json",
+                    "path": "outputs/audit.json",
+                    "expected": True,
+                },
+                depends_on=("artifact:outputs-audit-json",),
+            )
+        )
+    return TaskContract("source-access-phase", "Read source and write artifact.", tuple(criteria))
+
+
+def _state_for(contract: TaskContract, *assessments: CriterionAssessment) -> object:
+    ledger = SessionLedger("phase-custom")
+    writer = TaskEventWriter(ledger)
+    writer.create_contract(contract)
+    if assessments:
+        result = ContractCompletionResult(
+            all(item.status is CriterionStatus.SATISFIED for item in assessments),
+            tuple(assessments),
+            tuple(item.criterion_id for item in assessments if item.status is not CriterionStatus.SATISFIED),
+            "phase fixture",
+        )
+        ledger.append("completion/checked", result.to_payload())
+    return TaskStateProjector().project(ledger.events)
+
+
 class RuleBasedPhaseControllerTests(unittest.TestCase):
+    def test_no_assessment_with_source_access_routes_to_acquiring_with_public_url_summary(self) -> None:
+        state = _state_for(_source_access_contract())
+
+        decision = RuleBasedPhaseController().evaluate(state)  # type: ignore[arg-type]
+
+        self.assertEqual(decision.phase, Phase.ACQUIRING)
+        rendered = str(decision.unmet_obligations)
+        self.assertIn("Public source URL must be read", rendered)
+        self.assertIn("observation_equals", rendered)
+        self.assertIn("pending", rendered)
+        self.assertIn("https://public.example.test/api/help", rendered)
+        self.assertNotIn("must-not-leak", rendered)
+
+    def test_source_pending_overrides_unsatisfied_artifact_exists_to_acquiring(self) -> None:
+        state = _state_for(
+            _source_access_contract(),
+            CriterionAssessment("artifact:outputs-audit-json", CriterionStatus.UNSATISFIED, "file missing"),
+            CriterionAssessment("source-access:public-help", CriterionStatus.PENDING, "URL not read"),
+        )
+
+        decision = RuleBasedPhaseController().evaluate(state)  # type: ignore[arg-type]
+
+        self.assertEqual(decision.phase, Phase.ACQUIRING)
+        self.assertIn("source-access:public-help", decision.unmet_obligation_ids)
+
+    def test_unsatisfied_artifact_shape_routes_to_repairing_even_with_source_satisfied(self) -> None:
+        state = _state_for(
+            _source_access_contract(with_shape=True),
+            CriterionAssessment("artifact:outputs-audit-json", CriterionStatus.SATISFIED, "exists"),
+            CriterionAssessment("source-access:public-help", CriterionStatus.SATISFIED, "URL read"),
+            CriterionAssessment("shape:outputs-audit-json", CriterionStatus.UNSATISFIED, "shape false"),
+        )
+
+        decision = RuleBasedPhaseController().evaluate(state)  # type: ignore[arg-type]
+
+        self.assertEqual(decision.phase, Phase.REPAIRING)
+
+    def test_contradicted_runtime_observation_routes_to_repairing(self) -> None:
+        contract = TaskContract(
+            "runtime-state",
+            "Observe public state.",
+            (
+                Criterion(
+                    "state:ready",
+                    "Public state must be ready",
+                    CriterionKind.OBSERVATION_EQUALS,
+                    CriterionSource.TASK_PROMPT,
+                    {"subject": "state.ready", "expected": True},
+                ),
+            ),
+        )
+        state = _state_for(
+            contract,
+            CriterionAssessment("state:ready", CriterionStatus.UNSATISFIED, "observed false"),
+        )
+
+        decision = RuleBasedPhaseController().evaluate(state)  # type: ignore[arg-type]
+
+        self.assertEqual(decision.phase, Phase.REPAIRING)
+
+    def test_unsatisfied_artifact_without_source_routes_to_synthesizing(self) -> None:
+        contract = TaskContract(
+            "artifact-only",
+            "Write artifact.",
+            (
+                Criterion(
+                    "artifact:outputs-audit-json",
+                    "Artifact exists",
+                    CriterionKind.ARTIFACT_EXISTS,
+                    CriterionSource.TASK_PROMPT,
+                    {"path": "outputs/audit.json"},
+                ),
+            ),
+        )
+        state = _state_for(
+            contract,
+            CriterionAssessment("artifact:outputs-audit-json", CriterionStatus.UNSATISFIED, "file missing"),
+        )
+
+        decision = RuleBasedPhaseController().evaluate(state)  # type: ignore[arg-type]
+
+        self.assertEqual(decision.phase, Phase.SYNTHESIZING)
+
     def test_routes_uncontracted_state_to_uncontracted(self) -> None:
         decision = RuleBasedPhaseController().evaluate(TaskState())
 

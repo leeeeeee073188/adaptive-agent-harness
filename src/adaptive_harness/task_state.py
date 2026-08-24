@@ -447,18 +447,27 @@ class RuleBasedContractChecker:
                     or item.metadata.get("resource") == resource
                 )
             ]
+            is_source_access = subject.startswith("source.access:") and isinstance(resource, str)
             if not matches:
+                reason = (
+                    f"Missing public source access: {resource}"
+                    if is_source_access
+                    else f"Missing runtime observation: {subject}"
+                )
                 return CriterionAssessment(
                     criterion.id,
                     CriterionStatus.PENDING,
-                    f"Missing runtime observation: {subject}",
+                    reason,
                 )
             latest = matches[-1]
             satisfied = latest.value == expected
             status = CriterionStatus.SATISFIED if satisfied else CriterionStatus.UNSATISFIED
-            reason = f"Observed required value for {subject}" if satisfied else (
-                f"Expected {subject}={expected!r}, observed {latest.value!r}"
-            )
+            if satisfied:
+                reason = f"Observed required value for {subject}"
+            elif is_source_access:
+                reason = f"Expected public source access: {resource}, observed {latest.value!r}"
+            else:
+                reason = f"Expected {subject}={expected!r}, observed {latest.value!r}"
             return CriterionAssessment(criterion.id, status, reason, (latest.id,))
         raise AssertionError(f"unhandled criterion kind: {criterion.kind}")
 

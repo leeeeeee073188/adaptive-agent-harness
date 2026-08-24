@@ -170,6 +170,11 @@ def main() -> int:
                 "durable_recovery",
                 "resource_guardrail",
             ],
+            "max_completion_turns_frozen": adaptive.get("max_completion_turns") == 3,
+            "local_resource_read_budget_frozen": adaptive.get(
+                "local_resource_read_budget_frozen"
+            )
+            is True,
             "policy_profile_fingerprint_matches": adaptive.get(
                 "policy_profile_fingerprint"
             )
@@ -231,6 +236,8 @@ def main() -> int:
                 "realreplica_action_ledger_wired",
                 "realreplica_runner_copies_source",
                 "realreplica_runner_persists_ledger",
+                "max_completion_turns_frozen",
+                "local_resource_read_budget_frozen",
                 "runner_probe_used_zero_models",
             )
         )

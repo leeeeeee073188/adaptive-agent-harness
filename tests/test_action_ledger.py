@@ -51,6 +51,20 @@ class ToolActionLedgerTests(unittest.TestCase):
         self.assertEqual(inspect.intent, ToolIntent.VERIFY)
 
 
+    def test_local_path_aliases_are_casefolded_and_resolved_against_bash_cd(self) -> None:
+        cd_read = classify_tool_action(
+            "bash",
+            {"command": "cd /task/workspace && cat HANDOFF.md"},
+        )
+        direct_read = classify_tool_action(
+            "read_file",
+            {"path": "/task/workspace/handoff.md"},
+        )
+
+        self.assertEqual(cd_read.resources, ("workspace/handoff.md",))
+        self.assertEqual(cd_read.resources, direct_read.resources)
+        self.assertEqual(cd_read.scope_key, direct_read.scope_key)
+
     def test_bash_curl_and_wget_extract_public_http_resources(self) -> None:
         curl = classify_tool_action(
             "bash",
@@ -63,6 +77,12 @@ class ToolActionLedgerTests(unittest.TestCase):
 
         self.assertIn("https://public.example.com/data?x=1", curl.resources)
         self.assertIn("https://public.example.com/api/help", wget.resources)
+
+        endpoint = classify_tool_action(
+            "fetch",
+            {"endpoint": "https://public.example.com/data?token=secret&key=category-a"},
+        )
+        self.assertEqual(endpoint.resources, ("https://public.example.com/data?key=category-a",))
 
     def test_browser_url_argument_extracts_public_http_resource(self) -> None:
         action = classify_tool_action(

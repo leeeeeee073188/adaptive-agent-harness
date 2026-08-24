@@ -479,7 +479,12 @@ def _extract_resources(arguments: Mapping[str, Any], command: str) -> tuple[str,
     for key, value in arguments.items():
         normalized = str(key).lower().replace("-", "_")
         if normalized in {"path", "file", "directory", "endpoint"} and isinstance(value, str):
-            values.append(value)
+            if value.lower().startswith(("http://", "https://")):
+                canonical = _canonical_http_resource(value)
+                if canonical is not None:
+                    urls.append(canonical)
+            else:
+                values.append(value)
         elif normalized == "url" and isinstance(value, str):
             canonical = _canonical_http_resource(value)
             if canonical is not None:
@@ -488,9 +493,16 @@ def _extract_resources(arguments: Mapping[str, Any], command: str) -> tuple[str,
         canonical = _canonical_http_resource(match.rstrip(".,;:)]}"))
         if canonical is not None:
             urls.append(canonical)
-    values.extend(_RESOURCE.findall(command))
-    values.extend(_ABSOLUTE_TASK_RESOURCE.findall(command))
-    values.extend(_FILE.findall(command))
+    command_cwd = _command_cwd(command)
+    for pattern in (_RESOURCE, _ABSOLUTE_TASK_RESOURCE):
+        for match in pattern.finditer(command):
+            if not _is_cd_target(command, match.start()):
+                values.append(match.group())
+    for match in _FILE.finditer(command):
+        if match.start() > 0 and command[match.start() - 1] == "/":
+            continue
+        resource = match.group()
+        values.append(f"{command_cwd}/{resource}" if command_cwd is not None else resource)
     normalized_resources = {_normalize_resource(value) for value in values if value.strip()}
     normalized_resources.update(urls)
     return tuple(sorted(normalized_resources))
@@ -522,9 +534,24 @@ def _canonical_http_resource(raw: str) -> str | None:
     return canonical_http_resource(raw)
 
 
+def _command_cwd(command: str) -> str | None:
+    for match in re.finditer(r"(?:^|[;&|]{1,2})\s*cd\s+([^;&|\n]+)", command):
+        normalized = _normalize_resource(match.group(1))
+        if normalized.startswith(("workspace/", "outputs/", "snapshots/", "tmp/")):
+            return normalized
+        if normalized in {"workspace", "outputs", "snapshots", "tmp"}:
+            return normalized
+    return None
+
+
+def _is_cd_target(command: str, start: int) -> bool:
+    prefix = command[:start]
+    return bool(re.search(r"(?:^|[;&|]{1,2})\s*cd\s+$", prefix))
+
+
 def _normalize_resource(value: str) -> str:
     normalized = value.strip("'\"` ,;:()[]{}").replace("\\", "/")
-    return normalized.removeprefix("/task/")
+    return normalized.removeprefix("/task/").casefold()
 
 
 _NON_SEMANTIC_ARGUMENTS = {"description", "reason", "label"}

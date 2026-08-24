@@ -208,7 +208,11 @@ async def assemble_policy_kernel(
     return await assemble_profile(profile or DEFAULT_POLICY_PROFILE, registry, kernel=kernel)
 
 
-def policy_session_from_kernel(kernel: Kernel) -> PolicySession:
+def policy_session_from_kernel(
+    kernel: Kernel,
+    *,
+    max_completion_turns: int = 2,
+) -> PolicySession:
     """Create a new PolicySession from already assembled Kernel services."""
 
     return PolicySession(
@@ -222,6 +226,7 @@ def policy_session_from_kernel(kernel: Kernel) -> PolicySession:
         recovery_outcome_evaluator=kernel.services.get(RECOVERY_OUTCOME_EVALUATOR),
         resource_guardrail=kernel.services.get(RESOURCE_GUARDRAIL),
         phase_controller=kernel.services.get(PHASE_CONTROLLER),
+        max_completion_turns=max_completion_turns,
         unsupported_criteria="observe_only",
     )
 

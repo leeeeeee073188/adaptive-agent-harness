@@ -81,6 +81,23 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertTrue(index["claims"]["v3_paid_canary_allowed"])
         self.assertTrue(index["claims"]["v3_source_hash_matches"])
         self.assertTrue(index["claims"]["v3_profile_fingerprint_matches"])
+        self.assertEqual(
+            index["claims"]["v3_live_selected_candidate"],
+            "adaptive_harness_runtime_evolution_v2_6",
+        )
+        self.assertFalse(index["claims"]["v3_live_row"]["passed"])
+        self.assertEqual(index["claims"]["v3_live_row"]["capacity_score"], 0.0)
+        self.assertFalse(index["claims"]["v3_live_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["v3_1_gate_passed"])
+        self.assertTrue(index["claims"]["v3_1_single_canary_allowed"])
+        self.assertFalse(index["claims"]["v3_1_paid_expansion_allowed"])
+        self.assertEqual(
+            index["claims"]["v3_1_candidate_variant"],
+            "adaptive_harness_evidence_workspace_v3_1",
+        )
+        self.assertTrue(index["claims"]["v3_1_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["v3_1_source_hash_matches"])
+        self.assertTrue(index["claims"]["v3_1_profile_fingerprint_matches"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

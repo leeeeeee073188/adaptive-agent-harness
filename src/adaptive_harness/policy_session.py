@@ -545,6 +545,9 @@ class KernelPolicySession:
             delta["phase.action_intents"] = action_intents
         if current_values.get("phase.budget_semantics") != decision.budget_semantics:
             delta["phase.budget_semantics"] = decision.budget_semantics
+        unmet_obligations = [dict(item) for item in decision.unmet_obligations]
+        if current_values.get("phase.unmet_obligations") != unmet_obligations:
+            delta["phase.unmet_obligations"] = unmet_obligations
         if delta:
             TaskEventWriter(ledger).update_state(delta, reason="soft phase evaluated")
 

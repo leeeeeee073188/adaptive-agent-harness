@@ -150,6 +150,8 @@ class PolicyProfileTests(unittest.IsolatedAsyncioTestCase):
             self.assertIs(first.completion_gate, kernel.services.get(TASK_COMPLETION_GATE))
             self.assertIs(first.phase_controller, kernel.services.get(PHASE_CONTROLLER))
             self.assertEqual(first.unsupported_criteria, "observe_only")
+            three_turn = policy_session_from_kernel(kernel, max_completion_turns=3)
+            self.assertEqual(three_turn.max_completion_turns, 3)
         finally:
             await kernel.close()
 
