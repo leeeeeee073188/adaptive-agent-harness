@@ -173,6 +173,52 @@ class TaskAwareContextTests(unittest.TestCase):
         self.assertIn("inspection result", rendered)
         self.assertNotIn("must be dropped", rendered)
 
+    def test_dropped_large_tool_results_leave_deduplicated_safe_interaction_facts(self) -> None:
+        messages = (
+            {"role": "user", "content": "Complete the task."},
+            {
+                "role": "assistant",
+                "content": "Reading source.",
+                "tool_calls": [
+                    {
+                        "id": "read-1",
+                        "name": "read_file",
+                        "arguments": {"path": "/task/input.json", "api_key": "sk-not-safe-123456"},
+                    }
+                ],
+            },
+            {"role": "tool", "tool_call_id": "read-1", "content": "x" * 5000},
+            {
+                "role": "assistant",
+                "content": "Reading again.",
+                "tool_calls": [
+                    {
+                        "id": "read-2",
+                        "name": "read_file",
+                        "arguments": {"path": "/task/input.json", "api_key": "sk-not-safe-123456"},
+                    }
+                ],
+            },
+            {"role": "tool", "tool_call_id": "read-2", "content": "x" * 5000},
+        )
+        manager = TaskAwareContextManager(
+            budget=ContextBudget(max_input_tokens=1024),
+        )
+
+        prepared = manager.prepare(
+            messages,
+            environment_state={},
+            task_state={},
+        )
+
+        rendered = str(prepared.messages)
+        self.assertIn("tool:read_file:", rendered)
+        self.assertIn('"attempts":2', rendered)
+        self.assertIn("/task/input.json", rendered)
+        self.assertIn("<redacted>", rendered)
+        self.assertNotIn("sk-not-safe", rendered)
+        self.assertLess(len(rendered), 5000)
+
 
 if __name__ == "__main__":
     unittest.main()
