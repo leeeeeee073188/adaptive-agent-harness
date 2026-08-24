@@ -320,6 +320,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
             with TemporaryDirectory() as tmp:
                 bridge = DeerFlowPolicyBridge(
                     policy_session=session,
+                    max_completion_turns=session.max_completion_turns,
                     observation_providers=(FileArtifactObservationProvider(Path(tmp)),),
                 )
                 ledger = SessionLedger("profile-bridge")
@@ -722,15 +723,15 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         headers = [event for event in result.ledger.events if event.type == "request/header"]
         progress = [event for event in result.ledger.events if event.type == "progress/checked"]
         self.assertFalse(result.completed)
-        self.assertEqual(result.turns, 2)
-        self.assertEqual(len(client.calls), 2)
-        self.assertEqual(len(state.recoveries), 2)
-        self.assertEqual(len(state.recovery_executions), 2)
-        self.assertEqual(len(state.recovery_outcomes), 1)
-        self.assertFalse(state.recovery_outcomes[0].effective)
+        self.assertEqual(result.turns, 3)
+        self.assertEqual(len(client.calls), 3)
+        self.assertEqual(len(state.recoveries), 3)
+        self.assertEqual(len(state.recovery_executions), 3)
+        self.assertEqual(len(state.recovery_outcomes), 2)
+        self.assertTrue(all(not outcome.effective for outcome in state.recovery_outcomes))
         self.assertEqual(
             [event.payload["status"] for event in progress],
-            ["progressed", "no_progress"],
+            ["progressed", "no_progress", "no_progress"],
         )
         self.assertEqual(
             state.recoveries[0].decision.actions,
@@ -741,8 +742,12 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(
             state.recoveries[1].decision.actions,
-            (TaskRecoveryAction.STOP,),
+            (
+                TaskRecoveryAction.VALIDATE_CONTRACT,
+                TaskRecoveryAction.WRITE_PARTIAL,
+            ),
         )
+        self.assertEqual(state.recoveries[2].decision.actions, (TaskRecoveryAction.STOP,))
         self.assertIn("recent_recoveries", str(headers[1].payload["context"]["task"]))
         self.assertIn(
             "recovery.missing_requirements",

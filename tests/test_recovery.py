@@ -48,7 +48,11 @@ class TaskRecoveryTests(unittest.TestCase):
         )
 
     def test_exhausted_recovery_budget_stops(self) -> None:
-        attempts = {action: 1 for action in TaskRecoveryAction if action is not TaskRecoveryAction.STOP}
+        attempts = {
+            action: 2
+            for action in TaskRecoveryAction
+            if action is not TaskRecoveryAction.STOP
+        }
         decision = RuleBasedTaskRecoveryPolicy().decide(
             TaskFailureContext(
                 TaskFailureCategory.BROWSER_GROUNDING,

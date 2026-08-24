@@ -31,7 +31,7 @@ from adaptive_harness.services import (
     TASK_RECOVERY_POLICY,
 )
 from adaptive_harness.task_contract import ContractBuilder, TaskContract
-from adaptive_harness.task_state import EvidenceCompletionGate
+from adaptive_harness.task_state import StagedEvidenceCompletionGate
 
 
 class CustomContractBuilder:
@@ -50,7 +50,7 @@ class PolicyProfileTests(unittest.IsolatedAsyncioTestCase):
                     "context",
                     "response_completion",
                     "task_contract_builder",
-                    "evidence_completion",
+                    "staged_evidence_completion",
                     "semantic_progress",
                     "durable_recovery",
                     "resource_guardrail",
@@ -61,7 +61,10 @@ class PolicyProfileTests(unittest.IsolatedAsyncioTestCase):
                 kernel.services.get(COMPLETION_POLICY),
                 AcceptFinalCompletion,
             )
-            self.assertIsInstance(kernel.services.get(TASK_COMPLETION_GATE), EvidenceCompletionGate)
+            self.assertIsInstance(
+                kernel.services.get(TASK_COMPLETION_GATE),
+                StagedEvidenceCompletionGate,
+            )
             self.assertIsInstance(kernel.services.get(PROGRESS_DETECTOR), RuleBasedProgressDetector)
             self.assertIsInstance(kernel.services.get(TASK_RECOVERY_POLICY), RuleBasedTaskRecoveryPolicy)
             self.assertIsInstance(kernel.services.get(TASK_RECOVERY_EXECUTOR), RuleBasedTaskRecoveryExecutor)
@@ -145,6 +148,7 @@ class PolicyProfileTests(unittest.IsolatedAsyncioTestCase):
             self.assertIs(first.context_manager, kernel.services.get(CONTEXT_MANAGER))
             self.assertIs(first.completion_gate, kernel.services.get(TASK_COMPLETION_GATE))
             self.assertEqual(first.unsupported_criteria, "observe_only")
+            self.assertEqual(first.max_completion_turns, 3)
         finally:
             await kernel.close()
 
