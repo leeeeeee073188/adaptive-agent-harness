@@ -243,6 +243,26 @@ fewer observed Tokens than Vanilla, but still failed the task and increased
 tool calls from 18 to 42. It is therefore Shadow evidence, not a promoted
 success, and no Transfer or Held-out execution is authorized.
 
+## Evidence Workspace v3
+
+The next candidate fixes the architecture exposed by that failed run rather
+than encoding task answers. Tool observations are compiled into typed,
+content-addressed resource blocks with access counts, safe excerpts, and an
+explicit archive dashboard. Durable failures, completion results, recovery,
+and a soft evidence-derived phase are bound into the actual DeerFlow model
+request. Public task prompts can add JSON shape/identity checks and successful
+source-access obligations without reading evaluator-private data. Tool ledgers
+and delivery state now live for the task run, while admission budgets remain
+turn-scoped. A shared redaction module protects raw history, Action Ledger
+previews, workspace blocks, and safe fallback context.
+
+This remains a Shadow candidate. Historical replay proves that the old v2.6
+artifact would be rejected by public consistency checks and that critical
+observations survive a 4096-token context selection. Container conformance and
+the paid-canary gate use matching source/Profile fingerprints and zero model
+calls. They authorize one Development canary, not Transfer, Held-out, further
+tasks, or a benchmark-wide uplift claim.
+
 Later Context Shadows are separate Profile versions and are not merged with
 that pair. A reused historical Vanilla result is exploratory only. Context v1.1
 remains rejected historical evidence because the run used the superseded cost

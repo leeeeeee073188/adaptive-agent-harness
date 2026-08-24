@@ -22,7 +22,12 @@ from adaptive_harness.context import (
     TaskAwareContextManager,
 )
 from adaptive_harness.context_audit import emit_context_audit
-from adaptive_harness.policy_session import KernelPolicySession, current_policy_session
+from adaptive_harness.policy_session import (
+    KernelPolicySession,
+    current_policy_session,
+    current_policy_task_state,
+)
+from adaptive_harness.redaction import deep_redact, scrub_text
 
 _AUTHORITY_MARKER = "HARNESS_CONTEXT_AUTHORITY"
 _DATA_NAME = "harness-working-set-data"
@@ -47,7 +52,11 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
         original = list(request.messages)
         mapped = [_message_to_mapping(message, index) for index, message in enumerate(original)]
         bound_session = current_policy_session()
-        session = bound_session or self._session
+        session = (
+            bound_session
+            if bound_session is not None and bound_session.context_manager is not None
+            else self._session
+        )
         prepared = session.prepare_context(
             mapped,
             environment_state={},
@@ -56,22 +65,13 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
         authority = ""
         selected: list[BaseMessage] = []
         for message in prepared.messages:
-            source_index = message.get("_source_index")
-            if isinstance(source_index, int):
-                selected.append(original[source_index])
-                continue
             content = str(message.get("content") or "")
             if message.get("role") == "system" and content.startswith(_AUTHORITY_MARKER):
                 authority = content
                 continue
-            if message.get("name") == _DATA_NAME:
-                selected.append(
-                    HumanMessage(
-                        content=content,
-                        name=_DATA_NAME,
-                        additional_kwargs={"hide_from_ui": True, "adaptive_context_data": True},
-                    )
-                )
+            converted = _mapping_to_message(message)
+            if converted is not None:
+                selected.append(converted)
         system_message = _merge_system_message(request.system_message, authority)
         emit_context_audit(
             {
@@ -88,7 +88,10 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
         if self._snapshot_path.is_file():
             document = json.loads(self._snapshot_path.read_text(encoding="utf-8"))
             if isinstance(document, Mapping):
-                snapshot.update(document)
+                snapshot.update(_mutable_context_copy(document))
+        bound_task_state = current_policy_task_state()
+        if bound_task_state is not None:
+            snapshot.update(_mutable_context_copy(bound_task_state))
         state = request.state or {}
         live_values = {
             key: state.get(key)
@@ -96,9 +99,13 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
             if state.get(key)
         }
         task = snapshot.get("task")
-        task_snapshot = dict(task) if isinstance(task, Mapping) else {}
+        task_snapshot = _mutable_context_copy(task) if isinstance(task, Mapping) else {}
         if live_values:
-            task_snapshot["values"] = live_values
+            values = task_snapshot.get("values")
+            task_snapshot["values"] = {
+                **(values if isinstance(values, Mapping) else {}),
+                **live_values,
+            }
         return {"task": task_snapshot} if task_snapshot else {}
 
     @override
@@ -110,11 +117,13 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
         try:
             request = self._prepare(request)
         except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+            request = _safe_minimal_request(request)
             emit_context_audit(
                 {
                     "policy": CONTEXT_POLICY_VERSION,
                     "adapter": "deerflow-model-middleware-v1",
-                    "failed_open": True,
+                    "safe_fallback": True,
+                    "dropped_tool_history": True,
                     "error_type": type(error).__name__,
                 }
             )
@@ -129,15 +138,105 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
         try:
             request = self._prepare(request)
         except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+            request = _safe_minimal_request(request)
             emit_context_audit(
                 {
                     "policy": CONTEXT_POLICY_VERSION,
                     "adapter": "deerflow-model-middleware-v1",
-                    "failed_open": True,
+                    "safe_fallback": True,
+                    "dropped_tool_history": True,
                     "error_type": type(error).__name__,
                 }
             )
         return await handler(request)
+
+
+def _mapping_to_message(message: Mapping[str, Any]) -> BaseMessage | None:
+    role = str(message.get("role") or "")
+    content = message.get("content", "")
+    name = message.get("name")
+    if role == "system":
+        return SystemMessage(content=content, name=name)
+    if role == "user":
+        kwargs = {"name": name} if name else {}
+        if name == _DATA_NAME:
+            kwargs["additional_kwargs"] = {"hide_from_ui": True, "adaptive_context_data": True}
+        return HumanMessage(content=content, **kwargs)
+    if role == "assistant":
+        return AIMessage(content=content, tool_calls=_langchain_tool_calls(message.get("tool_calls") or ()))
+    if role == "tool":
+        return ToolMessage(content=content, tool_call_id=str(message.get("tool_call_id") or ""))
+    return None
+
+
+def _langchain_tool_calls(raw_calls: Any) -> list[dict[str, Any]]:
+    calls: list[dict[str, Any]] = []
+    if not isinstance(raw_calls, list | tuple):
+        return calls
+    for raw in raw_calls:
+        if not isinstance(raw, Mapping):
+            continue
+        call_id = str(raw.get("id") or "")
+        name = str(raw.get("name") or "")
+        args = raw.get("args")
+        if isinstance(raw.get("function"), Mapping):
+            function = raw["function"]
+            name = str(function.get("name") or name)
+            args = function.get("arguments", args)
+        if args is None:
+            args = raw.get("arguments") or {}
+        if isinstance(args, str):
+            try:
+                parsed_args = json.loads(args)
+            except json.JSONDecodeError:
+                parsed_args = {"raw_arguments": args}
+            args = parsed_args if isinstance(parsed_args, Mapping) else {"raw_arguments": args}
+        calls.append(
+            {
+                "id": call_id,
+                "name": name or "unknown",
+                "args": dict(args) if isinstance(args, Mapping) else {},
+            }
+        )
+    return calls
+
+
+def _safe_minimal_request(request: ModelRequest) -> ModelRequest:
+    candidates = [
+        message
+        for message in request.messages
+        if isinstance(message, (HumanMessage, SystemMessage))
+    ]
+    selected: list[BaseMessage] = []
+    for message in _first_and_latest(candidates):
+        content = message.content if isinstance(message.content, str) else json.dumps(deep_redact(message.content))
+        safe_content = scrub_text(content, drop_sensitive_lines=False)
+        if isinstance(message, SystemMessage):
+            selected.append(SystemMessage(content=safe_content, name=message.name))
+        else:
+            selected.append(HumanMessage(content=safe_content, name=message.name))
+    system_message = request.system_message
+    if system_message is not None:
+        if isinstance(system_message.content, str):
+            content = system_message.content
+        else:
+            content = json.dumps(deep_redact(system_message.content))
+        system_message = SystemMessage(
+            content=scrub_text(content, drop_sensitive_lines=False),
+            name=system_message.name,
+        )
+    return request.override(messages=selected, system_message=system_message)
+
+
+def _first_and_latest(messages: list[BaseMessage]) -> list[BaseMessage]:
+    selected: list[BaseMessage] = []
+    first_system = next((message for message in messages if isinstance(message, SystemMessage)), None)
+    first_human = next((message for message in messages if isinstance(message, HumanMessage)), None)
+    latest_human_or_system = messages[-1] if messages else None
+    for message in (first_system, first_human, latest_human_or_system):
+        if message is not None and message not in selected:
+            selected.append(message)
+    return selected
 
 
 def _message_to_mapping(message: BaseMessage, index: int) -> Mapping[str, Any]:
@@ -185,3 +284,11 @@ def _merge_system_message(message: SystemMessage | None, authority: str) -> Syst
         name=message.name,
         id=message.id,
     )
+
+
+def _mutable_context_copy(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _mutable_context_copy(item) for key, item in value.items()}
+    if isinstance(value, tuple | list):
+        return [_mutable_context_copy(item) for item in value]
+    return value

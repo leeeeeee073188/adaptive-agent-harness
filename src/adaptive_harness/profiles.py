@@ -21,6 +21,7 @@ from adaptive_harness.context import (
     TaskAwareContextManager,
 )
 from adaptive_harness.kernel import Kernel, PluginContext
+from adaptive_harness.phase import RuleBasedPhaseController
 from adaptive_harness.policy_session import PolicySession
 from adaptive_harness.progress import RuleBasedProgressDetector
 from adaptive_harness.recovery import (
@@ -32,6 +33,7 @@ from adaptive_harness.resource_guardrail import ResourceGuardrail
 from adaptive_harness.services import (
     COMPLETION_POLICY,
     CONTEXT_MANAGER,
+    PHASE_CONTROLLER,
     PROGRESS_DETECTOR,
     RECOVERY_OUTCOME_EVALUATOR,
     RESOURCE_GUARDRAIL,
@@ -48,6 +50,7 @@ _POLICY_PLUGIN_ORDER = (
     "response_completion",
     "task_contract_builder",
     "evidence_completion",
+    "soft_phase",
     "semantic_progress",
     "durable_recovery",
     "resource_guardrail",
@@ -57,6 +60,7 @@ _ALLOWED_EMPTY_CONFIGS = {
     "response_completion",
     "task_contract_builder",
     "evidence_completion",
+    "soft_phase",
     "semantic_progress",
     "durable_recovery",
     "resource_guardrail",
@@ -118,6 +122,15 @@ class _EvidenceCompletionPlugin:
     async def mount(self, context: PluginContext) -> None:
         _validate_empty_config(self.name, context.config)
         context.provide(TASK_COMPLETION_GATE, EvidenceCompletionGate())
+
+
+class _SoftPhasePlugin:
+    name = "soft_phase"
+    requires = ()
+
+    async def mount(self, context: PluginContext) -> None:
+        _validate_empty_config(self.name, context.config)
+        context.provide(PHASE_CONTROLLER, RuleBasedPhaseController())
 
 
 class _SemanticProgressPlugin:
@@ -208,6 +221,7 @@ def policy_session_from_kernel(kernel: Kernel) -> PolicySession:
         recovery_executor=kernel.services.get(TASK_RECOVERY_EXECUTOR),
         recovery_outcome_evaluator=kernel.services.get(RECOVERY_OUTCOME_EVALUATOR),
         resource_guardrail=kernel.services.get(RESOURCE_GUARDRAIL),
+        phase_controller=kernel.services.get(PHASE_CONTROLLER),
         unsupported_criteria="observe_only",
     )
 
@@ -226,6 +240,7 @@ def _policy_plugin_registry(
                 lambda spec: _TaskContractBuilderPlugin(contract_builder),
             ),
             ("evidence_completion", lambda spec: _EvidenceCompletionPlugin()),
+            ("soft_phase", lambda spec: _SoftPhasePlugin()),
             ("semantic_progress", lambda spec: _SemanticProgressPlugin()),
             ("durable_recovery", lambda spec: _DurableRecoveryPlugin()),
             ("resource_guardrail", lambda spec: _ResourceGuardrailPlugin()),

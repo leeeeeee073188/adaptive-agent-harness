@@ -9,6 +9,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Any, Protocol
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 
 class CriterionKind(StrEnum):
@@ -130,6 +131,15 @@ class RuleBasedTaskContractBuilder:
         re.IGNORECASE,
     )
     _CODE_FILE = re.compile(r"`(?P<path>[A-Za-z0-9_.\-/]+\.[A-Za-z0-9]{1,10})`")
+    _JSON_FENCE = re.compile(r"```json\s*(?P<body>.*?)```", re.IGNORECASE | re.DOTALL)
+    _HTTP_URL = re.compile(r"https?://[^\s`<>()\[\]{}\"']+", re.IGNORECASE)
+    _ABSOLUTE_ENDPOINT = re.compile(
+        r"`(?P<endpoint>/[A-Za-z0-9_.~!$&()*+,;=:@%/-]+"
+        r"(?:\?[A-Za-z0-9_.~!$&()*+,;=:@%/?-]+)?)`"
+    )
+    _SOURCE_ACTION = re.compile(
+        r"(?i)\b(?:open|access|use|visit|read|verify)\b|(?:真值|访问|打开|使用|核验)"
+    )
     _NUMBER_WORDS = {
         "one": 1,
         "two": 2,
@@ -240,6 +250,9 @@ class RuleBasedTaskContractBuilder:
                 )
             )
 
+        criteria.extend(self._json_artifact_shape_criteria(task_prompt, criteria, used_ids))
+        criteria.extend(self._public_source_access_criteria(task_prompt, used_ids))
+
         for extractor in self.extractors:
             for draft in extractor.extract(task_prompt):
                 criteria.append(
@@ -260,6 +273,54 @@ class RuleBasedTaskContractBuilder:
         self._validate_graph(criteria)
         schema_hash = _canonical_hash(schema) if public_schema is not None else None
         return TaskContract(task_id, task_prompt, tuple(criteria), schema_hash)
+
+    def _json_artifact_shape_criteria(
+        self,
+        task_prompt: str,
+        criteria: Sequence[Criterion],
+        used_ids: set[str],
+    ) -> list[Criterion]:
+        json_artifacts = [
+            item
+            for item in criteria
+            if item.kind is CriterionKind.ARTIFACT_EXISTS
+            and str(item.parameters.get("path") or "").lower().endswith(".json")
+        ]
+        if len(json_artifacts) != 1:
+            return []
+        examples: list[Any] = []
+        for match in self._JSON_FENCE.finditer(task_prompt):
+            try:
+                example = json.loads(match.group("body"))
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(example, (Mapping, list)):
+                continue
+            self._reject_evaluation_data(example)
+            examples.append(example)
+        if len(examples) != 1 or not isinstance(examples[0], Mapping):
+            return []
+
+        artifact = json_artifacts[0]
+        path = str(artifact.parameters["path"])
+        shape = _json_shape_from_example(examples[0])
+        return [
+            Criterion(
+                id=_unique_id("observation", f"artifact-json-shape-{path}", used_ids),
+                description=f"JSON artifact matches public example shape: {path}",
+                kind=CriterionKind.OBSERVATION_EQUALS,
+                source=CriterionSource.TASK_PROMPT,
+                parameters={
+                    "subject": f"artifact.json_shape:{path}",
+                    "expected": True,
+                    "path": path,
+                    "required_top_level_keys": list(examples[0].keys()),
+                    "shape": shape,
+                    "list_identity_keys": _json_list_identity_keys(shape),
+                },
+                depends_on=(artifact.id,),
+            )
+        ]
 
     def _output_directory_files(self, task_prompt: str) -> tuple[str, ...]:
         """Extract code-quoted files only near an explicit outputs/ declaration."""
@@ -298,6 +359,67 @@ class RuleBasedTaskContractBuilder:
                 if declared_count is not None and len(files) >= declared_count:
                     break
         return tuple(files)
+
+    def _public_source_access_criteria(
+        self,
+        task_prompt: str,
+        used_ids: set[str],
+    ) -> list[Criterion]:
+        resources: list[str] = []
+        for context in self._source_contexts(task_prompt):
+            if not self._SOURCE_ACTION.search(context):
+                continue
+            urls = [
+                url
+                for match in self._HTTP_URL.finditer(context)
+                if (url := _canonical_public_url(match.group(0).rstrip(".,;:)]}"), allow_sensitive_query=False))
+            ]
+            if not urls:
+                continue
+            endpoints = [
+                endpoint
+                for match in self._ABSOLUTE_ENDPOINT.finditer(context)
+                if (endpoint := _safe_absolute_endpoint(match.group("endpoint")))
+            ]
+            if endpoints:
+                for url in urls:
+                    parsed = urlparse(url)
+                    origin = urlunparse((parsed.scheme, parsed.netloc, "", "", "", ""))
+                    for endpoint in endpoints:
+                        combined = _canonical_public_url(f"{origin}{endpoint}", allow_sensitive_query=False)
+                        if combined is not None and combined not in resources:
+                            resources.append(combined)
+                continue
+            for url in urls:
+                if url not in resources:
+                    resources.append(url)
+        return [
+            Criterion(
+                id=_unique_id("observation", f"source-access-{resource}", used_ids),
+                description=f"Public source was accessed: {resource}",
+                kind=CriterionKind.OBSERVATION_EQUALS,
+                source=CriterionSource.TASK_PROMPT,
+                parameters={
+                    "subject": _source_access_subject(resource),
+                    "expected": True,
+                    "resource": resource,
+                },
+            )
+            for resource in resources
+        ]
+
+    def _source_contexts(self, task_prompt: str) -> tuple[str, ...]:
+        contexts: list[str] = []
+        start = 0
+        for match in re.finditer(r"[\n。！？]", task_prompt):
+            segment = task_prompt[start:match.start()].strip()
+            if segment:
+                contexts.append(segment)
+            start = match.end()
+        tail = task_prompt[start:].strip()
+        if tail:
+            contexts.append(tail)
+        return tuple(contexts)
 
     def _schema_criteria(
         self,
@@ -449,6 +571,64 @@ class RuleBasedTaskContractBuilder:
                 self._reject_evaluation_data(item)
 
 
+_SENSITIVE_QUERY_KEYS = {
+    "api_key",
+    "apikey",
+    "access_token",
+    "auth",
+    "authorization",
+    "client_secret",
+    "code",
+    "credential",
+    "password",
+    "secret",
+    "signature",
+    "token",
+}
+
+
+def _source_access_subject(resource: str) -> str:
+    digest = hashlib.sha256(resource.encode()).hexdigest()[:12]
+    return f"source.access:{digest}"
+
+
+def _canonical_public_url(raw: str, *, allow_sensitive_query: bool) -> str | None:
+    cleaned = raw.strip().strip("'\"` ,;:()[]{}")
+    parsed = urlparse(cleaned)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        return None
+    if parsed.username or parsed.password:
+        return None
+    query_items = parse_qsl(parsed.query, keep_blank_values=True)
+    sensitive = {
+        key
+        for key, _value in query_items
+        if key.lower().replace("-", "_") in _SENSITIVE_QUERY_KEYS
+    }
+    if sensitive and not allow_sensitive_query:
+        return None
+    query = urlencode(
+        [(key, value) for key, value in query_items if key not in sensitive],
+        doseq=True,
+    )
+    path = parsed.path or ""
+    return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), path, "", query, ""))
+
+
+def _safe_absolute_endpoint(raw: str) -> str | None:
+    if not raw.startswith("/") or raw.startswith("//"):
+        return None
+    parsed = urlparse(raw)
+    if parsed.scheme or parsed.netloc:
+        return None
+    if any(
+        key.lower().replace("-", "_") in _SENSITIVE_QUERY_KEYS
+        for key, _value in parse_qsl(parsed.query, keep_blank_values=True)
+    ):
+        return None
+    return urlunparse(("", "", parsed.path, "", parsed.query, ""))
+
+
 def _normalize_path(path: str) -> str:
     normalized = path.strip().replace("\\", "/")
     return normalized.removeprefix("/task/")
@@ -483,3 +663,120 @@ def _dependencies(raw: Any, label: str) -> tuple[str, ...]:
 def _canonical_hash(value: Mapping[str, Any]) -> str:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _json_shape_from_example(value: Any) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        properties = {str(key): _json_shape_from_example(item) for key, item in value.items()}
+        return {
+            "type": "object",
+            "required": list(properties),
+            "properties": properties,
+        }
+    if isinstance(value, list):
+        item_shape = _merge_json_shapes([_json_shape_from_example(item) for item in value])
+        payload: dict[str, Any] = {"type": "array"}
+        if item_shape is not None:
+            payload["items"] = item_shape
+        return payload
+    if isinstance(value, bool):
+        return {"type": "boolean"}
+    if isinstance(value, int) and not isinstance(value, bool):
+        return {"type": "integer"}
+    if isinstance(value, float):
+        return {"type": "number"}
+    if isinstance(value, str):
+        return {"type": "string"}
+    if value is None:
+        return {"type": "null"}
+    return {"type": "unknown"}
+
+
+def _merge_json_shapes(shapes: Sequence[Mapping[str, Any]]) -> dict[str, Any] | None:
+    if not shapes:
+        return None
+    first = dict(shapes[0])
+    if len(shapes) == 1:
+        return first
+    if not all(shape.get("type") == first.get("type") for shape in shapes):
+        return {"type": "any"}
+    if first.get("type") == "object":
+        property_keys = sorted(
+            {key for shape in shapes for key in (shape.get("properties") or {})}
+        )
+        properties: dict[str, Any] = {}
+        for key in property_keys:
+            nested = [
+                shape["properties"][key]
+                for shape in shapes
+                if isinstance(shape.get("properties"), Mapping) and key in shape["properties"]
+            ]
+            merged = _merge_json_shapes(nested)
+            if merged is not None:
+                properties[key] = merged
+        return {
+            "type": "object",
+            "required": sorted(
+                set.intersection(
+                    *[
+                        set(shape.get("required") or ())
+                        for shape in shapes
+                        if isinstance(shape.get("required"), Sequence)
+                    ]
+                )
+                if shapes
+                else set()
+            ),
+            "properties": properties,
+        }
+    if first.get("type") == "array":
+        item_shapes = [shape["items"] for shape in shapes if isinstance(shape.get("items"), Mapping)]
+        payload: dict[str, Any] = {"type": "array"}
+        merged = _merge_json_shapes(item_shapes)
+        if merged is not None:
+            payload["items"] = merged
+        return payload
+    return first
+
+
+def _json_list_identity_keys(shape: Mapping[str, Any]) -> dict[str, list[str]]:
+    identity: dict[str, list[str]] = {}
+
+    def visit(node: Mapping[str, Any], path: str) -> None:
+        if node.get("type") == "array":
+            item_shape = node.get("items")
+            if isinstance(item_shape, Mapping):
+                properties = item_shape.get("properties")
+                if isinstance(properties, Mapping):
+                    key = _preferred_identity_key(properties)
+                    if key is not None:
+                        identity[path] = key
+                visit(item_shape, f"{path}[]")
+            return
+        if node.get("type") == "object":
+            properties = node.get("properties")
+            if isinstance(properties, Mapping):
+                for key, child in properties.items():
+                    if isinstance(child, Mapping):
+                        visit(child, f"{path}.{key}")
+
+    visit(shape, "$")
+    return identity
+
+
+def _preferred_identity_key(properties: Mapping[str, Any]) -> list[str] | None:
+    keys = [str(key) for key in properties]
+    if "id" in keys:
+        return ["id"]
+    scoped_ids = [key for key in keys if key.endswith("_id")]
+    if scoped_ids:
+        return scoped_ids
+    if "slug" in keys:
+        for scoped in ("brand", "name", "key"):
+            if scoped in keys:
+                return ["slug", scoped]
+        return ["slug"]
+    for preferred in ("name", "key"):
+        if preferred in keys:
+            return [preferred]
+    return None

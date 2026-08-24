@@ -16,10 +16,12 @@ from adaptive_harness.evaluation import (
     ExperienceAdmissibilityFilter,
     ExperienceCandidate,
 )
+from adaptive_harness.evidence_workspace import EvidenceSnapshot, EvidenceWorkspace
 from adaptive_harness.experience_store import Experience, ExperienceAdmissibility
+from adaptive_harness.redaction import deep_redact, scrub_text, scrub_tool_result_text
 
 CONTEXT_SELECTED = "context/selected"
-CONTEXT_POLICY_VERSION = "task-aware-v1.5"
+CONTEXT_POLICY_VERSION = "task-aware-v1.6"
 
 
 class ContextLayer(StrEnum):
@@ -120,6 +122,7 @@ class _Selection:
     rejected_experiences: int
     estimated_tokens: int
     immutable_overflow: bool
+    evidence_workspace: EvidenceSnapshot
 
 
 class TaskAwareContextManager:
@@ -169,6 +172,15 @@ class TaskAwareContextManager:
             "history_selected": selection.history_selected,
             "history_dropped": selection.history_dropped,
             "rejected_experiences": selection.rejected_experiences,
+            "visible_evidence_workspace": {
+                "block_selected": any(
+                    item.item_id.startswith("evidence:visible-workspace")
+                    for item in selection.items
+                ),
+                "resource_count": len(selection.evidence_workspace.resources),
+                "archived_resources": selection.evidence_workspace.archived_resources,
+                "repeated_results": selection.evidence_workspace.repeated_results,
+            },
             "surface_sha256": hashlib.sha256(
                 _canonical_json(list(selection.messages)).encode()
             ).hexdigest(),
@@ -181,17 +193,22 @@ class TaskAwareContextManager:
         environment_state: Mapping[str, Any],
         task_state: Mapping[str, Any],
     ) -> _Selection:
-        normalized_messages = tuple(dict(message) for message in messages)
+        normalized_messages = _sanitize_messages(messages)
         fixed_indices = _fixed_message_indices(normalized_messages)
         fixed = [normalized_messages[index] for index in sorted(fixed_indices)]
         fixed_tokens = estimate_message_tokens(fixed)
         remaining = max(0, self.budget.max_input_tokens - fixed_tokens)
         working_budget = int(remaining * (1 - self.budget.recent_history_fraction))
 
+        evidence_workspace = EvidenceWorkspace.from_messages(
+            normalized_messages,
+            task_terms=_task_terms(task_state, normalized_messages),
+        )
         items, rejected_experiences = self._items(
             environment_state,
             task_state,
             normalized_messages,
+            evidence_workspace,
         )
         selected_items = self._select_items(items, working_budget)
         working_messages = _working_set_messages(selected_items)
@@ -257,6 +274,7 @@ class TaskAwareContextManager:
             rejected_experiences,
             estimated,
             estimated > self.budget.max_input_tokens,
+            evidence_workspace.snapshot(),
         )
 
     def _items(
@@ -264,6 +282,7 @@ class TaskAwareContextManager:
         environment_state: Mapping[str, Any],
         task_state: Mapping[str, Any],
         messages: Sequence[Mapping[str, Any]],
+        evidence_workspace: EvidenceWorkspace,
     ) -> tuple[tuple[ContextItem, ...], int]:
         task = task_state.get("task")
         snapshot = task if isinstance(task, Mapping) else {}
@@ -391,6 +410,47 @@ class TaskAwareContextManager:
                 )
 
         items.extend(self._tool_history_items(messages))
+        workspace_block = {
+            "resources": [
+                resource.to_dashboard_row()
+                for resource in evidence_workspace.dashboard_resources(limit=4)
+            ],
+            "stats": evidence_workspace.stats(),
+            "retention": (
+                "Large/duplicate result bodies are archived by resource+hash; use excerpts below "
+                "instead of re-reading unchanged resources."
+            ),
+        }
+        if workspace_block["resources"]:
+            items.append(
+                ContextItem(
+                    "evidence:visible-workspace:dashboard",
+                    ContextLayer.EVIDENCE,
+                    {"visible_evidence_workspace": workspace_block},
+                    1.0,
+                    1.0,
+                    0.8,
+                    0.4 if workspace_block["stats"]["repeated_results"] else 0.0,
+                    1.0,
+                )
+            )
+            max_excerpt_sequence = max(
+                (excerpt.sequence for excerpt in evidence_workspace.snapshot().excerpts),
+                default=1,
+            )
+            for index, excerpt in enumerate(evidence_workspace.evidence_excerpts(limit=10)):
+                items.append(
+                    ContextItem(
+                        f"evidence:visible-workspace:excerpt:{index + 1}:{excerpt.hash}",
+                        ContextLayer.EVIDENCE,
+                        {"visible_evidence_excerpt": excerpt.to_payload()},
+                        1.0,
+                        min(1.0, max(0.0, excerpt.sequence / max_excerpt_sequence)),
+                        0.75,
+                        0.2 if excerpt.archived else 0.0,
+                        1.0,
+                    )
+                )
 
         rejected = 0
         if self.experience_retriever is not None:
@@ -543,6 +603,56 @@ class TaskAwareContextManager:
         return selected
 
 
+def _sanitize_messages(messages: Sequence[Mapping[str, Any]]) -> tuple[Mapping[str, Any], ...]:
+    return tuple(_sanitize_message(message) for message in messages)
+
+
+def _sanitize_message(message: Mapping[str, Any]) -> Mapping[str, Any]:
+    sanitized = dict(message)
+    role = str(sanitized.get("role") or "")
+    if "content" in sanitized:
+        if role == "tool":
+            sanitized["content"] = scrub_tool_result_text(sanitized.get("content", ""))
+        elif isinstance(sanitized.get("content"), str):
+            sanitized["content"] = scrub_text(str(sanitized["content"]), drop_sensitive_lines=False)
+        else:
+            sanitized["content"] = deep_redact(sanitized["content"])
+    if role == "assistant" and "tool_calls" in sanitized:
+        sanitized["tool_calls"] = _sanitize_tool_calls(sanitized.get("tool_calls") or ())
+    return sanitized
+
+
+def _sanitize_tool_calls(raw_calls: Any) -> list[Any]:
+    if not isinstance(raw_calls, Sequence) or isinstance(raw_calls, (str, bytes)):
+        return []
+    calls: list[Any] = []
+    for raw in raw_calls:
+        if not isinstance(raw, Mapping):
+            continue
+        call = dict(raw)
+        if isinstance(call.get("function"), Mapping):
+            function = dict(call["function"])
+            if "arguments" in function:
+                function["arguments"] = _sanitize_tool_arguments(function["arguments"])
+            call["function"] = function
+        for key in ("arguments", "args"):
+            if key in call:
+                call[key] = _sanitize_tool_arguments(call[key])
+        calls.append(call)
+    return calls
+
+
+def _sanitize_tool_arguments(raw: Any) -> Any:
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            return scrub_text(raw, drop_sensitive_lines=False)
+        redacted = deep_redact(parsed)
+        return _canonical_json(redacted)
+    return deep_redact(raw)
+
+
 def estimate_tokens(text: str) -> int:
     """Conservative dependency-free estimate for mixed Latin/CJK text."""
 
@@ -639,6 +749,30 @@ def _positive_evidence(value: Any) -> bool:
     if value is True:
         return True
     return isinstance(value, Mapping) and value.get("exists") is True
+
+
+def _task_terms(
+    task_state: Mapping[str, Any],
+    messages: Sequence[Mapping[str, Any]],
+) -> str:
+    task = task_state.get("task")
+    snapshot = task if isinstance(task, Mapping) else {}
+    parts: list[str] = []
+    first_user = next(
+        (
+            str(message.get("content") or "")
+            for message in messages
+            if message.get("role") == "user"
+            and message.get("name") != "harness-working-set-data"
+        ),
+        "",
+    )
+    parts.append(first_user)
+    for key in ("task_id", "criteria", "values", "latest_completion"):
+        value = snapshot.get(key)
+        if value:
+            parts.append(_canonical_json(value))
+    return "\n".join(parts)
 
 
 def _canonical_json(value: Any) -> str:

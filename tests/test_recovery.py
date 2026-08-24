@@ -60,6 +60,41 @@ class TaskRecoveryTests(unittest.TestCase):
         self.assertFalse(decision.should_continue)
         self.assertEqual(decision.actions, (TaskRecoveryAction.STOP,))
 
+
+    def test_evidence_gap_validates_and_replans_without_delivery_action(self) -> None:
+        decision = RuleBasedTaskRecoveryPolicy().decide(
+            TaskFailureContext(
+                TaskFailureCategory.EVIDENCE_GAP,
+                (TaskFailureCategory.PREMATURE_FINISH,),
+            )
+        )
+
+        self.assertTrue(decision.should_continue)
+        self.assertEqual(
+            decision.actions,
+            (TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.REPLAN),
+        )
+        self.assertNotIn(TaskRecoveryAction.WRITE_PARTIAL, decision.actions)
+
+    def test_evidence_gap_loop_can_stop_repeated_action_without_delivery(self) -> None:
+        decision = RuleBasedTaskRecoveryPolicy().decide(
+            TaskFailureContext(
+                TaskFailureCategory.EVIDENCE_GAP,
+                (TaskFailureCategory.LOOP,),
+                repeated_action_count=3,
+            )
+        )
+
+        self.assertEqual(
+            decision.actions,
+            (
+                TaskRecoveryAction.STOP_REPEATED_ACTION,
+                TaskRecoveryAction.VALIDATE_CONTRACT,
+                TaskRecoveryAction.REPLAN,
+            ),
+        )
+        self.assertNotIn(TaskRecoveryAction.WRITE_PARTIAL, decision.actions)
+
     def test_executor_applies_control_state_and_directives(self) -> None:
         execution = RuleBasedTaskRecoveryExecutor().execute(
             RuleBasedTaskRecoveryPolicy().decide(

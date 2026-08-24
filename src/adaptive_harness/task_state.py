@@ -434,10 +434,18 @@ class RuleBasedContractChecker:
         if criterion.kind is CriterionKind.OBSERVATION_EQUALS:
             subject = _normalize_subject(str(criterion.parameters["subject"]))
             expected = criterion.parameters.get("expected")
+            resource = criterion.parameters.get("resource")
+            requires_source_resource_match = subject.startswith("source.access:") and resource is not None
             matches = [
                 item
                 for item in evidence
-                if item.kind is EvidenceKind.OBSERVATION and _normalize_subject(item.subject) == subject
+                if item.kind is EvidenceKind.OBSERVATION
+                and _normalize_subject(item.subject) == subject
+                and (
+                    not requires_source_resource_match
+                    or item.metadata.get("criterion_id") == criterion.id
+                    or item.metadata.get("resource") == resource
+                )
             ]
             if not matches:
                 return CriterionAssessment(

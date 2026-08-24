@@ -1,6 +1,6 @@
 # 下一阶段：Runtime Conformance 与 Offline Evolution 接线方案
 
-状态：实现与真实单任务 Development 迭代完成；v2.6 选为 Shadow，禁止扩跑
+状态：v2.6 失败因果分析完成；Evidence Workspace v3 零模型门禁通过，仅允许一个 Development canary
 前置版本：`3f589aa`  
 约束：禁止完整 107 任务；确定性门禁通过前禁止付费模型调用。
 
@@ -137,6 +137,8 @@ SessionLedger
 - Candidate 成功率无提升且新增无效动作。
 
 零模型门禁见 `evidence/a20-runtime-evolution/summary.json`。真实模型迭代见 `evidence/a22-live-model-evolution/summary.json`：v2.6 在同一 Development 任务上取得部分公开质量提升并降低观察 Token，但仍未通过且有工具调用回归，因此保持 Shadow；Transfer、Held-out 和更多任务继续禁用。
+
+后续因果回放见 `evidence/a23-runtime-failure-analysis/summary.json`，v3 的历史 Context/Contract gate 与容器接线分别见 `evidence/a24-next-generation-gate/summary.json` 和 `evidence/a25-v3-container-conformance/summary.json`。二者绑定相同 source/Profile fingerprint，且只允许配置中的一个 Development canary；任何失败、无进展循环或质量回退都会继续保持 Shadow。
 
 ## 测试规格摘要
 

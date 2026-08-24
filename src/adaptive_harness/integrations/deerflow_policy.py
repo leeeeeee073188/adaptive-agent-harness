@@ -59,7 +59,10 @@ class FileArtifactObservationProvider:
         self.task_root = task_root.resolve()
 
     def supports(self, criterion: Any) -> bool:
-        return criterion.kind is CriterionKind.ARTIFACT_EXISTS
+        return criterion.kind in {CriterionKind.ARTIFACT_EXISTS, CriterionKind.OBSERVATION_EQUALS} and (
+            criterion.kind is CriterionKind.ARTIFACT_EXISTS
+            or str(criterion.parameters.get("subject") or "").startswith("artifact.json_shape:")
+        )
 
     def observe(
         self,
@@ -70,29 +73,69 @@ class FileArtifactObservationProvider:
     ) -> Sequence[Evidence]:
         evidence = []
         for criterion in contract.criteria:
-            if criterion.kind is not CriterionKind.ARTIFACT_EXISTS:
+            if criterion.kind is CriterionKind.ARTIFACT_EXISTS:
+                relative = str(criterion.parameters["path"]).removeprefix("/task/")
+                path = self._artifact_path(relative)
+                exists = path.is_file()
+                value = {
+                    "exists": exists,
+                    "size": path.stat().st_size if exists else None,
+                    "sha256": _file_sha256(path) if exists else None,
+                }
+                evidence.append(
+                    Evidence(
+                        id=f"deerflow:t{turn}:{criterion.id}",
+                        kind=EvidenceKind.ARTIFACT,
+                        subject=relative,
+                        value=value,
+                        source=EvidenceSource.ARTIFACT_INSPECTION,
+                        metadata={"provider": "filesystem"},
+                    )
+                )
+                continue
+            if not self.supports(criterion):
                 continue
             relative = str(criterion.parameters["path"]).removeprefix("/task/")
-            path = (self.task_root / relative).resolve()
-            if not path.is_relative_to(self.task_root):
-                raise ValueError(f"artifact criterion escapes task root: {relative}")
-            exists = path.is_file()
-            value = {
-                "exists": exists,
-                "size": path.stat().st_size if exists else None,
-                "sha256": _file_sha256(path) if exists else None,
-            }
+            path = self._artifact_path(relative)
+            diagnostics = self._json_shape_diagnostics(path, criterion.parameters)
             evidence.append(
                 Evidence(
                     id=f"deerflow:t{turn}:{criterion.id}",
-                    kind=EvidenceKind.ARTIFACT,
-                    subject=relative,
-                    value=value,
+                    kind=EvidenceKind.OBSERVATION,
+                    subject=str(criterion.parameters["subject"]),
+                    value=not diagnostics,
                     source=EvidenceSource.ARTIFACT_INSPECTION,
-                    metadata={"provider": "filesystem"},
+                    metadata={
+                        "provider": "filesystem-json-shape",
+                        "path": relative,
+                        "diagnostics": diagnostics,
+                    },
                 )
             )
         return tuple(evidence)
+
+    def _artifact_path(self, relative: str) -> Path:
+        path = (self.task_root / relative).resolve()
+        if not path.is_relative_to(self.task_root):
+            raise ValueError(f"artifact criterion escapes task root: {relative}")
+        return path
+
+    def _json_shape_diagnostics(self, path: Path, parameters: Mapping[str, Any]) -> list[str]:
+        if not path.is_file():
+            return ["artifact missing"]
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            return [f"invalid json: {error}"]
+        shape = parameters.get("shape")
+        if not isinstance(shape, Mapping):
+            return ["invalid shape criterion parameters"]
+        diagnostics: list[str] = []
+        _validate_json_shape(payload, shape, "$", diagnostics)
+        identity_keys = parameters.get("list_identity_keys") or {}
+        if isinstance(identity_keys, Mapping):
+            _validate_json_identity_keys(payload, identity_keys, diagnostics)
+        return diagnostics
 
 
 class OutputFileCountObservationProvider:
@@ -397,6 +440,12 @@ class DeerFlowPolicyBridge:
         )
 
     def _criterion_supported(self, criterion: Any) -> bool:
+        if (
+            criterion.kind is CriterionKind.OBSERVATION_EQUALS
+            and str(criterion.parameters.get("subject") or "").startswith("source.access")
+            and str(criterion.parameters.get("resource") or "").startswith(("http://", "https://"))
+        ):
+            return True
         return any(
             bool(getattr(provider, "supports", lambda _criterion: False)(criterion))
             for provider in self.observation_providers
@@ -414,3 +463,123 @@ def _file_sha256(path: Path) -> str:
 def _fetch_json(url: str) -> Any:
     with urlopen(url, timeout=5) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def _validate_json_shape(
+    value: Any,
+    shape: Mapping[str, Any],
+    location: str,
+    diagnostics: list[str],
+) -> None:
+    expected_type = str(shape.get("type") or "any")
+    if expected_type != "any" and not _json_type_matches(value, expected_type):
+        diagnostics.append(
+            f"wrong type {location}: expected {expected_type}, observed {_json_type_name(value)}"
+        )
+        return
+    if expected_type == "object":
+        if not isinstance(value, Mapping):
+            return
+        for key in shape.get("required") or ():
+            if key not in value:
+                diagnostics.append(f"missing required key {location}.{key}")
+        properties = shape.get("properties")
+        if isinstance(properties, Mapping):
+            for key, child in properties.items():
+                if key in value and isinstance(child, Mapping):
+                    _validate_json_shape(value[key], child, f"{location}.{key}", diagnostics)
+    if expected_type == "array":
+        if not isinstance(value, list):
+            return
+        item_shape = shape.get("items")
+        if isinstance(item_shape, Mapping):
+            for index, item in enumerate(value):
+                _validate_json_shape(item, item_shape, f"{location}[{index}]", diagnostics)
+
+
+def _json_type_matches(value: Any, expected_type: str) -> bool:
+    if expected_type == "object":
+        return isinstance(value, Mapping)
+    if expected_type == "array":
+        return isinstance(value, list)
+    if expected_type == "string":
+        return isinstance(value, str)
+    if expected_type == "boolean":
+        return isinstance(value, bool)
+    if expected_type == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if expected_type == "number":
+        return (isinstance(value, int | float) and not isinstance(value, bool))
+    if expected_type == "null":
+        return value is None
+    return True
+
+
+def _json_type_name(value: Any) -> str:
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, Mapping):
+        return "object"
+    if isinstance(value, list):
+        return "array"
+    if isinstance(value, str):
+        return "string"
+    if isinstance(value, int):
+        return "integer"
+    if isinstance(value, float):
+        return "number"
+    if value is None:
+        return "null"
+    return type(value).__name__
+
+
+def _validate_json_identity_keys(
+    payload: Any,
+    identity_keys: Mapping[str, Any],
+    diagnostics: list[str],
+) -> None:
+    for path, raw_keys in identity_keys.items():
+        keys = [str(item) for item in raw_keys] if isinstance(raw_keys, list) else [str(raw_keys)]
+        if not keys:
+            continue
+        values = _values_at_json_path(payload, str(path))
+        for value in values:
+            if not isinstance(value, list):
+                continue
+            seen: set[tuple[str, ...]] = set()
+            for item in value:
+                if not isinstance(item, Mapping) or any(key not in item for key in keys):
+                    continue
+                identity = tuple(str(item[key]) for key in keys if _is_scalar_identity(item[key]))
+                if len(identity) != len(keys):
+                    continue
+                if identity in seen:
+                    key_label = ",".join(keys)
+                    diagnostics.append(f"duplicate identity {path} ({key_label})={identity!r}")
+                seen.add(identity)
+
+
+def _is_scalar_identity(value: Any) -> bool:
+    return isinstance(value, str | int | float | bool) and value is not None
+
+
+def _values_at_json_path(payload: Any, path: str) -> list[Any]:
+    if path == "$":
+        return [payload]
+    if not path.startswith("$."):
+        return []
+    current = [payload]
+    for part in path[2:].split("."):
+        next_values: list[Any] = []
+        array = part.endswith("[]")
+        key = part[:-2] if array else part
+        for value in current:
+            if not isinstance(value, Mapping) or key not in value:
+                continue
+            child = value[key]
+            if array and isinstance(child, list):
+                next_values.extend(child)
+            elif not array:
+                next_values.append(child)
+        current = next_values
+    return current

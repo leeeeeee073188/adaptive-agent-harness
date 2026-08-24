@@ -189,10 +189,11 @@ class DeerFlowRuntimeAdapter:
                     turn=turn,
                 )
             task_state = TaskStateProjector().project(ledger.events).to_context()
+            task_context = {"task": task_state}
             prepared_context = self.policy_bridge.prepare_context(
                 [{"role": "user", "content": message}],
                 environment_state=dict(self.environment.state()),
-                task_state=task_state,
+                task_state=task_context,
             )
             if isinstance(prepared_context, PreparedContext):
                 ledger.append(CONTEXT_SELECTED, dict(prepared_context.audit), turn=turn)
@@ -221,7 +222,7 @@ class DeerFlowRuntimeAdapter:
             )
             canonical_start = len(ledger.events)
             try:
-                with bind_policy_session(self.policy_bridge.policy_session):
+                with bind_policy_session(self.policy_bridge.policy_session, task_state=task_context):
                     with bind_context_audit_sink(
                         lambda payload: ledger.append(CONTEXT_SELECTED, payload, turn=turn)
                     ):

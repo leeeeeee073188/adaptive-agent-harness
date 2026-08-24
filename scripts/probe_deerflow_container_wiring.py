@@ -12,7 +12,10 @@ import tempfile
 import uuid
 from pathlib import Path
 
-from preflight_minibench16 import DEFAULT_IMAGE, _variant_specs
+try:
+    from scripts.preflight_minibench16 import DEFAULT_IMAGE, _variant_specs
+except ModuleNotFoundError:  # Direct script execution puts scripts/ on sys.path.
+    from preflight_minibench16 import DEFAULT_IMAGE, _variant_specs
 
 from adaptive_harness.integrations.realreplica import RealReplicaMiniBenchAdapter
 from adaptive_harness.model_routes import PRIMARY_MODEL
@@ -162,6 +165,7 @@ def main() -> int:
                 "response_completion",
                 "task_contract_builder",
                 "evidence_completion",
+                "soft_phase",
                 "semantic_progress",
                 "durable_recovery",
                 "resource_guardrail",
@@ -238,6 +242,9 @@ def main() -> int:
             "deerflow_source_sha": source_sha,
             "dataset_fingerprint": dataset.fingerprint,
             "candidate_profile_fingerprint": candidate.profile_fingerprint,
+            "executable_policy_profile_fingerprint": adaptive.get(
+                "policy_profile_fingerprint"
+            ),
             "adaptive_source_sha256": _sha256_tree(source_dir),
             "runner_source_sha256": hashlib.sha256(runner_path.read_bytes()).hexdigest(),
             "probe_script_sha256": hashlib.sha256(generated_script.read_bytes()).hexdigest(),

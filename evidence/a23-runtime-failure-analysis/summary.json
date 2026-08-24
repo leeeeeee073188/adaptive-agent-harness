@@ -1,0 +1,928 @@
+{
+  "analysis_model_calls": 0,
+  "analysis_new_tokens": 0,
+  "claim_boundary": "Signals are derived from public run summaries, adaptive ledgers, and workspace artifacts. No evaluation-private values or explanations are read.",
+  "run_count": 6,
+  "runs": [
+    {
+      "actions_by_intent": {
+        "discover": 7,
+        "read": 124,
+        "search": 5,
+        "verify": 35,
+        "write": 3
+      },
+      "artifact_matches_non_output_files": [],
+      "audited_actions": 174,
+      "capacity_score": 0.0,
+      "context": {
+        "max_failure_layer_tokens": 0,
+        "max_history_dropped": 265,
+        "model_call_audits": 103
+      },
+      "failure_types": {
+        "LOOP": 67,
+        "NO_PROGRESS": 21
+      },
+      "passed": false,
+      "repeated_resources": [
+        {
+          "access_count": 41,
+          "resource": "workspace/analysis/audit.py",
+          "tool_names": [
+            "bash",
+            "grep",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 35,
+          "resource": "workspace/handoff.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 33,
+          "resource": "handoff.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 27,
+          "resource": "workspace",
+          "tool_names": [
+            "bash",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 23,
+          "resource": "workspace/slack_excerpt.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 22,
+          "resource": "slack_excerpt.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 22,
+          "resource": "README.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 19,
+          "resource": "workspace/README.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 17,
+          "resource": "workspace/drafts/draft_audit.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 14,
+          "resource": "draft_audit.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 8,
+          "resource": "workspace/analysis/results.json",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 8,
+          "resource": "outputs/_scratch.txt",
+          "tool_names": [
+            "bash",
+            "grep",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 7,
+          "resource": "results.json",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 6,
+          "resource": "/mnt/user-data/outputs/.tool-results/bash-7ea243469df8.log",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 6,
+          "resource": "outputs/.tool-results/bash-7ea243469df8.log",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "workspace/analysis",
+          "tool_names": [
+            "bash",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace/analysis/",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace/drafts",
+          "tool_names": [
+            "bash",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "_scratch.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/drafts/",
+          "tool_names": [
+            "bash"
+          ]
+        }
+      ],
+      "required_contract_kinds": [
+        "artifact_exists"
+      ],
+      "run_id": "adaptive-harness-runtime-evolution-v2-development",
+      "runtime_error_types": [],
+      "signals": {
+        "artifact_only_contract": true,
+        "cross_tool_repeated_resource_count": 10,
+        "durable_failure_state_missing_from_model_context": true,
+        "mutation_epoch_regression": false,
+        "repeated_resource_accesses": 285
+      },
+      "tool_calls": 176,
+      "total_tokens": 1815707,
+      "variant": "adaptive_harness_runtime_evolution_v2"
+    },
+    {
+      "actions_by_intent": {
+        "discover": 7,
+        "read": 70,
+        "search": 2,
+        "verify": 25,
+        "write": 21
+      },
+      "artifact_matches_non_output_files": [
+        {
+          "matching_source": "workspace/analysis/audit.py",
+          "output": "outputs/_auditpy.txt"
+        },
+        {
+          "matching_source": "workspace/analysis/results.json",
+          "output": "outputs/_results.txt"
+        }
+      ],
+      "audited_actions": 125,
+      "capacity_score": 0.0,
+      "context": {
+        "max_failure_layer_tokens": 0,
+        "max_history_dropped": 204,
+        "model_call_audits": 83
+      },
+      "failure_types": {
+        "LOOP": 13,
+        "NO_PROGRESS": 6
+      },
+      "passed": false,
+      "repeated_resources": [
+        {
+          "access_count": 45,
+          "resource": "workspace",
+          "tool_names": [
+            "bash",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 23,
+          "resource": "README.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 23,
+          "resource": "handoff.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 16,
+          "resource": "workspace/analysis/audit.py",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 14,
+          "resource": "workspace/handoff.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 14,
+          "resource": "slack_excerpt.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 10,
+          "resource": "workspace/README.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 10,
+          "resource": "workspace/slack_excerpt.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 10,
+          "resource": "workspace/drafts/draft_audit.md",
+          "tool_names": [
+            "bash",
+            "grep",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 9,
+          "resource": "outputs",
+          "tool_names": [
+            "bash",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 7,
+          "resource": "draft_audit.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 6,
+          "resource": "outputs/_results.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "_probe.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "workspace/analysis/results.json",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "outputs/_probe.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "_dump.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "outputs/_dump.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "_results.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "outputs/_auditpy.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "run_audit_final.py",
+          "tool_names": [
+            "read_file",
+            "write_file"
+          ]
+        }
+      ],
+      "required_contract_kinds": [
+        "artifact_exists"
+      ],
+      "run_id": "adaptive-harness-runtime-evolution-v2-3-development",
+      "runtime_error_types": [
+        "ValueError"
+      ],
+      "signals": {
+        "artifact_only_contract": true,
+        "cross_tool_repeated_resource_count": 12,
+        "durable_failure_state_missing_from_model_context": true,
+        "mutation_epoch_regression": true,
+        "repeated_resource_accesses": 202
+      },
+      "tool_calls": 127,
+      "total_tokens": 996255,
+      "variant": "adaptive_harness_runtime_evolution_v2_3"
+    },
+    {
+      "actions_by_intent": {
+        "discover": 2,
+        "read": 36,
+        "verify": 1
+      },
+      "artifact_matches_non_output_files": [],
+      "audited_actions": 39,
+      "capacity_score": 0.0,
+      "context": {
+        "max_failure_layer_tokens": 0,
+        "max_history_dropped": 61,
+        "model_call_audits": 26
+      },
+      "failure_types": {
+        "LOOP": 7,
+        "NO_PROGRESS": 6
+      },
+      "passed": false,
+      "repeated_resources": [
+        {
+          "access_count": 17,
+          "resource": "workspace",
+          "tool_names": [
+            "bash",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 13,
+          "resource": "handoff.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 12,
+          "resource": "README.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 11,
+          "resource": "slack_excerpt.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 8,
+          "resource": "draft_audit.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 6,
+          "resource": "workspace/analysis/audit.py",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "workspace/handoff.md",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "workspace/slack_excerpt.txt",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace/drafts/draft_audit.md",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/README.md",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/analysis/results.json",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "results.json",
+          "tool_names": [
+            "bash"
+          ]
+        }
+      ],
+      "required_contract_kinds": [
+        "artifact_exists"
+      ],
+      "run_id": "adaptive-harness-runtime-evolution-v2-4-development",
+      "runtime_error_types": [],
+      "signals": {
+        "artifact_only_contract": true,
+        "cross_tool_repeated_resource_count": 1,
+        "durable_failure_state_missing_from_model_context": true,
+        "mutation_epoch_regression": false,
+        "repeated_resource_accesses": 73
+      },
+      "tool_calls": 45,
+      "total_tokens": 366295,
+      "variant": "adaptive_harness_runtime_evolution_v2_4"
+    },
+    {
+      "actions_by_intent": {
+        "discover": 3,
+        "read": 32,
+        "verify": 1,
+        "write": 1
+      },
+      "artifact_matches_non_output_files": [],
+      "audited_actions": 37,
+      "capacity_score": 0.0,
+      "context": {
+        "max_failure_layer_tokens": 0,
+        "max_history_dropped": 47,
+        "model_call_audits": 15
+      },
+      "failure_types": {
+        "LOOP": 7,
+        "NO_PROGRESS": 9
+      },
+      "passed": false,
+      "repeated_resources": [
+        {
+          "access_count": 8,
+          "resource": "workspace/handoff.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 7,
+          "resource": "workspace/slack_excerpt.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "workspace/README.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "workspace/analysis/audit.py",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "workspace/drafts/draft_audit.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "task.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "README.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/analysis",
+          "tool_names": [
+            "bash",
+            "ls"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "draft_audit.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "handoff.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "slack_excerpt.txt",
+          "tool_names": [
+            "bash"
+          ]
+        }
+      ],
+      "required_contract_kinds": [
+        "artifact_exists"
+      ],
+      "run_id": "adaptive-harness-runtime-evolution-v2-5-development",
+      "runtime_error_types": [],
+      "signals": {
+        "artifact_only_contract": true,
+        "cross_tool_repeated_resource_count": 8,
+        "durable_failure_state_missing_from_model_context": true,
+        "mutation_epoch_regression": false,
+        "repeated_resource_accesses": 35
+      },
+      "tool_calls": 42,
+      "total_tokens": 240202,
+      "variant": "adaptive_harness_runtime_evolution_v2_5"
+    },
+    {
+      "actions_by_intent": {
+        "discover": 1,
+        "read": 27,
+        "verify": 3,
+        "write": 1
+      },
+      "artifact_matches_non_output_files": [
+        {
+          "matching_source": "workspace/analysis/results.json",
+          "output": "outputs/quality_audit.json"
+        }
+      ],
+      "audited_actions": 32,
+      "capacity_score": 0.4,
+      "context": {
+        "max_failure_layer_tokens": 0,
+        "max_history_dropped": 48,
+        "model_call_audits": 15
+      },
+      "failure_types": {
+        "LOOP": 6,
+        "NO_PROGRESS": 4
+      },
+      "passed": false,
+      "repeated_resources": [
+        {
+          "access_count": 9,
+          "resource": "workspace/handoff.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 7,
+          "resource": "workspace/slack_excerpt.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 7,
+          "resource": "workspace/analysis/audit.py",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 5,
+          "resource": "workspace/analysis/results.json",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "workspace/README.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "workspace/drafts/draft_audit.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 4,
+          "resource": "handoff.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "results.json",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "README.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "slack_excerpt.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "outputs",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "outputs/quality_audit.json",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        }
+      ],
+      "required_contract_kinds": [
+        "artifact_exists"
+      ],
+      "run_id": "adaptive-harness-runtime-evolution-v2-6-development",
+      "runtime_error_types": [],
+      "signals": {
+        "artifact_only_contract": true,
+        "cross_tool_repeated_resource_count": 7,
+        "durable_failure_state_missing_from_model_context": true,
+        "mutation_epoch_regression": false,
+        "repeated_resource_accesses": 43
+      },
+      "tool_calls": 42,
+      "total_tokens": 236570,
+      "variant": "adaptive_harness_runtime_evolution_v2_6"
+    },
+    {
+      "actions_by_intent": {
+        "read": 49,
+        "verify": 3,
+        "write": 2
+      },
+      "artifact_matches_non_output_files": [],
+      "audited_actions": 54,
+      "capacity_score": 0.2,
+      "context": {
+        "max_failure_layer_tokens": 0,
+        "max_history_dropped": 88,
+        "model_call_audits": 30
+      },
+      "failure_types": {
+        "LOOP": 6,
+        "NO_PROGRESS": 6
+      },
+      "passed": false,
+      "repeated_resources": [
+        {
+          "access_count": 18,
+          "resource": "workspace",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 14,
+          "resource": "handoff.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 13,
+          "resource": "slack_excerpt.txt",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 11,
+          "resource": "README.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 8,
+          "resource": "workspace/drafts/draft_audit.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 7,
+          "resource": "workspace/analysis/audit.py",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 7,
+          "resource": "workspace/analysis/results.json",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 7,
+          "resource": "draft_audit.md",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 6,
+          "resource": "workspace/slack_excerpt.txt",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 6,
+          "resource": "workspace/handoff.md",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace/README.md",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "results.json",
+          "tool_names": [
+            "bash"
+          ]
+        }
+      ],
+      "required_contract_kinds": [
+        "artifact_exists"
+      ],
+      "run_id": "adaptive-harness-runtime-evolution-v2-7-development",
+      "runtime_error_types": [
+        "ValueError"
+      ],
+      "signals": {
+        "artifact_only_contract": true,
+        "cross_tool_repeated_resource_count": 4,
+        "durable_failure_state_missing_from_model_context": true,
+        "mutation_epoch_regression": true,
+        "repeated_resource_accesses": 91
+      },
+      "tool_calls": 64,
+      "total_tokens": 348639,
+      "variant": "adaptive_harness_runtime_evolution_v2_7"
+    }
+  ],
+  "scope": "zero-model generic Runtime failure analysis",
+  "skipped_runs": [
+    {
+      "reason": "completed task result missing or ambiguous",
+      "run_dir": "../RealReplicaBench/runs/adaptive-harness-runtime-evolution-v2-1-development",
+      "run_id": "adaptive-harness-runtime-evolution-v2-1-development"
+    },
+    {
+      "reason": "completed task result missing or ambiguous",
+      "run_dir": "../RealReplicaBench/runs/adaptive-harness-runtime-evolution-v2-2-development",
+      "run_id": "adaptive-harness-runtime-evolution-v2-2-development"
+    }
+  ],
+  "task_id": "cli-google-trends-data-quality-audit"
+}

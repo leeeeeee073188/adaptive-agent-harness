@@ -37,6 +37,9 @@ REQUIRED = tuple(
         (20, "runtime-evolution"),
         (21, "live-v2-canary"),
         (22, "live-model-evolution"),
+        (23, "runtime-failure-analysis"),
+        (24, "next-generation-gate"),
+        (25, "v3-container-conformance"),
     )
 )
 OPTIONAL = (
@@ -44,6 +47,7 @@ OPTIONAL = (
     "a20-runtime-evolution/review.json",
     "a22-live-model-evolution/pair-v2-6.json",
     "a22-live-model-evolution/review.json",
+    "a25-v3-container-conformance/container-wiring.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -101,6 +105,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     runtime_review = documents.get("a20-runtime-evolution/review.json", {})
     live_evolution = doc("a22-live-model-evolution/summary.json") if not missing else {}
     live_review = documents.get("a22-live-model-evolution/review.json", {})
+    failure_analysis = doc("a23-runtime-failure-analysis/summary.json") if not missing else {}
+    next_generation = doc("a24-next-generation-gate/summary.json") if not missing else {}
+    v3_conformance = doc("a25-v3-container-conformance/summary.json") if not missing else {}
+    v3_wiring = documents.get("a25-v3-container-conformance/container-wiring.json", {})
     selected_live_row = next(
         (
             row
@@ -259,6 +267,55 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "live_selected_token_fraction_vs_baseline": (
             (selected_live_row or {}).get("delta_vs_baseline") or {}
         ).get("token_fraction"),
+        "failure_analysis_model_calls": failure_analysis.get("analysis_model_calls"),
+        "failure_analysis_run_count": failure_analysis.get("run_count"),
+        "failure_analysis_v2_6_signals": next(
+            (
+                row.get("signals")
+                for row in failure_analysis.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_runtime_evolution_v2_6"
+            ),
+            None,
+        ),
+        "failure_analysis_v2_7_signals": next(
+            (
+                row.get("signals")
+                for row in failure_analysis.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_runtime_evolution_v2_7"
+            ),
+            None,
+        ),
+        "next_generation_gate_passed": next_generation.get("passed"),
+        "next_generation_single_canary_allowed": next_generation.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "next_generation_paid_expansion_allowed": next_generation.get(
+            "paid_expansion_allowed"
+        ),
+        "next_generation_visible_workspace_selected": (
+            next_generation.get("context_replay") or {}
+        ).get("visible_workspace_selected"),
+        "next_generation_source_criterion_count": (
+            next_generation.get("contract") or {}
+        ).get("source_access_criterion_count"),
+        "next_generation_historical_artifact_rejected": (
+            next_generation.get("historical_artifact") or {}
+        ).get("rejected"),
+        "v3_candidate_variant": (
+            (v3_conformance.get("profiles") or {}).get("candidate") or {}
+        ).get("name"),
+        "v3_paid_canary_allowed": (
+            v3_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v3_zero_model_passed": v3_conformance.get("zero_model_passed"),
+        "v3_source_hash_matches": bool(next_generation.get("adaptive_source_sha256"))
+        and next_generation.get("adaptive_source_sha256")
+        == v3_wiring.get("adaptive_source_sha256"),
+        "v3_profile_fingerprint_matches": bool(
+            next_generation.get("executable_policy_profile_fingerprint")
+        )
+        and next_generation.get("executable_policy_profile_fingerprint")
+        == v3_wiring.get("executable_policy_profile_fingerprint"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -324,6 +381,38 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             and claims["live_selected_checks_total"] == 5
             and (claims["live_selected_token_fraction_vs_baseline"] or 0) < 0
         ),
+        "failure_analysis_is_zero_model": claims["failure_analysis_model_calls"] == 0,
+        "failure_analysis_covers_live_chain": claims["failure_analysis_run_count"] == 6,
+        "failure_analysis_proves_context_starvation": (
+            (claims["failure_analysis_v2_6_signals"] or {}).get(
+                "durable_failure_state_missing_from_model_context"
+            )
+            is True
+        ),
+        "failure_analysis_proves_cross_turn_regression": (
+            (claims["failure_analysis_v2_7_signals"] or {}).get(
+                "mutation_epoch_regression"
+            )
+            is True
+        ),
+        "next_generation_gate_cleared": claims["next_generation_gate_passed"] is True,
+        "next_generation_is_single_canary_only": claims[
+            "next_generation_single_canary_allowed"
+        ]
+        is True
+        and claims["next_generation_paid_expansion_allowed"] is False,
+        "next_generation_context_and_contract_verified": claims[
+            "next_generation_visible_workspace_selected"
+        ]
+        is True
+        and claims["next_generation_source_criterion_count"] == 2
+        and claims["next_generation_historical_artifact_rejected"] is True,
+        "v3_container_and_candidate_gate_cleared": claims["v3_zero_model_passed"]
+        is True
+        and claims["v3_paid_canary_allowed"] is True
+        and claims["v3_candidate_variant"] == "adaptive_harness_evidence_workspace_v3",
+        "v3_evidence_bound_to_current_source": claims["v3_source_hash_matches"] is True
+        and claims["v3_profile_fingerprint_matches"] is True,
     }
     return {
         "schema_version": 1,
@@ -346,7 +435,11 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does "
             "not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: "
             "v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed "
-            "and remains Shadow. Transfer, Held-out, and further task expansion remain disabled."
+            "and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, "
+            "and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 "
+            "Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and "
+            "container wiring; they authorize one Development canary only. Transfer, Held-out, and "
+            "further task expansion remain disabled."
         ),
     }
 

@@ -56,6 +56,31 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertFalse(index["claims"]["live_selected_passed"])
         self.assertEqual(index["claims"]["live_selected_capacity_score"], 0.4)
         self.assertLess(index["claims"]["live_selected_token_fraction_vs_baseline"], 0)
+        self.assertEqual(index["claims"]["failure_analysis_model_calls"], 0)
+        self.assertEqual(index["claims"]["failure_analysis_run_count"], 6)
+        self.assertTrue(
+            index["claims"]["failure_analysis_v2_6_signals"][
+                "durable_failure_state_missing_from_model_context"
+            ]
+        )
+        self.assertTrue(
+            index["claims"]["failure_analysis_v2_7_signals"][
+                "mutation_epoch_regression"
+            ]
+        )
+        self.assertTrue(index["claims"]["next_generation_gate_passed"])
+        self.assertTrue(index["claims"]["next_generation_single_canary_allowed"])
+        self.assertFalse(index["claims"]["next_generation_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["next_generation_visible_workspace_selected"])
+        self.assertEqual(index["claims"]["next_generation_source_criterion_count"], 2)
+        self.assertTrue(index["claims"]["next_generation_historical_artifact_rejected"])
+        self.assertEqual(
+            index["claims"]["v3_candidate_variant"],
+            "adaptive_harness_evidence_workspace_v3",
+        )
+        self.assertTrue(index["claims"]["v3_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["v3_source_hash_matches"])
+        self.assertTrue(index["claims"]["v3_profile_fingerprint_matches"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

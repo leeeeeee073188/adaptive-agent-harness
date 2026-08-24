@@ -65,17 +65,22 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             raise ValueError("ADAPTIVE_MAX_NONMUTATING_ACTIONS_PER_TURN must be positive")
         self._turn_budget = NonMutatingTurnBudget(self._max_nonmutating_actions)
         self._delivery_satisfied: set[str] = set()
-        self._delivery_lock = Lock()
         self._ledgers: OrderedDict[str, ToolActionLedger] = OrderedDict()
+        self._state_lock = Lock()
 
     def _ledger(self, request: ToolCallRequest) -> ToolActionLedger:
         key = _run_key(request)
+        with self._state_lock:
+            return self._ledger_locked(key)
+
+    def _ledger_locked(self, key: str) -> ToolActionLedger:
         ledger = self._ledgers.get(key)
         if ledger is None:
             ledger = ToolActionLedger(self._config)
             self._ledgers[key] = ledger
             if len(self._ledgers) > _MAX_RUN_LEDGERS:
-                self._ledgers.popitem(last=False)
+                evicted_key, _ = self._ledgers.popitem(last=False)
+                self._delivery_satisfied.discard(evicted_key)
         else:
             self._ledgers.move_to_end(key)
         return ledger
@@ -92,10 +97,12 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             dict(raw.get("args") or {}),
         )
         tool_result = _tool_result(call.id, result)
-        record, decision = self._ledger(request).observe(call, tool_result)
-        if tool_result.error_type is None and _is_delivery_write(call):
-            with self._delivery_lock:
-                self._delivery_satisfied.add(_run_key(request))
+        run_key = _run_key(request)
+        with self._state_lock:
+            ledger = self._ledger_locked(run_key)
+            record, decision = ledger.observe(call, tool_result)
+            if tool_result.error_type is None and _is_delivery_write(call):
+                self._delivery_satisfied.add(run_key)
         advice_applied = bool(
             self._config.mode is VerificationMode.ADVISE
             and decision.disposition is VerificationDisposition.WARN
@@ -145,9 +152,10 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             dict(raw.get("args") or {}),
         )
         semantics = classify_tool_action(call.name, call.arguments)
-        ledger = self._ledger(request)
-        with self._delivery_lock:
-            delivery_satisfied = _run_key(request) in self._delivery_satisfied
+        run_key = _run_key(request)
+        with self._state_lock:
+            self._ledger_locked(run_key)
+            delivery_satisfied = run_key in self._delivery_satisfied
         delivery_required = _delivery_required(request.state) and not delivery_satisfied
         if delivery_required and not semantics.mutating:
             return ToolMessage(
@@ -159,7 +167,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                 status="error",
             )
         if not self._turn_budget.admit(
-            _run_key(request),
+            _turn_key(request),
             mutating=semantics.mutating,
         ):
             return Command(
@@ -185,13 +193,15 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                 if semantics.intent in {ToolIntent.OBSERVE, ToolIntent.VERIFY}
                 else None
             )
+            with self._state_lock:
+                clusters = self._ledger_locked(run_key).clusters()
             exhausted = bool(
                 threshold is not None
                 and any(
                     cluster.scope_key == semantics.scope_key
                     and cluster.attempts >= threshold
                     and cluster.repeated_unchanged
-                    for cluster in ledger.clusters()
+                    for cluster in clusters
                 )
             )
             if not exhausted:
@@ -204,15 +214,31 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
 
 
 def _run_key(request: ToolCallRequest) -> str:
+    """Return the stable task-run key shared by all policy turns in one run."""
+
     runtime = getattr(request, "runtime", None)
     context = getattr(runtime, "context", None)
     if isinstance(context, Mapping):
         for key in ("run_id", "thread_id"):
             if context.get(key):
-                session = current_policy_session()
-                turn = session.turn_index if session is not None else 0
-                return f"{key}:{context[key]}:policy-turn:{turn}"
+                return f"{key}:{context[key]}"
     return f"runtime:{id(runtime)}"
+
+
+def _turn_key(request: ToolCallRequest) -> str:
+    """Return the per-policy-turn key for budgets that intentionally reset each turn."""
+
+    run_key = _run_key(request)
+    session = current_policy_session()
+    if session is not None:
+        return f"{run_key}:policy-turn:{session.turn_index}"
+    runtime = getattr(request, "runtime", None)
+    context = getattr(runtime, "context", None)
+    if isinstance(context, Mapping):
+        for key in ("policy_turn", "turn_index", "turn"):
+            if context.get(key) is not None:
+                return f"{run_key}:policy-turn:{context[key]}"
+    return f"{run_key}:policy-turn:0"
 
 
 def _tool_result(call_id: str, result: ToolMessage | Command) -> ToolResult:

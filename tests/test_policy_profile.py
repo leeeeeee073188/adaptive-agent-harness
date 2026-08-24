@@ -6,6 +6,7 @@ from adaptive_harness.capabilities import AcceptFinalCompletion, ModelResponse
 from adaptive_harness.config import Bundle, PluginSpec, Profile
 from adaptive_harness.context import ContextBudget, TaskAwareContextManager
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.phase import RuleBasedPhaseController
 from adaptive_harness.policy_session import PolicySession
 from adaptive_harness.profiles import (
     assemble_policy_kernel,
@@ -22,6 +23,7 @@ from adaptive_harness.resource_guardrail import ResourceGuardrail
 from adaptive_harness.services import (
     COMPLETION_POLICY,
     CONTEXT_MANAGER,
+    PHASE_CONTROLLER,
     PROGRESS_DETECTOR,
     RECOVERY_OUTCOME_EVALUATOR,
     RESOURCE_GUARDRAIL,
@@ -51,6 +53,7 @@ class PolicyProfileTests(unittest.IsolatedAsyncioTestCase):
                     "response_completion",
                     "task_contract_builder",
                     "evidence_completion",
+                    "soft_phase",
                     "semantic_progress",
                     "durable_recovery",
                     "resource_guardrail",
@@ -62,6 +65,7 @@ class PolicyProfileTests(unittest.IsolatedAsyncioTestCase):
                 AcceptFinalCompletion,
             )
             self.assertIsInstance(kernel.services.get(TASK_COMPLETION_GATE), EvidenceCompletionGate)
+            self.assertIsInstance(kernel.services.get(PHASE_CONTROLLER), RuleBasedPhaseController)
             self.assertIsInstance(kernel.services.get(PROGRESS_DETECTOR), RuleBasedProgressDetector)
             self.assertIsInstance(kernel.services.get(TASK_RECOVERY_POLICY), RuleBasedTaskRecoveryPolicy)
             self.assertIsInstance(kernel.services.get(TASK_RECOVERY_EXECUTOR), RuleBasedTaskRecoveryExecutor)
@@ -144,6 +148,7 @@ class PolicyProfileTests(unittest.IsolatedAsyncioTestCase):
             self.assertIs(first.contract_builder, custom)
             self.assertIs(first.context_manager, kernel.services.get(CONTEXT_MANAGER))
             self.assertIs(first.completion_gate, kernel.services.get(TASK_COMPLETION_GATE))
+            self.assertIs(first.phase_controller, kernel.services.get(PHASE_CONTROLLER))
             self.assertEqual(first.unsupported_criteria, "observe_only")
         finally:
             await kernel.close()
@@ -188,6 +193,34 @@ class PolicyProfileTests(unittest.IsolatedAsyncioTestCase):
     async def test_unknown_plugin_config_fails_closed(self) -> None:
         profile = candidate_policy_profile(
             overlays=(PluginSpec("context", {"unknown": True}),),
+        )
+
+        with self.assertRaisesRegex(ValueError, "unknown config"):
+            await assemble_policy_kernel(profile)
+
+
+    def test_default_candidate_profile_fingerprint_changes_when_soft_phase_is_removed(self) -> None:
+        with_soft_phase = candidate_policy_profile()
+        without_soft_phase = Profile(
+            "candidate_policy_profile",
+            (
+                Bundle(
+                    "policy-core",
+                    tuple(
+                        spec
+                        for spec in with_soft_phase.bundles[0].plugins
+                        if spec.name != "soft_phase"
+                    ),
+                ),
+            ),
+        )
+
+        self.assertIn("soft_phase", [spec.name for spec in with_soft_phase.compose()])
+        self.assertNotEqual(with_soft_phase.fingerprint(), without_soft_phase.fingerprint())
+
+    async def test_soft_phase_config_fails_closed(self) -> None:
+        profile = candidate_policy_profile(
+            overlays=(PluginSpec("soft_phase", {"enabled": True}),),
         )
 
         with self.assertRaisesRegex(ValueError, "unknown config"):

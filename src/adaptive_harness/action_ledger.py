@@ -12,6 +12,13 @@ from typing import Any
 
 from adaptive_harness.capabilities import ToolCall, ToolResult
 from adaptive_harness.recovery_practice import wilson_interval
+from adaptive_harness.redaction import (
+    canonical_http_resource,
+    is_sensitive_key,
+    redact_mapping,
+    render_redacted,
+    scrub_tool_result_text,
+)
 
 
 class ToolIntent(StrEnum):
@@ -265,7 +272,7 @@ class ToolActionLedger:
             self._verification_scopes.clear()
             self._read_scopes.clear()
             self._read_results.clear()
-        rendered = result.content
+        rendered = scrub_tool_result_text(result.content)
         record = ActionRecord(
             sequence=len(self._records) + 1,
             call_id=call.id,
@@ -366,7 +373,7 @@ class ToolActionLedger:
                     pending[call_id] = ToolCall(
                         call_id,
                         str(raw.get("name") or "unknown"),
-                        dict(raw.get("arguments") or raw.get("args") or {}),
+                        redact_mapping(dict(raw.get("arguments") or raw.get("args") or {})),
                     )
             elif message.get("role") == "tool":
                 call_id = str(message.get("tool_call_id") or "")
@@ -374,7 +381,7 @@ class ToolActionLedger:
                 if call is None:
                     continue
                 content = message.get("content", "")
-                rendered = content if isinstance(content, str) else json.dumps(content, default=str)
+                rendered = render_redacted(content)
                 ledger.observe(
                     call,
                     ToolResult(call_id, rendered, error_type=message.get("error_type")),
@@ -420,7 +427,7 @@ def classify_tool_action(tool_name: str, arguments: Mapping[str, Any]) -> Action
         _extract_fields(command),
         hashlib.sha256(encoded).hexdigest()[:20],
         tuple(sorted(str(key) for key in arguments if _normalized_key(key) not in _NON_SEMANTIC_ARGUMENTS)),
-        tuple(sorted(str(key) for key in arguments if _normalized_key(key) in _SENSITIVE_ARGUMENTS)),
+        tuple(sorted(str(key) for key in arguments if is_sensitive_key(key))),
     )
 
 
@@ -458,6 +465,7 @@ _RESOURCE = re.compile(
 )
 _ABSOLUTE_TASK_RESOURCE = re.compile(r"/task/[A-Za-z0-9_.*?{}\-/]+(?:\.[A-Za-z0-9]{1,10})?")
 _FILE = re.compile(r"\b[A-Za-z0-9_-]+\.(?:json|csv|md|txt|yaml|yml|toml|html|png|jpg|pdf)\b", re.I)
+_HTTP_URL = re.compile(r"https?://[^\s`<>()\[\]{}\"']+", re.I)
 _FIELD_PATTERNS = (
     re.compile(r"\[['\"]([A-Za-z_][A-Za-z0-9_-]{1,48})['\"]\]"),
     re.compile(r"\.get\(\s*['\"]([A-Za-z_][A-Za-z0-9_-]{1,48})['\"]"),
@@ -467,14 +475,25 @@ _FIELD_PATTERNS = (
 
 def _extract_resources(arguments: Mapping[str, Any], command: str) -> tuple[str, ...]:
     values: list[str] = []
+    urls: list[str] = []
     for key, value in arguments.items():
         normalized = str(key).lower().replace("-", "_")
-        if normalized in {"path", "file", "directory", "url", "endpoint"} and isinstance(value, str):
+        if normalized in {"path", "file", "directory", "endpoint"} and isinstance(value, str):
             values.append(value)
+        elif normalized == "url" and isinstance(value, str):
+            canonical = _canonical_http_resource(value)
+            if canonical is not None:
+                urls.append(canonical)
+    for match in _HTTP_URL.findall(command):
+        canonical = _canonical_http_resource(match.rstrip(".,;:)]}"))
+        if canonical is not None:
+            urls.append(canonical)
     values.extend(_RESOURCE.findall(command))
     values.extend(_ABSOLUTE_TASK_RESOURCE.findall(command))
     values.extend(_FILE.findall(command))
-    return tuple(sorted({_normalize_resource(value) for value in values if value.strip()}))
+    normalized_resources = {_normalize_resource(value) for value in values if value.strip()}
+    normalized_resources.update(urls)
+    return tuple(sorted(normalized_resources))
 
 
 def _extract_fields(command: str) -> tuple[str, ...]:
@@ -499,34 +518,27 @@ _FIELD_STOPWORDS = {
 }
 
 
+def _canonical_http_resource(raw: str) -> str | None:
+    return canonical_http_resource(raw)
+
+
 def _normalize_resource(value: str) -> str:
     normalized = value.strip("'\"` ,;:()[]{}").replace("\\", "/")
     return normalized.removeprefix("/task/")
 
 
 _NON_SEMANTIC_ARGUMENTS = {"description", "reason", "label"}
-_SENSITIVE_ARGUMENTS = {"api_key", "apikey", "authorization", "password", "secret", "token"}
-
-
 def _semantic_arguments(value: Mapping[str, Any]) -> Mapping[str, Any]:
-    result = {}
-    for key, item in value.items():
-        normalized = _normalized_key(key)
-        if normalized in _NON_SEMANTIC_ARGUMENTS:
-            continue
-        result[str(key)] = "<redacted>" if normalized in _SENSITIVE_ARGUMENTS else item
-    return result
+    return redact_mapping(value, drop_keys=_NON_SEMANTIC_ARGUMENTS)
 
 
 def _normalized_key(value: Any) -> str:
     return str(value).lower().replace("-", "_")
 
 
-_SECRET_VALUE = re.compile(r"(?i)(?:bearer\s+)?sk-[a-z0-9_-]{12,}")
-
 
 def _safe_preview(text: str, *, head: int = 180, tail: int = 80) -> str:
-    scrubbed = _SECRET_VALUE.sub("<redacted>", text)
+    scrubbed = scrub_tool_result_text(text)
     if len(scrubbed) <= head + tail:
         return scrubbed
     return f"{scrubbed[:head]}…<{len(scrubbed) - head - tail} chars omitted>…{scrubbed[-tail:]}"

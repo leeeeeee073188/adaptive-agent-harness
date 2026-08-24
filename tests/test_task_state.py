@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -254,6 +255,172 @@ class TaskContractStateTests(unittest.TestCase):
         result = writer.check_completion()
         self.assertFalse(result.passed)
         self.assertEqual(result.missing, ("verifiable criteria",))
+
+
+
+    def test_non_source_observation_with_resource_keeps_subject_match_semantics(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "generic-resource-observation",
+            "Create the required output.",
+            {
+                "criteria": [
+                    {
+                        "id": "generic-resource-observation",
+                        "kind": "observation_equals",
+                        "description": "Generic resource-backed observation",
+                        "parameters": {
+                            "subject": "artifact.validation",
+                            "expected": True,
+                            "resource": "outputs/report.json",
+                        },
+                    }
+                ]
+            },
+        )
+        ledger = SessionLedger("generic-resource-observation")
+        writer = TaskEventWriter(ledger)
+        writer.create_contract(contract)
+        writer.add_evidence(
+            Evidence(
+                "generic-observation",
+                EvidenceKind.OBSERVATION,
+                "artifact.validation",
+                True,
+                EvidenceSource.RUNTIME_OBSERVATION,
+            )
+        )
+
+        result = writer.check_completion()
+
+        self.assertTrue(result.passed)
+
+    def test_public_source_access_contract_from_action_prompt_url(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "source-access",
+            "Open https://public.example.com/data and use the result to write outputs/report.md.",
+        )
+
+        source = [
+            item
+            for item in contract.criteria
+            if str(item.parameters.get("subject") or "").startswith("source.access")
+        ]
+        self.assertEqual(len(source), 1)
+        self.assertEqual(source[0].kind, CriterionKind.OBSERVATION_EQUALS)
+        self.assertEqual(source[0].parameters["resource"], "https://public.example.com/data")
+        self.assertTrue(source[0].parameters["expected"])
+
+    def test_plain_documentation_link_does_not_force_source_access(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "source-access-none",
+            "Background documentation: https://public.example.com/docs. Write outputs/report.md.",
+        )
+
+        self.assertFalse(
+            any(
+                str(item.parameters.get("subject") or "").startswith("source.access")
+                for item in contract.criteria
+            )
+        )
+
+    def test_credential_or_sensitive_source_url_is_rejected(self) -> None:
+        builder = RuleBasedTaskContractBuilder()
+        contract = builder.build(
+            "source-access-userinfo",
+            "Open https://user:pass@public.example.com/data and summarize it.",
+        )
+        self.assertFalse(
+            any(
+                str(item.parameters.get("subject") or "").startswith("source.access")
+                for item in contract.criteria
+            )
+        )
+
+        contract = builder.build(
+            "source-access-token",
+            "Open https://public.example.com/data?token=secret and summarize it.",
+        )
+        self.assertFalse(
+            any(
+                str(item.parameters.get("subject") or "").startswith("source.access")
+                for item in contract.criteria
+            )
+        )
+
+    def test_backticked_absolute_endpoint_combines_with_action_url_origin(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "source-access-endpoint",
+            "Visit https://public.example.com then read `/api/help` for the task rules.",
+        )
+
+        source = [
+            item
+            for item in contract.criteria
+            if str(item.parameters.get("subject") or "").startswith("source.access")
+        ]
+        self.assertEqual([item.parameters["resource"] for item in source], ["https://public.example.com/api/help"])
+
+    def test_public_json_artifact_shape_contract_from_prompt_example(self) -> None:
+        contract = RuleBasedTaskContractBuilder().build(
+            "json-shape",
+            """Write outputs/audit.json.
+
+```json
+{
+  "summary": "short text",
+  "items": [
+    {"id": "a", "score": 1, "passed": true}
+  ]
+}
+```
+""",
+        )
+
+        shape = [item for item in contract.criteria if item.kind is CriterionKind.OBSERVATION_EQUALS]
+        self.assertEqual(len(shape), 1)
+        self.assertEqual(shape[0].depends_on, ("artifact:outputs-audit-json",))
+        self.assertEqual(shape[0].parameters["path"], "outputs/audit.json")
+        self.assertEqual(shape[0].parameters["required_top_level_keys"], ["summary", "items"])
+        self.assertEqual(shape[0].parameters["expected"], True)
+        self.assertEqual(shape[0].parameters["subject"], "artifact.json_shape:outputs/audit.json")
+        self.assertEqual(shape[0].parameters["list_identity_keys"], {"$.items": ["id"]})
+        self.assertEqual(
+            shape[0].parameters["shape"]["properties"]["items"]["items"]["properties"]["score"],
+            {"type": "integer"},
+        )
+        encoded = json.dumps(shape[0].parameters, ensure_ascii=False)
+        self.assertNotIn('"a"', encoded)
+        self.assertNotIn('"short text"', encoded)
+
+    def test_json_shape_contract_skips_ambiguous_or_missing_examples(self) -> None:
+        no_example = RuleBasedTaskContractBuilder().build(
+            "no-example",
+            "Write outputs/result.json with whatever is appropriate.",
+        )
+        multi_artifact = RuleBasedTaskContractBuilder().build(
+            "multi-artifact",
+            """Write outputs/a.json and outputs/b.json.
+
+```json
+{"items": [{"id": "x"}]}
+```
+""",
+        )
+
+        self.assertFalse(any(item.kind is CriterionKind.OBSERVATION_EQUALS for item in no_example.criteria))
+        self.assertFalse(any(item.kind is CriterionKind.OBSERVATION_EQUALS for item in multi_artifact.criteria))
+
+    def test_public_json_shape_contract_forbids_evaluator_fields(self) -> None:
+        with self.assertRaisesRegex(ValueError, "evaluation-only field"):
+            RuleBasedTaskContractBuilder().build(
+                "leaky-example",
+                """Write outputs/result.json.
+
+```json
+{"rubric": "hidden", "items": []}
+```
+""",
+            )
 
     def test_invalid_dependency_graph_fails_closed(self) -> None:
         builder = RuleBasedTaskContractBuilder()

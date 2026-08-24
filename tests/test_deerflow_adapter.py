@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib.util
 import json
+import sys
 import unittest
 from dataclasses import dataclass
 from pathlib import Path
@@ -309,6 +311,55 @@ class _TurnClient:
         yield from self.turns[index]
 
 
+
+def _install_fake_langchain_for_deerflow_context() -> None:
+    helper_path = Path(__file__).with_name("test_deerflow_context_middleware.py")
+    spec = importlib.util.spec_from_file_location("_deerflow_context_test_helper", helper_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("could not load DeerFlow context test helper")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    module._install_fake_langchain_modules()
+
+
+class _FailingObservationProvider:
+    def supports(self, _criterion: Any) -> bool:
+        return True
+
+    def observe(self, _contract: Any, _summary: Any, *, turn: int):
+        raise ValueError("provider failed before evidence was available")
+
+
+class _MiddlewareClient:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str | None]] = []
+        self.prepared_by_turn: list[str] = []
+
+    def stream(self, message: str, *, thread_id: str | None = None, **_kwargs: Any):
+        _install_fake_langchain_for_deerflow_context()
+        from langchain.agents.middleware.types import ModelRequest
+        from langchain_core.messages import HumanMessage
+
+        from adaptive_harness.integrations.deerflow_context import DeerFlowTaskAwareContextMiddleware
+
+        self.calls.append((message, thread_id))
+        middleware = DeerFlowTaskAwareContextMiddleware()
+
+        def handler(request: Any) -> object:
+            contents = [str(getattr(item, "content", "")) for item in request.messages]
+            system = getattr(request.system_message, "content", "")
+            self.prepared_by_turn.append("\n".join([*contents, str(system)]))
+            return object()
+
+        middleware.wrap_model_call(
+            ModelRequest(messages=[HumanMessage(content=message)]),
+            handler,
+        )
+        yield _RawEvent("messages-tuple", {"type": "ai", "id": f"a{len(self.calls)}", "content": "done"})
+        yield _RawEvent("end", {"usage": {"total_tokens": 5}})
+
+
 class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
     async def test_policy_bridge_accepts_executable_profile_session(self) -> None:
         kernel = await assemble_policy_kernel(
@@ -535,6 +586,33 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         outcomes = TaskStateProjector().project(result.ledger.events).recovery_outcomes
         self.assertEqual(len(outcomes), 1)
         self.assertTrue(outcomes[0].effective)
+
+    async def test_policy_bridge_binds_durable_task_state_into_actual_context_middleware(self) -> None:
+        client = _MiddlewareClient()
+        bridge = DeerFlowPolicyBridge(
+            contract_builder=RuleBasedTaskContractBuilder(),
+            observation_providers=(_FailingObservationProvider(),),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+            max_completion_turns=2,
+        )
+
+        result = await DeerFlowRuntimeAdapter(
+            client,
+            _FakeEnvironment(),
+            policy_bridge=bridge,
+        ).run(
+            DeerFlowRunRequest("Write outputs/report.csv.", "thread-context"),
+            run_id="run-context",
+        )
+
+        self.assertFalse(result.completed)
+        self.assertEqual(len(client.prepared_by_turn), 2)
+        second = client.prepared_by_turn[1]
+        self.assertIn("provider failed before evidence was available", second)
+        self.assertIn("latest_completion", second)
+        self.assertIn("recent_recoveries", second)
+
 
     async def test_policy_bridge_fails_closed_when_turn_budget_expires(self) -> None:
         client = _TurnClient(

@@ -10,6 +10,12 @@ from adaptive_harness.distiller import (
     DistillerConfig,
     DistillerSchemaError,
 )
+from adaptive_harness.evidence_workspace import (
+    EvidenceExcerpt,
+    EvidenceResource,
+    EvidenceSnapshot,
+    EvidenceWorkspace,
+)
 from adaptive_harness.evolution import (
     EvolutionCandidate,
     EvolutionGate,
@@ -34,6 +40,7 @@ from adaptive_harness.experience_store import (
 )
 from adaptive_harness.kernel import Kernel, Plugin, ServiceKey
 from adaptive_harness.ledger_rollout import PublicOutcome, ledger_to_development_rollout
+from adaptive_harness.phase import Phase, PhaseDecision, RuleBasedPhaseController
 from adaptive_harness.policy_session import KernelPolicySession, PolicySession
 from adaptive_harness.profiles import (
     DEFAULT_POLICY_PROFILE,
@@ -77,6 +84,10 @@ __all__ = [
     "DistillerConfig",
     "DistillerSchemaError",
     "EvidenceCompletionGate",
+    "EvidenceExcerpt",
+    "EvidenceResource",
+    "EvidenceSnapshot",
+    "EvidenceWorkspace",
     "EvolutionCandidate",
     "EvolutionGate",
     "EvolutionGateConfig",
@@ -90,6 +101,8 @@ __all__ = [
     "KernelPolicySession",
     "Plugin",
     "PluginRegistry",
+    "Phase",
+    "PhaseDecision",
     "PluginSpec",
     "Profile",
     "PublicOutcome",
@@ -106,6 +119,7 @@ __all__ = [
     "RuleBasedContractChecker",
     "RuleBasedTaskContractBuilder",
     "RuleBasedProgressDetector",
+    "RuleBasedPhaseController",
     "RuleBasedRecoveryOutcomeEvaluator",
     "RunResult",
     "RuntimeAdapter",

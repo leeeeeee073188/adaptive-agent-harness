@@ -11,14 +11,16 @@ from adaptive_harness.experience_store import (
     TransferValidation,
 )
 from adaptive_harness.ledger import SessionLedger
-from adaptive_harness.policy_session import KernelPolicySession
+from adaptive_harness.phase import PHASE_EVALUATED, Phase
+from adaptive_harness.policy_session import KernelPolicySession, bind_policy_session, current_policy_task_state
 from adaptive_harness.recovery import (
     RuleBasedTaskRecoveryExecutor,
     RuleBasedTaskRecoveryPolicy,
+    TaskFailureCategory,
     TaskRecoveryAction,
 )
 from adaptive_harness.resource_guardrail import ResourceGuardrail
-from adaptive_harness.task_state import EvidenceCompletionGate, TaskStateProjector
+from adaptive_harness.task_state import CriterionStatus, EvidenceCompletionGate, TaskStateProjector
 
 
 class PolicySessionTests(unittest.TestCase):
@@ -87,6 +89,338 @@ class PolicySessionTests(unittest.TestCase):
         self.assertLess(types.index("recovery/decided"), types.index("recovery/executed"))
         state = TaskStateProjector().project(ledger.events)
         self.assertIn("recovery.missing_requirements", state.values)
+
+
+    def test_completion_evaluates_soft_phase_and_state_once_per_decision(self) -> None:
+        ledger = SessionLedger("policy-phase")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Write outputs/report.csv.",
+            public_schema=None,
+        )
+
+        first, _feedback, _recovery = session.check_completion(ledger)
+        second, _feedback, _recovery = session.check_completion(ledger)
+
+        self.assertFalse(first.passed)
+        self.assertFalse(second.passed)
+        phase_events = [event for event in ledger.events if event.type == PHASE_EVALUATED]
+        self.assertEqual(len(phase_events), 1)
+        self.assertEqual(phase_events[0].payload["phase"], Phase.SYNTHESIZING.value)
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(state.values["phase.current"], Phase.SYNTHESIZING.value)
+        self.assertEqual(state.values["phase.unmet_obligation_ids"], ["artifact:outputs-report-csv"])
+        self.assertEqual(state.values["phase.action_intents"], ["write_artifact", "synthesize"])
+        self.assertIn("artifact evidence is still missing", state.values["phase.reason"])
+        self.assertIn("validate immediately", state.values["phase.budget_semantics"])
+        context = state.to_context()
+        self.assertEqual(context["values"]["phase.current"], Phase.SYNTHESIZING.value)
+        self.assertEqual(context["values"]["phase.action_intents"], ["write_artifact", "synthesize"])
+        self.assertIn("artifact evidence is still missing", context["values"]["phase.reason"])
+        self.assertIn("validate immediately", context["values"]["phase.budget_semantics"])
+
+    def test_begin_turn_evaluates_contracted_phase_without_progress_detector(self) -> None:
+        ledger = SessionLedger("policy-phase-begin")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Write outputs/report.csv.",
+            public_schema=None,
+        )
+
+        snapshot = session.begin_turn(ledger)
+
+        self.assertIsNone(snapshot)
+        phase_events = [event for event in ledger.events if event.type == PHASE_EVALUATED]
+        self.assertEqual(len(phase_events), 1)
+        self.assertEqual(phase_events[0].payload["phase"], Phase.CONTRACTED.value)
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(state.values["phase.current"], Phase.CONTRACTED.value)
+
+
+
+    def test_missing_source_and_artifact_recovers_by_acquiring_evidence_without_delivery(self) -> None:
+        ledger = SessionLedger("policy-source-gap-before-artifact")
+        session = KernelPolicySession(
+            completion_gate=EvidenceCompletionGate(),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+        )
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Read https://public.example.com/data before writing outputs/report.md.",
+            public_schema=None,
+        )
+
+        result, feedback, recovery = session.check_completion(ledger)
+
+        self.assertFalse(result.passed)
+        self.assertIsNotNone(recovery)
+        assert recovery is not None
+        self.assertEqual(
+            recovery.actions,
+            (TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.REPLAN),
+        )
+        self.assertNotIn("[HARNESS DELIVERY REQUIRED]", feedback or "")
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(state.recoveries[-1].primary, TaskFailureCategory.EVIDENCE_GAP)
+        self.assertEqual(state.values["phase.current"], Phase.ACQUIRING.value)
+
+    def test_after_source_evidence_missing_artifact_recovers_with_delivery(self) -> None:
+        ledger = SessionLedger("policy-artifact-after-source")
+        session = KernelPolicySession(
+            completion_gate=EvidenceCompletionGate(),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+        )
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Read https://public.example.com/data before writing outputs/report.md.",
+            public_schema=None,
+        )
+        ledger.append(
+            "tool/action-audited",
+            {
+                "record": {
+                    "intent": "read",
+                    "resources": ["https://public.example.com/data"],
+                    "scope_key": "source",
+                    "argument_fingerprint": "source",
+                    "mutation_epoch": 0,
+                },
+                "decision": {"disposition": "allow"},
+            },
+            turn=1,
+        )
+        session.check_resources(ledger, progress=None, turn=1)
+
+        result, feedback, recovery = session.check_completion(ledger)
+
+        self.assertFalse(result.passed)
+        self.assertIsNotNone(recovery)
+        assert recovery is not None
+        self.assertEqual(
+            recovery.actions,
+            (TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.WRITE_PARTIAL),
+        )
+        self.assertIn("[HARNESS DELIVERY REQUIRED]", feedback or "")
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(state.recoveries[-1].primary, TaskFailureCategory.ARTIFACT_ERROR)
+        self.assertEqual(state.values["phase.current"], Phase.SYNTHESIZING.value)
+
+    def test_artifact_only_recovery_still_requests_delivery(self) -> None:
+        ledger = SessionLedger("policy-artifact-only")
+        session = KernelPolicySession(
+            completion_gate=EvidenceCompletionGate(),
+            recovery_policy=RuleBasedTaskRecoveryPolicy(),
+            recovery_executor=RuleBasedTaskRecoveryExecutor(),
+        )
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Write outputs/report.md.",
+            public_schema=None,
+        )
+
+        result, feedback, recovery = session.check_completion(ledger)
+
+        self.assertFalse(result.passed)
+        self.assertIsNotNone(recovery)
+        assert recovery is not None
+        self.assertIn(TaskRecoveryAction.WRITE_PARTIAL, recovery.actions)
+        self.assertIn("[HARNESS DELIVERY REQUIRED]", feedback or "")
+
+    def test_source_access_evidence_from_audited_tool_resource_satisfies_contract(self) -> None:
+        ledger = SessionLedger("policy-source-access")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Open https://public.example.com/data and write outputs/report.md.",
+            public_schema=None,
+        )
+        ledger.append(
+            "tool/action-audited",
+            {
+                "record": {
+                    "intent": "read",
+                    "resources": ["https://public.example.com/data"],
+                    "scope_key": "source",
+                    "argument_fingerprint": "source",
+                    "mutation_epoch": 0,
+                },
+                "decision": {"disposition": "allow"},
+            },
+            turn=1,
+        )
+
+        session.check_resources(ledger, progress=None, turn=1)
+        result, _feedback, _recovery = session.check_completion(ledger)
+
+        source = next(item for item in result.assessments if item.criterion_id.startswith("observation:source-access"))
+        self.assertEqual(source.status, CriterionStatus.SATISFIED)
+
+    def test_completion_rejects_when_required_source_was_not_accessed(self) -> None:
+        ledger = SessionLedger("policy-source-missing")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Read https://public.example.com/data before writing outputs/report.md.",
+            public_schema=None,
+        )
+
+        result, feedback, _recovery = session.check_completion(ledger)
+
+        self.assertFalse(result.passed)
+        self.assertIn("source.access", feedback or "")
+
+    def test_failed_source_tool_result_does_not_satisfy_access(self) -> None:
+        ledger = SessionLedger("policy-source-failed")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Read https://public.example.com/data before writing outputs/report.md.",
+            public_schema=None,
+        )
+        ledger.append(
+            "tool/action-audited",
+            {
+                "record": {
+                    "intent": "read",
+                    "resources": ["https://public.example.com/data"],
+                    "error_type": "TOOL_ERROR",
+                    "scope_key": "source",
+                    "argument_fingerprint": "source",
+                    "mutation_epoch": 0,
+                },
+                "decision": {"disposition": "allow"},
+            },
+            turn=1,
+        )
+
+        session.check_resources(ledger, progress=None, turn=1)
+        result, _feedback, _recovery = session.check_completion(ledger)
+
+        source = next(
+            item
+            for item in result.assessments
+            if item.criterion_id.startswith("observation:source-access")
+        )
+        self.assertEqual(source.status, CriterionStatus.PENDING)
+
+    def test_source_access_evidence_is_not_duplicated_across_repeated_checks(self) -> None:
+        ledger = SessionLedger("policy-source-dedupe")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Use https://public.example.com/data to write outputs/report.md.",
+            public_schema=None,
+        )
+        ledger.append(
+            "tool/action-audited",
+            {
+                "record": {
+                    "intent": "read",
+                    "resources": ["https://public.example.com/data"],
+                    "scope_key": "source",
+                    "argument_fingerprint": "source",
+                    "mutation_epoch": 0,
+                },
+                "decision": {"disposition": "allow"},
+            },
+            turn=1,
+        )
+
+        session.check_resources(ledger, progress=None, turn=1)
+        session.check_resources(ledger, progress=None, turn=1)
+        state = TaskStateProjector().project(ledger.events)
+
+        self.assertEqual(
+            sum(1 for item in state.evidence if item.subject.startswith("source.access")),
+            1,
+        )
+
+
+    def test_source_access_for_one_url_does_not_satisfy_another_url(self) -> None:
+        ledger = SessionLedger("policy-source-partial")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt=(
+                "Open https://public.example.com/data and read "
+                "https://public.example.com/help before writing outputs/report.md."
+            ),
+            public_schema=None,
+        )
+        ledger.append(
+            "tool/action-audited",
+            {
+                "record": {
+                    "intent": "read",
+                    "resources": ["https://public.example.com/data"],
+                    "scope_key": "source",
+                    "argument_fingerprint": "source",
+                    "mutation_epoch": 0,
+                },
+                "decision": {"disposition": "allow"},
+            },
+            turn=1,
+        )
+
+        session.check_resources(ledger, progress=None, turn=1)
+        result, _feedback, _recovery = session.check_completion(ledger)
+
+        source_assessments = [
+            item
+            for item in result.assessments
+            if item.criterion_id.startswith("observation:source-access")
+        ]
+        self.assertEqual(
+            [item.status for item in source_assessments].count(CriterionStatus.SATISFIED),
+            1,
+        )
+        self.assertEqual(
+            [item.status for item in source_assessments].count(CriterionStatus.PENDING),
+            1,
+        )
+
+    def test_source_access_evidence_is_not_duplicated_across_turns(self) -> None:
+        ledger = SessionLedger("policy-source-turn-dedupe")
+        session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
+        session.start_contract(
+            ledger,
+            task_id="public-task",
+            task_prompt="Access https://public.example.com/data before writing outputs/report.md.",
+            public_schema=None,
+        )
+        for turn in (1, 2):
+            ledger.append(
+                "tool/action-audited",
+                {
+                    "record": {
+                        "intent": "read",
+                        "resources": ["https://public.example.com/data"],
+                        "scope_key": f"source-{turn}",
+                        "argument_fingerprint": f"source-{turn}",
+                        "mutation_epoch": 0,
+                    },
+                    "decision": {"disposition": "allow"},
+                },
+                turn=turn,
+            )
+            session.check_resources(ledger, progress=None, turn=turn)
+
+        state = TaskStateProjector().project(ledger.events)
+        self.assertEqual(sum(1 for item in state.evidence if item.subject.startswith("source.access")), 1)
 
     def test_context_retrieves_promoted_experience_without_model_visible_provenance(self) -> None:
         store = ExperienceStore(SessionLedger("policy-experience-store"))
@@ -188,6 +522,26 @@ class PolicySessionTests(unittest.TestCase):
         self.assertEqual(prepared.audit["rejected_experiences"], 0)
         self.assertIn("structured task state", str(prepared.messages))
         self.assertIn("Use a narrower command", str(prepared.messages))
+
+    def test_bound_task_state_is_frozen_without_mutable_aliases(self) -> None:
+        session = KernelPolicySession()
+        source = {
+            "task": {
+                "failures": [{"error_type": "TIMEOUT", "message": "before"}],
+                "latest_completion": {"passed": False},
+            }
+        }
+
+        with bind_policy_session(session, task_state=source):
+            source["task"]["failures"][0]["message"] = "after"
+            snapshot = current_policy_task_state()
+
+        self.assertIsNotNone(snapshot)
+        assert snapshot is not None
+        self.assertEqual(snapshot["task"]["failures"][0]["message"], "before")
+        with self.assertRaises(TypeError):
+            snapshot["task"] = {}  # type: ignore[index]
+
 
     def test_resource_guardrail_only_processes_new_action_audits_once(self) -> None:
         session = KernelPolicySession(resource_guardrail=ResourceGuardrail())

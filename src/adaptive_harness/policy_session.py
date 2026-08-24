@@ -11,6 +11,7 @@ from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import replace
+from types import MappingProxyType
 from typing import Any
 
 from adaptive_harness.action_ledger import classify_tool_action
@@ -22,6 +23,7 @@ from adaptive_harness.capabilities import (
     ToolCall,
 )
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.phase import PHASE_EVALUATED, PhaseController, RuleBasedPhaseController
 from adaptive_harness.progress import ProgressDetector, ProgressResult, ProgressSnapshot, ProgressStatus
 from adaptive_harness.recovery import (
     RecoveryOutcomeEvaluator,
@@ -40,7 +42,9 @@ from adaptive_harness.resource_guardrail import (
 from adaptive_harness.task_contract import ContractBuilder, CriterionKind, RuleBasedTaskContractBuilder, TaskContract
 from adaptive_harness.task_state import (
     ContractCompletionResult,
+    Evidence,
     EvidenceCompletionGate,
+    EvidenceKind,
     EvidenceSource,
     Failure,
     RecoveryExecutionRecord,
@@ -55,19 +59,52 @@ _CURRENT_POLICY_SESSION: ContextVar[Any] = ContextVar(
     "adaptive_policy_session",
     default=None,
 )
+_CURRENT_POLICY_TASK_STATE: ContextVar[Any] = ContextVar(
+    "adaptive_policy_task_state",
+    default=None,
+)
 
 
 @contextmanager
-def bind_policy_session(session: KernelPolicySession) -> Iterator[None]:
-    token = _CURRENT_POLICY_SESSION.set(session)
+def bind_policy_session(
+    session: KernelPolicySession,
+    *,
+    task_state: Mapping[str, Any] | None = None,
+) -> Iterator[None]:
+    """Bind one policy session and immutable task-state snapshot for runtime hooks."""
+
+    session_token = _CURRENT_POLICY_SESSION.set(session)
+    task_state_token = _CURRENT_POLICY_TASK_STATE.set(
+        _freeze_context_value(task_state) if task_state is not None else None
+    )
     try:
         yield
     finally:
-        _CURRENT_POLICY_SESSION.reset(token)
+        _CURRENT_POLICY_TASK_STATE.reset(task_state_token)
+        _CURRENT_POLICY_SESSION.reset(session_token)
 
 
 def current_policy_session() -> KernelPolicySession | None:
     return _CURRENT_POLICY_SESSION.get()
+
+
+def current_policy_task_state() -> Mapping[str, Any] | None:
+    return _CURRENT_POLICY_TASK_STATE.get()
+
+
+def _freeze_context_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({
+            str(key): _freeze_context_value(item)
+            for key, item in value.items()
+        })
+    if isinstance(value, tuple):
+        return tuple(_freeze_context_value(item) for item in value)
+    if isinstance(value, list):
+        return tuple(_freeze_context_value(item) for item in value)
+    if isinstance(value, set):
+        return tuple(_freeze_context_value(item) for item in sorted(value, key=repr))
+    return value
 
 
 class KernelPolicySession:
@@ -85,6 +122,7 @@ class KernelPolicySession:
         recovery_executor: TaskRecoveryExecutor | None = None,
         recovery_outcome_evaluator: RecoveryOutcomeEvaluator | None = None,
         resource_guardrail: ResourceGuardrail | None = None,
+        phase_controller: PhaseController | None = None,
         unsupported_criteria: str = "reject",
         allow_unverified_completion: bool = False,
     ) -> None:
@@ -99,6 +137,7 @@ class KernelPolicySession:
         self.recovery_executor = recovery_executor
         self.recovery_outcome_evaluator = recovery_outcome_evaluator
         self.resource_guardrail = resource_guardrail
+        self.phase_controller = phase_controller or RuleBasedPhaseController()
         self.unsupported_criteria = unsupported_criteria
         self.allow_unverified_completion = allow_unverified_completion
         self._resource_cursor = -1
@@ -197,6 +236,8 @@ class KernelPolicySession:
 
     def begin_turn(self, ledger: SessionLedger) -> ProgressSnapshot | None:
         self._turn_index += 1
+        state = TaskStateProjector().project(ledger.events)
+        self._evaluate_phase(ledger, state)
         if self.progress_detector is None:
             return None
         state = TaskStateProjector().project(ledger.events)
@@ -228,8 +269,6 @@ class KernelPolicySession:
         *,
         turn: int,
     ) -> tuple[dict[str, object], ...]:
-        if self.resource_guardrail is None:
-            return ()
         audited = [
             event
             for event in ledger.events
@@ -237,6 +276,11 @@ class KernelPolicySession:
             and event.turn == turn
             and event.seq > self._resource_cursor
         ]
+        self._record_source_access_evidence(ledger, audited, turn=turn)
+        if self.resource_guardrail is None:
+            if audited:
+                self._resource_cursor = max(event.seq for event in audited)
+            return ()
         decisions: list[dict[str, object]] = []
         for index, event in enumerate(audited):
             record = event.payload.get("record") or {}
@@ -297,6 +341,92 @@ class KernelPolicySession:
                 reason="resource guardrail evaluated",
             )
         return tuple(decisions)
+
+    def _record_source_access_evidence(
+        self,
+        ledger: SessionLedger,
+        audited: Sequence[Any],
+        *,
+        turn: int,
+    ) -> None:
+        if not audited:
+            return
+        state = TaskStateProjector().project(ledger.events)
+        if state.contract is None:
+            return
+        criteria = [
+            criterion
+            for criterion in state.contract.criteria
+            if criterion.kind is CriterionKind.OBSERVATION_EQUALS
+            and str(criterion.parameters.get("subject") or "").startswith("source.access")
+            and criterion.parameters.get("expected") is True
+            and str(criterion.parameters.get("resource") or "").startswith(("http://", "https://"))
+        ]
+        if not criteria:
+            return
+        existing_ids = {item.id for item in state.evidence}
+        satisfied_criteria = {
+            str(item.metadata.get("criterion_id"))
+            for item in state.evidence
+            if item.value is True and item.metadata.get("criterion_id")
+        }
+        satisfied_subjects = {
+            item.subject
+            for item in state.evidence
+            if item.value is True and item.subject.startswith("source.access:")
+        }
+        writer = TaskEventWriter(ledger)
+        for event in audited:
+            record = event.payload.get("record") or {}
+            if not isinstance(record, Mapping):
+                continue
+            if record.get("error_type") is not None:
+                continue
+            intent = str(record.get("intent") or "")
+            if intent not in {"navigate", "read", "observe", "verify", "search"}:
+                continue
+            resources = record.get("resources") or ()
+            if isinstance(resources, str):
+                resources = (resources,)
+            if not isinstance(resources, Sequence):
+                continue
+            for criterion in criteria:
+                subject = str(criterion.parameters["subject"])
+                if criterion.id in satisfied_criteria or subject in satisfied_subjects:
+                    continue
+                required = str(criterion.parameters["resource"])
+                match = next(
+                    (
+                        str(resource)
+                        for resource in resources
+                        if _matches_source_access(required, str(resource))
+                    ),
+                    None,
+                )
+                if match is None:
+                    continue
+                evidence_id = f"source-access:{criterion.id}"
+                if evidence_id in existing_ids:
+                    continue
+                writer.add_evidence(
+                    Evidence(
+                        id=evidence_id,
+                        kind=EvidenceKind.OBSERVATION,
+                        subject=subject,
+                        value=True,
+                        source=EvidenceSource.RUNTIME_OBSERVATION,
+                        metadata={
+                            "criterion_id": criterion.id,
+                            "provider": "action-ledger-resource",
+                            "resource": required,
+                            "observed_resource": match,
+                            "action_event_seq": event.seq,
+                        },
+                    )
+                )
+                existing_ids.add(evidence_id)
+                satisfied_criteria.add(criterion.id)
+                satisfied_subjects.add(subject)
 
     def check_completion(
         self,
@@ -362,6 +492,7 @@ class KernelPolicySession:
         elif not result.passed and feedback is None:
             feedback = result.reason
         ledger.append("completion/checked", {**result.to_payload(), "feedback": feedback})
+        self._evaluate_phase(ledger, TaskStateProjector().project(ledger.events))
         self._evaluate_pending_recovery(ledger, result)
         recovery = None
         if not result.passed and self.recovery_policy is not None:
@@ -387,6 +518,35 @@ class KernelPolicySession:
                 if execution.directives:
                     feedback = f"{feedback}\n" + "\n".join(execution.directives)
         return result, feedback, recovery
+
+    def _evaluate_phase(self, ledger: SessionLedger, state: Any) -> None:
+        if self.phase_controller is None:
+            return
+        decision = self.phase_controller.evaluate(state)
+        payload = decision.to_payload()
+        latest_payload = next(
+            (event.payload for event in reversed(ledger.events) if event.type == PHASE_EVALUATED),
+            None,
+        )
+        if latest_payload == payload:
+            return
+        ledger.append(PHASE_EVALUATED, payload)
+        current_values = TaskStateProjector().project(ledger.events).values
+        delta: dict[str, object] = {}
+        if current_values.get("phase.current") != decision.phase.value:
+            delta["phase.current"] = decision.phase.value
+        unmet = list(decision.unmet_obligation_ids)
+        if current_values.get("phase.unmet_obligation_ids") != unmet:
+            delta["phase.unmet_obligation_ids"] = unmet
+        if current_values.get("phase.reason") != decision.reason:
+            delta["phase.reason"] = decision.reason
+        action_intents = list(decision.action_intents)
+        if current_values.get("phase.action_intents") != action_intents:
+            delta["phase.action_intents"] = action_intents
+        if current_values.get("phase.budget_semantics") != decision.budget_semantics:
+            delta["phase.budget_semantics"] = decision.budget_semantics
+        if delta:
+            TaskEventWriter(ledger).update_state(delta, reason="soft phase evaluated")
 
     def _evaluate_pending_recovery(
         self,
@@ -433,13 +593,26 @@ class KernelPolicySession:
             criterion.id: criterion
             for criterion in (state.contract.criteria if state.contract is not None else ())
         }
-        failed_kinds = {
-            by_id[assessment.criterion_id].kind
+        unmet_required_criteria = (
+            by_id[assessment.criterion_id]
             for assessment in result.assessments
-            if assessment.status.value != "satisfied" and assessment.criterion_id in by_id
-        }
+            if assessment.status.value != "satisfied"
+            and assessment.criterion_id in by_id
+            and by_id[assessment.criterion_id].required
+        )
+        failed_kinds: set[CriterionKind] = set()
+        has_source_evidence_gap = False
+        for criterion in unmet_required_criteria:
+            failed_kinds.add(criterion.kind)
+            if (
+                criterion.kind is CriterionKind.OBSERVATION_EQUALS
+                and str(criterion.parameters.get("subject") or "").startswith("source.access:")
+            ):
+                has_source_evidence_gap = True
         primary = (
-            TaskFailureCategory.ARTIFACT_ERROR
+            TaskFailureCategory.EVIDENCE_GAP
+            if has_source_evidence_gap
+            else TaskFailureCategory.ARTIFACT_ERROR
             if CriterionKind.ARTIFACT_EXISTS in failed_kinds
             else TaskFailureCategory.CONSTRAINT_MISS
             if CriterionKind.EXACT_COUNT in failed_kinds
@@ -468,6 +641,13 @@ class KernelPolicySession:
         )
 
 
+
+def _matches_source_access(required: str, observed: str) -> bool:
+    required_clean = required.rstrip("/")
+    observed_clean = observed.rstrip("/")
+    return observed_clean == required_clean or observed_clean.startswith(f"{required_clean}/")
+
+
 class PolicySession(KernelPolicySession):
     """Backward-compatible policy session API for runtime bridges.
 
@@ -491,6 +671,7 @@ class PolicySession(KernelPolicySession):
         recovery_executor: TaskRecoveryExecutor | None = None,
         recovery_outcome_evaluator: RecoveryOutcomeEvaluator | None = None,
         resource_guardrail: ResourceGuardrail | None = None,
+        phase_controller: PhaseController | None = None,
         allow_unverified_completion: bool = False,
     ) -> None:
         if max_completion_turns < 1:
@@ -505,6 +686,7 @@ class PolicySession(KernelPolicySession):
             recovery_executor=recovery_executor,
             recovery_outcome_evaluator=recovery_outcome_evaluator,
             resource_guardrail=resource_guardrail,
+            phase_controller=phase_controller,
             unsupported_criteria=unsupported_criteria,
             allow_unverified_completion=allow_unverified_completion,
         )

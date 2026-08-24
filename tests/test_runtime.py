@@ -362,6 +362,8 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
                 "turn/start",
                 "user/message",
                 "step/start",
+                "phase/evaluated",
+                "state/updated",
                 "request/header",
                 "assistant/message",
                 "tool/call",

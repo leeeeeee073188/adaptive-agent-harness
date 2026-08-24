@@ -19,6 +19,7 @@ class TaskFailureCategory(StrEnum):
     LOOP = "LOOP"
     PREMATURE_FINISH = "PREMATURE_FINISH"
     ARTIFACT_ERROR = "ARTIFACT_ERROR"
+    EVIDENCE_GAP = "EVIDENCE_GAP"
     CONSTRAINT_MISS = "CONSTRAINT_MISS"
     STATE_INCONSISTENCY = "STATE_INCONSISTENCY"
     UNKNOWN = "UNKNOWN"
@@ -181,6 +182,10 @@ class RuleBasedTaskRecoveryPolicy:
             elif TaskFailureCategory.WRONG_TOOL in categories:
                 proposed.append(TaskRecoveryAction.SWITCH_TOOL)
             proposed.append(TaskRecoveryAction.WRITE_PARTIAL)
+        elif context.primary is TaskFailureCategory.EVIDENCE_GAP:
+            if TaskFailureCategory.LOOP in categories:
+                proposed.append(TaskRecoveryAction.STOP_REPEATED_ACTION)
+            proposed.extend((TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.REPLAN))
         elif context.primary is TaskFailureCategory.ARTIFACT_ERROR:
             proposed.extend(
                 (TaskRecoveryAction.VALIDATE_CONTRACT, TaskRecoveryAction.WRITE_PARTIAL)
