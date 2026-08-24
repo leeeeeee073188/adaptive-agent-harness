@@ -5,12 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol
 
+from adaptive_harness.action_ledger import ToolActionLedger, ToolIntent
 from adaptive_harness.capabilities import PreparedContext
 from adaptive_harness.evaluation import (
     ExperienceAdmissibilityFilter,
@@ -18,7 +18,7 @@ from adaptive_harness.evaluation import (
 )
 
 CONTEXT_SELECTED = "context/selected"
-CONTEXT_POLICY_VERSION = "task-aware-v1.2"
+CONTEXT_POLICY_VERSION = "task-aware-v1.3"
 
 
 class ContextLayer(StrEnum):
@@ -417,82 +417,51 @@ class TaskAwareContextManager:
         self,
         messages: Sequence[Mapping[str, Any]],
     ) -> tuple[ContextItem, ...]:
-        pending: dict[str, tuple[int, Mapping[str, Any]]] = {}
-        completed: dict[str, tuple[int, Mapping[str, Any], Mapping[str, Any], int, int]] = {}
-        attempts: dict[str, int] = {}
-        result_hashes: dict[str, set[str]] = {}
-        for index, message in enumerate(messages):
-            if message.get("role") == "assistant":
-                for call in message.get("tool_calls") or ():
-                    if isinstance(call, Mapping) and call.get("id") is not None:
-                        pending[str(call["id"])] = (index, call)
-                continue
-            if message.get("role") != "tool":
-                continue
-            call_id = str(message.get("tool_call_id") or "")
-            call_entry = pending.pop(call_id, None)
-            if call_entry is None:
-                continue
-            _, call = call_entry
-            semantic_arguments = _semantic_tool_arguments(call.get("arguments") or {})
-            signature_payload = {
-                "name": str(call.get("name") or "unknown"),
-                "arguments": _redact_sensitive(semantic_arguments),
-            }
-            signature = hashlib.sha256(
-                _canonical_json(signature_payload).encode()
-            ).hexdigest()[:16]
-            attempts[signature] = attempts.get(signature, 0) + 1
-            raw_content = message.get("content", "")
-            rendered = raw_content if isinstance(raw_content, str) else _canonical_json(raw_content)
-            result_hashes.setdefault(signature, set()).add(hashlib.sha256(rendered.encode()).hexdigest())
-            completed[signature] = (
-                index,
-                call,
-                message,
-                attempts[signature],
-                len(result_hashes[signature]),
-            )
-
-        count = max(1, len(messages))
+        ledger = ToolActionLedger.from_messages(messages)
+        records = {record.sequence: record for record in ledger.records}
+        decisions = {
+            record.sequence: decision
+            for record, decision in zip(ledger.records, ledger.decisions, strict=True)
+        }
+        count = max(1, len(ledger.records))
         rows = []
-        for signature, (index, call, result, attempt_count, distinct_results) in completed.items():
-            raw_content = result.get("content", "")
-            rendered = raw_content if isinstance(raw_content, str) else _canonical_json(raw_content)
-            repeated_unchanged = attempt_count > 1 and distinct_results == 1
+        for cluster in ledger.clusters():
+            latest = records[cluster.record_sequences[-1]]
+            over_verification = (
+                cluster.intent is ToolIntent.VERIFY
+                and any(
+                    decisions[sequence].disposition.value == "warn"
+                    for sequence in cluster.record_sequences
+                )
+            )
             rows.append(
                 ContextItem(
-                    f"tool:{str(call.get('name') or 'unknown')}:{signature}",
+                    f"action:{cluster.intent.value}:{cluster.scope_key}",
                     ContextLayer.EVIDENCE,
                     {
-                        "tool_interaction": {
-                            "name": str(call.get("name") or "unknown"),
-                            "arguments": _redact_sensitive(
-                                _semantic_tool_arguments(call.get("arguments") or {})
+                        "action_cluster": {
+                            **cluster.to_payload(),
+                            "tool_name": latest.tool_name,
+                            "argument_keys": list(latest.semantics.argument_keys),
+                            "redacted_argument_keys": list(
+                                latest.semantics.redacted_argument_keys
                             ),
-                            "attempts": attempt_count,
-                            "distinct_result_hashes": distinct_results,
-                            "repeated_unchanged": repeated_unchanged,
-                            "result_chars": len(rendered),
-                            "result_sha256": hashlib.sha256(rendered.encode()).hexdigest(),
-                            "result_preview": _safe_preview(rendered),
+                            "latest_result_chars": latest.result_chars,
+                            "latest_result_sha256": latest.result_sha256,
+                            "latest_result_preview": latest.result_preview,
+                            "verification_budget_exceeded": over_verification,
                             "retention": (
-                                "Full result omitted from this working set. Do not repeat an unchanged "
-                                "call; use a targeted query or code over the source when more detail is needed."
-                            ),
-                            "repeat_warning": (
-                                "This execution-equivalent call already returned the same result multiple "
-                                "times. Repeating it again is no progress."
-                                if repeated_unchanged
-                                else None
+                                "Full results are omitted. Reuse the resource/field facts; after a repeated "
+                                "or over-budget verification, deliver or change strategy instead of adding "
+                                "another equivalent check."
                             ),
                         }
                     },
-                    0.85,
-                    (index + 1) / count,
-                    0.75,
-                    0.9 if repeated_unchanged else 0.35 if result.get("error_type") else 0.0,
+                    0.9 if over_verification else 0.85,
+                    latest.sequence / count,
                     0.8,
+                    1.0 if over_verification or cluster.repeated_unchanged else 0.0,
+                    0.85,
                 )
             )
         return tuple(rows)
@@ -659,46 +628,6 @@ def _positive_evidence(value: Any) -> bool:
     if value is True:
         return True
     return isinstance(value, Mapping) and value.get("exists") is True
-
-
-_SECRET_VALUE = re.compile(
-    r"(?i)(?:bearer\s+)?(?:sk-[a-z0-9_-]{12,}|[a-z0-9_-]{24,}\.[a-z0-9_-]{12,}\.[a-z0-9_-]{12,})"
-)
-_SENSITIVE_KEYS = {"api_key", "apikey", "authorization", "password", "secret", "token"}
-
-
-def _redact_sensitive(value: Any) -> Any:
-    if isinstance(value, Mapping):
-        redacted = {}
-        for key, item in value.items():
-            normalized = str(key).lower().replace("-", "_")
-            redacted[str(key)] = "<redacted>" if normalized in _SENSITIVE_KEYS else _redact_sensitive(item)
-        return redacted
-    if isinstance(value, (list, tuple)):
-        return [_redact_sensitive(item) for item in value]
-    if isinstance(value, str):
-        return _SECRET_VALUE.sub("<redacted>", value)
-    return value
-
-
-_NON_SEMANTIC_TOOL_ARGUMENTS = {"description", "reason", "label"}
-
-
-def _semantic_tool_arguments(value: Any) -> Any:
-    if not isinstance(value, Mapping):
-        return value
-    return {
-        str(key): item
-        for key, item in value.items()
-        if str(key).lower().replace("-", "_") not in _NON_SEMANTIC_TOOL_ARGUMENTS
-    }
-
-
-def _safe_preview(text: str, *, head: int = 180, tail: int = 80) -> str:
-    scrubbed = _SECRET_VALUE.sub("<redacted>", text)
-    if len(scrubbed) <= head + tail:
-        return scrubbed
-    return f"{scrubbed[:head]}…<{len(scrubbed) - head - tail} chars omitted>…{scrubbed[-tail:]}"
 
 
 def _canonical_json(value: Any) -> str:

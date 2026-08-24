@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
+from adaptive_harness.action_audit import bind_action_audit_sink
 from adaptive_harness.capabilities import Environment
 from adaptive_harness.context import CONTEXT_SELECTED
 from adaptive_harness.context_audit import bind_context_audit_sink
@@ -129,12 +130,15 @@ class DeerFlowRuntimeAdapter:
             with bind_context_audit_sink(
                 lambda payload: ledger.append(CONTEXT_SELECTED, payload, turn=1)
             ):
-                for raw_event in self.client.stream(
-                    request.message,
-                    thread_id=request.thread_id,
-                    **dict(request.client_options),
+                with bind_action_audit_sink(
+                    lambda payload: ledger.append("tool/action-audited", payload, turn=1)
                 ):
-                    adapter.append(ledger, _event_mapping(raw_event))
+                    for raw_event in self.client.stream(
+                        request.message,
+                        thread_id=request.thread_id,
+                        **dict(request.client_options),
+                    ):
+                        adapter.append(ledger, _event_mapping(raw_event))
             summary = adapter.finish(ledger)
             return DeerFlowRunResult(run_id, ledger, summary)
         except Exception as error:
@@ -203,12 +207,15 @@ class DeerFlowRuntimeAdapter:
                 with bind_context_audit_sink(
                     lambda payload: ledger.append(CONTEXT_SELECTED, payload, turn=turn)
                 ):
-                    for raw_event in self.client.stream(
-                        message,
-                        thread_id=request.thread_id,
-                        **dict(request.client_options),
+                    with bind_action_audit_sink(
+                        lambda payload: ledger.append("tool/action-audited", payload, turn=turn)
                     ):
-                        adapter.append(ledger, _event_mapping(raw_event))
+                        for raw_event in self.client.stream(
+                            message,
+                            thread_id=request.thread_id,
+                            **dict(request.client_options),
+                        ):
+                            adapter.append(ledger, _event_mapping(raw_event))
                 summary = _summary_with_count(
                     adapter.finish(ledger),
                     len(ledger.events) - canonical_start,

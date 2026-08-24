@@ -55,7 +55,10 @@ def main() -> int:
         generated_script.write_text(_adaptive_deerflow_invocation_script() + "\n")
         prompt_path.write_text("帮我把商品发上线，发品系统打开后提交。\n")
         context_config_path.write_text(
-            build_deerflow_config(adaptive_context_enabled=True).to_yaml(),
+            build_deerflow_config(
+                adaptive_context_enabled=True,
+                adaptive_action_ledger_enabled=True,
+            ).to_yaml(),
             encoding="utf-8",
         )
         try:
@@ -150,12 +153,21 @@ def main() -> int:
             "ledger_persisted": ledger_path.is_file() and ledger_path.stat().st_size > 0,
             "policy_bridge_enabled": adaptive.get("completed") is True,
             "context_middleware_imported": adaptive.get("context_middleware_imported") is True,
+            "action_ledger_middleware_imported": (
+                adaptive.get("action_ledger_middleware_imported") is True
+            ),
+            "action_ledger_request_shape_valid": (
+                adaptive.get("action_ledger_request_shape_valid") is True
+            ),
             "context_middleware_request_shape_valid": (
                 adaptive.get("context_middleware_request_shape_valid") is True
             ),
             "pinned_candidate_config_loaded": True,
             "realreplica_candidate_config_enabled": "adaptive_policy_enabled: true" in config_text,
             "realreplica_context_profile_wired": "adaptive_context_enabled=adaptive_source is not None" in runner_text,
+            "realreplica_action_ledger_wired": (
+                "adaptive_action_ledger_enabled=adaptive_source is not None" in runner_text
+            ),
             "realreplica_runner_copies_source": "/tmp/adaptive-src/adaptive_harness" in runner_text,
             "realreplica_runner_persists_ledger": "adaptive-ledger.jsonl" in runner_text,
             "runner_probe_used_zero_models": adaptive.get("model_calls") == 0,
@@ -165,6 +177,7 @@ def main() -> int:
             for key in (
                 "realreplica_candidate_config_enabled",
                 "realreplica_context_profile_wired",
+                "realreplica_action_ledger_wired",
                 "realreplica_runner_copies_source",
                 "realreplica_runner_persists_ledger",
                 "runner_probe_used_zero_models",

@@ -1,5 +1,6 @@
 """Adaptive Agent Harness public API."""
 
+from adaptive_harness.action_ledger import ToolActionLedger, VerificationBudgetConfig
 from adaptive_harness.config import Bundle, PluginSpec, Profile
 from adaptive_harness.context import ContextBudget, TaskAwareContextManager
 from adaptive_harness.evolution import (
@@ -52,7 +53,9 @@ __all__ = [
     "ShadowEvaluation",
     "TaskContract",
     "TaskAwareContextManager",
+    "ToolActionLedger",
     "TaskState",
     "TaskStateProjector",
     "ToolReliabilityConfig",
+    "VerificationBudgetConfig",
 ]
