@@ -209,6 +209,29 @@ class ToolActionLedgerTests(unittest.TestCase):
         self.assertFalse(underpowered.eligible)
         self.assertGreaterEqual(len(underpowered.reasons), 2)
 
+    def test_fourth_unchanged_read_warns_but_changed_results_do_not(self) -> None:
+        unchanged = ToolActionLedger()
+        changed = ToolActionLedger()
+        unchanged_decision = None
+        changed_decision = None
+        for index in range(1, 5):
+            call = ToolCall(
+                f"read-{index}",
+                "read_file",
+                {"path": "/task/workspace/input.json", "description": f"Read {index}"},
+            )
+            _, unchanged_decision = unchanged.observe(
+                call,
+                ToolResult(call.id, "same-result"),
+            )
+            _, changed_decision = changed.observe(
+                call,
+                ToolResult(call.id, f"changed-result-{index}"),
+            )
+
+        self.assertEqual(unchanged_decision.disposition, VerificationDisposition.WARN)
+        self.assertEqual(changed_decision.disposition, VerificationDisposition.ALLOW)
+
 
 if __name__ == "__main__":
     unittest.main()

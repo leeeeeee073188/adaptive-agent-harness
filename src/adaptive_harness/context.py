@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol
 
-from adaptive_harness.action_ledger import ToolActionLedger, ToolIntent
+from adaptive_harness.action_ledger import ToolActionLedger
 from adaptive_harness.capabilities import PreparedContext
 from adaptive_harness.evaluation import (
     ExperienceAdmissibilityFilter,
@@ -18,7 +18,7 @@ from adaptive_harness.evaluation import (
 )
 
 CONTEXT_SELECTED = "context/selected"
-CONTEXT_POLICY_VERSION = "task-aware-v1.4"
+CONTEXT_POLICY_VERSION = "task-aware-v1.5"
 
 
 class ContextLayer(StrEnum):
@@ -428,8 +428,7 @@ class TaskAwareContextManager:
         for cluster in ledger.clusters():
             latest = records[cluster.record_sequences[-1]]
             over_verification = (
-                cluster.intent in {ToolIntent.VERIFY, ToolIntent.OBSERVE}
-                and any(
+                any(
                     decisions[sequence].disposition.value == "warn"
                     for sequence in cluster.record_sequences
                 )

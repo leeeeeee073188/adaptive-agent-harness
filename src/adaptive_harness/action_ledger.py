@@ -129,11 +129,16 @@ class ActionCluster:
 @dataclass(frozen=True)
 class VerificationBudgetConfig:
     max_same_scope: int = 2
+    max_same_scope_reads: int = 3
     max_total_since_mutation: int = 4
     mode: VerificationMode = VerificationMode.OBSERVE
 
     def __post_init__(self) -> None:
-        if self.max_same_scope < 1 or self.max_total_since_mutation < 1:
+        if (
+            self.max_same_scope < 1
+            or self.max_same_scope_reads < 1
+            or self.max_total_since_mutation < 1
+        ):
             raise ValueError("verification budgets must be positive")
 
 
@@ -241,6 +246,8 @@ class ToolActionLedger:
         self._mutation_epoch = 0
         self._verification_total = 0
         self._verification_scopes: dict[str, int] = {}
+        self._read_scopes: dict[str, int] = {}
+        self._read_results: dict[str, set[str]] = {}
 
     @property
     def records(self) -> tuple[ActionRecord, ...]:
@@ -256,6 +263,8 @@ class ToolActionLedger:
             self._mutation_epoch += 1
             self._verification_total = 0
             self._verification_scopes.clear()
+            self._read_scopes.clear()
+            self._read_results.clear()
         rendered = result.content
         record = ActionRecord(
             sequence=len(self._records) + 1,
@@ -269,6 +278,26 @@ class ToolActionLedger:
             mutation_epoch=self._mutation_epoch,
         )
         self._records.append(record)
+        if semantics.intent is ToolIntent.READ:
+            scope_attempts = self._read_scopes.get(semantics.scope_key, 0) + 1
+            self._read_scopes[semantics.scope_key] = scope_attempts
+            hashes = self._read_results.setdefault(semantics.scope_key, set())
+            repeated_result = record.result_sha256 in hashes
+            hashes.add(record.result_sha256)
+            exceeded = scope_attempts > self.config.max_same_scope_reads and repeated_result
+            decision = VerificationDecision(
+                VerificationDisposition.WARN if exceeded else VerificationDisposition.ALLOW,
+                scope_attempts,
+                self._verification_total,
+                (
+                    "Read budget exceeded for an unchanged resource; use the retained result or "
+                    "change strategy instead of reading it again."
+                    if exceeded
+                    else "Read remains within the unchanged-resource budget."
+                ),
+            )
+            self._decisions.append(decision)
+            return record, decision
         if semantics.intent not in {ToolIntent.VERIFY, ToolIntent.OBSERVE}:
             decision = VerificationDecision(
                 VerificationDisposition.ALLOW,
