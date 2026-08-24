@@ -125,6 +125,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | Diagnostic4 preflight | A54：4 类任务、2 easy/2 medium、text/browser/vision、与 MiniBench16 完全互斥 |
 | Diagnostic4 live / v4 gate | A55：0/4、1,206,127 Token；A56/A57 修复跨类型 Artifact/Observation 生命周期 |
 | v4 File live / v4.1 gate | A58：正确 path 写入因 description 缺失失败；A59/A60 验证兼容修复与 batch early-stop |
+| v4.1 File live | A61：仍 0/5，但 Token -34.8%、Tool -14、耗时 -65.1%；停止扩跑并转向 Transform/Workspace seam |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

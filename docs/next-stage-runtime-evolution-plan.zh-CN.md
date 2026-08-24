@@ -172,6 +172,8 @@ Diagnostic4 live（A55）已完成且没有触发任务级即时优化：File 0/
 
 v4 File/easy 复验（A58）仍为 0/5：Token 从 330,962 小幅升至 337,994，Tool 从 43 增至 45，且无最终产物。正向信号是模型已准确命中 required path；新失败是 DeerFlow 的 `write_file` 把非语义 `description` 设为 required，模型只提供 path/content，导致正确写入被 schema 拒绝，之后一个模型批次留下 15 个 delivery 终止结果。v4.1 只在 Tool Adapter 层补缺失 description，保留显式值和所有语义参数；after-model delivery batch guard 在整批无任何交付进展时直接结束本 turn。A59/A60 零模型门禁通过，尚未付费运行。
 
+v4.1 File/easy 复验（A61）仍为 0/5、无产物，因此不晋升也不扩跑；但 Token 220,496（较 v4 -34.8%）、Tool 31（-14）、耗时 116.6 秒（-65.1%），并把 delivery batch 终止结果从 15 个降为 2 个。description repair 本次未触发，因为模型改走 Bash。当前失败转移到通用 Transform/Workspace seam：任务提供脚本按自身位置把 snapshots 解析为不存在的 `/task/snapshots`，模型随后尝试的 `/tmp` 与路径穿越被 Sandbox 正确阻止。下一阶段只做离线安全 Transform Capsule/Workspace Manifest 设计，不再继续付费试错。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

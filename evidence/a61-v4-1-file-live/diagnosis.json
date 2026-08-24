@@ -1,0 +1,135 @@
+{
+  "analysis_model_calls": 0,
+  "analysis_new_tokens": 0,
+  "claim_boundary": "Signals are derived from public run summaries, adaptive ledgers, and workspace artifacts. No evaluation-private values or explanations are read.",
+  "run_count": 1,
+  "runs": [
+    {
+      "actions_by_intent": {
+        "discover": 2,
+        "read": 17,
+        "verify": 2,
+        "write": 4
+      },
+      "artifact_matches_non_output_files": [],
+      "audited_actions": 25,
+      "capacity_score": 0.0,
+      "context": {
+        "max_failure_layer_tokens": 727,
+        "max_history_dropped": 34,
+        "model_call_audits": 13
+      },
+      "failure_types": {
+        "LOOP": 4,
+        "NO_PROGRESS": 6
+      },
+      "passed": false,
+      "repeated_resources": [
+        {
+          "access_count": 4,
+          "resource": "workspace/readme.md",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace/slack_excerpt.txt",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace/handoff.md",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "workspace/analysis/results.json",
+          "tool_names": [
+            "bash",
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "outputs",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 3,
+          "resource": "outputs/quality_audit.json",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/drafts/draft_audit.md",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/analysis/audit.py",
+          "tool_names": [
+            "read_file"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "snapshots",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/results.json",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/snapshots",
+          "tool_names": [
+            "bash"
+          ]
+        },
+        {
+          "access_count": 2,
+          "resource": "workspace/snapshots/manifest.json",
+          "tool_names": [
+            "bash"
+          ]
+        }
+      ],
+      "required_contract_kinds": [
+        "artifact_exists",
+        "observation_equals"
+      ],
+      "run_id": "adaptive-harness-diagnostic4-v4-1-file-development",
+      "runtime_error_types": [],
+      "signals": {
+        "artifact_only_contract": false,
+        "cross_tool_repeated_resource_count": 1,
+        "durable_failure_state_missing_from_model_context": false,
+        "mutation_epoch_regression": false,
+        "repeated_resource_accesses": 19
+      },
+      "tool_calls": 31,
+      "total_tokens": 220496,
+      "variant": "adaptive_harness_cross_type_artifact_v4_1"
+    }
+  ],
+  "scope": "zero-model generic Runtime failure analysis",
+  "skipped_runs": [],
+  "task_id": "file-google-trends-data-quality-audit"
+}

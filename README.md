@@ -131,4 +131,6 @@ A55 已收齐四类首次样本：0/4 通过，Capacity 均值 0.0192，共 1,20
 
 A58 的单项 File/easy 复验显示 v4 仍为 0/5、337,994 Token、45 Tool：模型已经选择正确的 `outputs/quality_audit.json`，但 DeerFlow `write_file` 要求非语义 `description` 参数，模型遗漏后写入失败；随后同一模型批次产生 15 个 delivery 终止结果。v4.1 在 Tool Adapter 边界只补齐缺失的非语义 description（不改 path/content），显式 description 保持不变，并在 after-model 阶段提前结束完全不含交付进展的多工具批次。A59/A60 已用单测和 pinned container 零模型验证，尚未付费复验。
 
+A61 的 v4.1 File/easy 复验仍未通过且没有产物，因此不晋升；但 Token 从 337,994 降至 220,496（-34.8%）、Tool 从 45 降至 31、耗时从 334.2 秒降至 116.6 秒。batch guard 把原先 15 个冗余终止结果压到 2 个；description repair 未触发，因为本次模型改用 Bash。新的可公开失败面是任务提供的 transform 将 snapshots 解析到不存在的 `/task/snapshots`，随后模型的 `/tmp` 和路径穿越 workaround 被 Sandbox 正确拒绝。继续停止付费扩跑，下一步只做离线 Transform/Workspace 能力设计。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

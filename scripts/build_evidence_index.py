@@ -77,6 +77,7 @@ REQUIRED = tuple(
         (58, "v4-file-live"),
         (59, "v4-1-tool-compat-gate"),
         (60, "v4-1-tool-compat-container"),
+        (61, "v4-1-file-live"),
     )
 )
 OPTIONAL = (
@@ -151,6 +152,8 @@ OPTIONAL = (
     "a60-v4-1-tool-compat-container/review.json",
     "a60-v4-1-tool-compat-container/verification.json",
     "a60-v4-1-tool-compat-container/readiness.json",
+    "a61-v4-1-file-live/pair.json",
+    "a61-v4-1-file-live/diagnosis.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -279,6 +282,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v4_1_readiness = documents.get(
         "a60-v4-1-tool-compat-container/readiness.json", {}
     )
+    v4_1_live = doc("a61-v4-1-file-live/summary.json") if not missing else {}
     selected_live_row = next(
         (
             row
@@ -941,6 +945,27 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "new_finding_count"
         ),
         "v4_1_readiness": v4_1_readiness.get("ready"),
+        "v4_1_live_baseline": v4_1_live.get("baseline"),
+        "v4_1_live_candidate": v4_1_live.get("candidate"),
+        "v4_1_live_cost": v4_1_live.get("cost"),
+        "v4_1_live_delivery_batch_guard_result_count": v4_1_live.get(
+            "delivery_batch_guard_result_count"
+        ),
+        "v4_1_live_compatibility_repairs_applied": v4_1_live.get(
+            "compatibility_repairs_applied"
+        ),
+        "v4_1_live_task_transform_missing_snapshot_error": v4_1_live.get(
+            "task_transform_missing_snapshot_error"
+        ),
+        "v4_1_live_unsafe_path_attempt_blocked": v4_1_live.get(
+            "unsafe_path_attempt_blocked"
+        ),
+        "v4_1_live_selected_candidate": v4_1_live.get(
+            "selected_candidate_variant"
+        ),
+        "v4_1_live_paid_expansion_allowed": v4_1_live.get(
+            "paid_expansion_allowed"
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -1286,6 +1311,20 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v4_1_write_description_repair_enforced"] is True
         and claims["v4_1_new_full_repo_lint_findings"] == 0
         and claims["v4_1_readiness"] is True,
+        "v4_1_cost_improvement_without_quality_promotion": (
+            (claims["v4_1_live_candidate"] or {}).get("passed") is False
+            and (claims["v4_1_live_candidate"] or {}).get("capacity_score") == 0.0
+            and (claims["v4_1_live_candidate"] or {}).get("total_tokens") == 220496
+            and (claims["v4_1_live_candidate"] or {}).get("tool_calls") == 31
+            and (claims["v4_1_live_cost"] or {}).get("token_delta") == -117498
+            and (claims["v4_1_live_cost"] or {}).get("tool_call_delta") == -14
+            and claims["v4_1_live_delivery_batch_guard_result_count"] == 2
+            and claims["v4_1_live_task_transform_missing_snapshot_error"] is True
+            and claims["v4_1_live_unsafe_path_attempt_blocked"] is True
+            and claims["v4_1_live_selected_candidate"]
+            == "adaptive_harness_cross_type_artifact_v4_1"
+            and claims["v4_1_live_paid_expansion_allowed"] is False
+        ),
     }
     return {
         "schema_version": 1,
@@ -1351,6 +1390,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "targeted the correct artifact but DeerFlow rejected the write because the model omitted "
             "the non-semantic description field, and one model batch produced 15 rejected delivery "
             "results. A59/A60 bind v4.1 compatibility argument repair and delivery-batch early stop. "
+            "A61 records the v4.1 File replay: quality remained 0/5 and no artifact was delivered, "
+            "but observed Tokens fell 34.8%, Tool calls fell from 45 to 31, and latency fell 65.1%; "
+            "the next public failure is the task transform resolving `/task/snapshots` plus blocked "
+            "unsafe path workarounds. v4.1 remains Shadow and paid expansion stays disabled. "
             "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),

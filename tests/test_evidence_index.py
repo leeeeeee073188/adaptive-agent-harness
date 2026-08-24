@@ -310,6 +310,16 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertTrue(index["claims"]["v4_1_write_description_repair_enforced"])
         self.assertEqual(index["claims"]["v4_1_new_full_repo_lint_findings"], 0)
         self.assertTrue(index["claims"]["v4_1_readiness"])
+        self.assertFalse(index["claims"]["v4_1_live_candidate"]["passed"])
+        self.assertEqual(index["claims"]["v4_1_live_candidate"]["total_tokens"], 220496)
+        self.assertEqual(index["claims"]["v4_1_live_candidate"]["tool_calls"], 31)
+        self.assertEqual(index["claims"]["v4_1_live_cost"]["token_delta"], -117498)
+        self.assertEqual(index["claims"]["v4_1_live_cost"]["tool_call_delta"], -14)
+        self.assertEqual(index["claims"]["v4_1_live_delivery_batch_guard_result_count"], 2)
+        self.assertEqual(index["claims"]["v4_1_live_compatibility_repairs_applied"], 0)
+        self.assertTrue(index["claims"]["v4_1_live_task_transform_missing_snapshot_error"])
+        self.assertTrue(index["claims"]["v4_1_live_unsafe_path_attempt_blocked"])
+        self.assertFalse(index["claims"]["v4_1_live_paid_expansion_allowed"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:
