@@ -7,8 +7,8 @@ import json
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
-from urllib.parse import urlparse
-from urllib.request import urlopen
+from urllib.parse import parse_qsl, urlparse
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from adaptive_harness.capabilities import AcceptFinalCompletion, ModelResponse
 from adaptive_harness.ledger import SessionLedger
@@ -20,6 +20,7 @@ from adaptive_harness.recovery import (
     TaskRecoveryExecutor,
     TaskRecoveryPolicy,
 )
+from adaptive_harness.redaction import normalize_key, render_redacted, scrub_tool_result_text
 from adaptive_harness.resource_guardrail import ResourceGuardrail
 from adaptive_harness.task_contract import (
     ContractBuilder,
@@ -43,6 +44,8 @@ if TYPE_CHECKING:
 class DeerFlowObservationProvider(Protocol):
     def supports(self, criterion: Any) -> bool: ...
 
+    def before_run(self, contract: TaskContract) -> Sequence[Evidence] | None: ...
+
     def observe(
         self,
         contract: TaskContract,
@@ -50,6 +53,69 @@ class DeerFlowObservationProvider(Protocol):
         *,
         turn: int,
     ) -> Sequence[Evidence]: ...
+
+
+class PublicSourceAccessObservationProvider:
+    """Materialize explicit public loopback source-access obligations before model turns.
+
+    This provider is intentionally narrow: it only proves task-prompt
+    ``source.access:*`` criteria for loopback HTTP resources that are already
+    visible to the model. It never fetches external hosts and never treats a
+    failed snapshot as success.
+    """
+
+    MAX_BYTES = 64 * 1024
+    EXCERPT_CHARS = 4000
+
+    def __init__(
+        self,
+        *,
+        fetch_bytes: Callable[[str], tuple[str, bytes]] | None = None,
+    ) -> None:
+        self.fetch_bytes = fetch_bytes or _fetch_loopback_bytes
+
+    def supports(self, criterion: Any) -> bool:
+        return _is_loopback_source_access_criterion(criterion)
+
+    def before_run(self, contract: TaskContract) -> Sequence[Evidence]:
+        evidence: list[Evidence] = []
+        for criterion in contract.criteria:
+            if not self.supports(criterion):
+                continue
+            resource = str(criterion.parameters["resource"])
+            final_url, body = self.fetch_bytes(resource)
+            if not _is_safe_loopback_http_url(final_url):
+                raise ValueError(f"source access snapshot redirected outside loopback: {final_url}")
+            if len(body) > self.MAX_BYTES:
+                raise ValueError(
+                    f"source access snapshot for {resource} exceeds {self.MAX_BYTES} bytes"
+                )
+            rendered = _render_public_payload_excerpt(body)
+            evidence.append(
+                Evidence(
+                    id=f"source-snapshot:{criterion.id}",
+                    kind=EvidenceKind.OBSERVATION,
+                    subject=str(criterion.parameters["subject"]),
+                    value=True,
+                    source=EvidenceSource.RUNTIME_OBSERVATION,
+                    metadata={
+                        "resource": resource,
+                        "hash": hashlib.sha256(body).hexdigest(),
+                        "chars": len(rendered),
+                        "public_payload_excerpt": rendered[: self.EXCERPT_CHARS],
+                    },
+                )
+            )
+        return tuple(evidence)
+
+    def observe(
+        self,
+        contract: TaskContract,
+        summary: DeerFlowReplaySummary,
+        *,
+        turn: int,
+    ) -> Sequence[Evidence]:
+        return ()
 
 
 class FileArtifactObservationProvider:
@@ -372,8 +438,9 @@ class DeerFlowPolicyBridge:
             if before_run is None:
                 continue
             try:
-                before_run(contract)
-            except (KeyError, TypeError, ValueError) as error:
+                for evidence in before_run(contract) or ():
+                    writer.add_evidence(evidence)
+            except (KeyError, OSError, TypeError, ValueError) as error:
                 writer.classify_failure(
                     Failure(
                         id=f"deerflow:before-run-provider:{provider_index + 1}",
@@ -382,7 +449,7 @@ class DeerFlowPolicyBridge:
                         source=EvidenceSource.RUNTIME_OBSERVATION,
                         metadata={"provider": type(provider).__name__},
                     )
-        )
+                )
         return contract
 
     def observe_turn(
@@ -450,6 +517,79 @@ class DeerFlowPolicyBridge:
             bool(getattr(provider, "supports", lambda _criterion: False)(criterion))
             for provider in self.observation_providers
         )
+
+
+def _is_loopback_source_access_criterion(criterion: Any) -> bool:
+    parameters = getattr(criterion, "parameters", {})
+    if not isinstance(parameters, Mapping):
+        return False
+    return (
+        getattr(criterion, "kind", None) is CriterionKind.OBSERVATION_EQUALS
+        and bool(getattr(criterion, "required", False))
+        and str(parameters.get("subject") or "").startswith("source.access:")
+        and parameters.get("expected") is True
+        and _is_safe_loopback_http_url(str(parameters.get("resource") or ""))
+    )
+
+
+def _is_safe_loopback_http_url(raw: str) -> bool:
+    parsed = urlparse(raw)
+    if parsed.scheme.lower() != "http" or parsed.hostname not in {"127.0.0.1", "localhost"}:
+        return False
+    if parsed.username is not None or parsed.password is not None:
+        return False
+    try:
+        parsed.port
+    except ValueError:
+        return False
+    for key, _value in parse_qsl(parsed.query, keep_blank_values=True):
+        normalized = normalize_key(key)
+        if normalized in {
+            "api_key",
+            "apikey",
+            "auth",
+            "authorization",
+            "client_secret",
+            "code",
+            "credential",
+            "password",
+            "refresh_token",
+            "secret",
+            "signature",
+            "token",
+            "access_token",
+        } or normalized.endswith(("_token", "_secret")):
+            return False
+    return True
+
+
+def _fetch_loopback_bytes(url: str) -> tuple[str, bytes]:
+    if not _is_safe_loopback_http_url(url):
+        raise ValueError(f"unsafe source access snapshot URL: {url}")
+    opener = build_opener(_LoopbackRedirectHandler)
+    request = Request(url, headers={"Accept": "application/json,text/plain,*/*"})
+    with opener.open(request, timeout=5) as response:
+        final_url = response.geturl()
+        if not _is_safe_loopback_http_url(final_url):
+            raise ValueError(f"source access snapshot redirected outside loopback: {final_url}")
+        body = response.read(PublicSourceAccessObservationProvider.MAX_BYTES + 1)
+    return final_url, body
+
+
+class _LoopbackRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        if not _is_safe_loopback_http_url(str(newurl)):
+            raise ValueError(f"source access snapshot redirected outside loopback: {newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _render_public_payload_excerpt(body: bytes) -> str:
+    text = body.decode("utf-8", errors="replace")
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return scrub_tool_result_text(text)
+    return render_redacted(payload)
 
 
 def _file_sha256(path: Path) -> str:

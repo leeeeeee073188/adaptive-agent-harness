@@ -9,6 +9,9 @@ from adaptive_harness.task_state import (
     ContractCompletionResult,
     CriterionAssessment,
     CriterionStatus,
+    Evidence,
+    EvidenceKind,
+    EvidenceSource,
     TaskEventWriter,
     TaskState,
     TaskStateProjector,
@@ -134,7 +137,60 @@ def _state_for(contract: TaskContract, *assessments: CriterionAssessment) -> obj
     return TaskStateProjector().project(ledger.events)
 
 
+def _state_for_with_evidence(contract: TaskContract, *evidence: Evidence) -> object:
+    ledger = SessionLedger("phase-evidence")
+    writer = TaskEventWriter(ledger)
+    writer.create_contract(contract)
+    for item in evidence:
+        writer.add_evidence(item)
+    return TaskStateProjector().project(ledger.events)
+
+
 class RuleBasedPhaseControllerTests(unittest.TestCase):
+
+    def test_no_completion_with_before_run_source_evidence_routes_to_synthesizing(self) -> None:
+        state = _state_for_with_evidence(
+            _source_access_contract(),
+            Evidence(
+                "source-before-run",
+                EvidenceKind.OBSERVATION,
+                "source.access:https://public.example.test/api/help",
+                True,
+                EvidenceSource.RUNTIME_OBSERVATION,
+                {
+                    "criterion_id": "source-access:public-help",
+                    "resource": "https://public.example.test/api/help",
+                },
+            ),
+        )
+
+        decision = RuleBasedPhaseController().evaluate(state)  # type: ignore[arg-type]
+
+        self.assertEqual(decision.phase, Phase.SYNTHESIZING)
+        rendered = str(decision.unmet_obligations)
+        self.assertIn("Artifact exists", rendered)
+        self.assertNotIn("Public source URL must be read", rendered)
+
+    def test_artifact_only_without_completion_routes_to_synthesizing(self) -> None:
+        contract = TaskContract(
+            "artifact-only",
+            "Write artifact.",
+            (
+                Criterion(
+                    "artifact:outputs-audit-json",
+                    "Artifact exists",
+                    CriterionKind.ARTIFACT_EXISTS,
+                    CriterionSource.TASK_PROMPT,
+                    {"path": "outputs/audit.json"},
+                ),
+            ),
+        )
+        state = _state_for(contract)
+
+        decision = RuleBasedPhaseController().evaluate(state)  # type: ignore[arg-type]
+
+        self.assertEqual(decision.phase, Phase.SYNTHESIZING)
+
     def test_no_assessment_with_source_access_routes_to_acquiring_with_public_url_summary(self) -> None:
         state = _state_for(_source_access_contract())
 

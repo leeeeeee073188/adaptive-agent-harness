@@ -146,7 +146,7 @@ class PolicySessionTests(unittest.TestCase):
         self.assertIn("pending", rendered)
         self.assertNotIn("private", rendered.lower())
 
-    def test_begin_turn_evaluates_contracted_phase_without_progress_detector(self) -> None:
+    def test_begin_turn_evaluates_artifact_only_phase_without_progress_detector(self) -> None:
         ledger = SessionLedger("policy-phase-begin")
         session = KernelPolicySession(completion_gate=EvidenceCompletionGate())
         session.start_contract(
@@ -161,9 +161,9 @@ class PolicySessionTests(unittest.TestCase):
         self.assertIsNone(snapshot)
         phase_events = [event for event in ledger.events if event.type == PHASE_EVALUATED]
         self.assertEqual(len(phase_events), 1)
-        self.assertEqual(phase_events[0].payload["phase"], Phase.CONTRACTED.value)
+        self.assertEqual(phase_events[0].payload["phase"], Phase.SYNTHESIZING.value)
         state = TaskStateProjector().project(ledger.events)
-        self.assertEqual(state.values["phase.current"], Phase.CONTRACTED.value)
+        self.assertEqual(state.values["phase.current"], Phase.SYNTHESIZING.value)
 
 
 

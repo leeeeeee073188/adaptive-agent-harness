@@ -7,9 +7,19 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 from adaptive_harness.integrations.deerflow import DeerFlowReplaySummary
-from adaptive_harness.integrations.deerflow_policy import DeerFlowPolicyBridge, FileArtifactObservationProvider
+from adaptive_harness.integrations.deerflow_policy import (
+    DeerFlowPolicyBridge,
+    FileArtifactObservationProvider,
+    PublicSourceAccessObservationProvider,
+)
 from adaptive_harness.ledger import SessionLedger
-from adaptive_harness.task_contract import CriterionKind, RuleBasedTaskContractBuilder
+from adaptive_harness.task_contract import (
+    Criterion,
+    CriterionKind,
+    CriterionSource,
+    RuleBasedTaskContractBuilder,
+    TaskContract,
+)
 from adaptive_harness.task_state import TaskEventWriter
 
 
@@ -54,6 +64,39 @@ def _slug_brand_contract() -> Any:
     assert "sample-brand" not in encoded
     assert shape.parameters["list_identity_keys"] == {"$.items": ["slug", "brand"]}
     return contract
+
+
+def _source_contract(resource: str = "http://127.0.0.1:8123/data") -> TaskContract:
+    return TaskContract(
+        "source-only",
+        f"Open {resource} and summarize it.",
+        (
+            Criterion(
+                id="observation:source-access",
+                description="Public source was accessed",
+                kind=CriterionKind.OBSERVATION_EQUALS,
+                source=CriterionSource.TASK_PROMPT,
+                parameters={
+                    "subject": "source.access:test",
+                    "expected": True,
+                    "resource": resource,
+                },
+            ),
+        ),
+    )
+
+
+class _StaticContractBuilder:
+    def __init__(self, contract: TaskContract) -> None:
+        self.contract = contract
+
+    def build(
+        self,
+        task_id: str,
+        task_prompt: str,
+        public_schema: Any | None = None,
+    ) -> TaskContract:
+        return self.contract
 
 
 def _summary() -> DeerFlowReplaySummary:
@@ -204,6 +247,118 @@ class DeerFlowPolicyBridgeSourceCriterionTests(unittest.TestCase):
         bridge = DeerFlowPolicyBridge(unsupported_criteria="observe_only")
 
         self.assertTrue(bridge._criterion_supported(criterion))
+
+
+class PublicSourceAccessObservationProviderTests(unittest.TestCase):
+    def test_loopback_source_is_materialized_before_completion_check(self) -> None:
+        provider = PublicSourceAccessObservationProvider(
+            fetch_bytes=lambda _url: (
+                "http://127.0.0.1:8123/data",
+                b'{"message":"ok","api_key":"secret-value"}',
+            )
+        )
+        ledger = SessionLedger("source-materialized")
+        bridge = DeerFlowPolicyBridge(
+            contract_builder=_StaticContractBuilder(_source_contract()),
+            observation_providers=(provider,),
+        )
+
+        bridge.start(ledger, task_id="source-only", task_prompt="Open http://127.0.0.1:8123/data", public_schema=None)
+
+        result = TaskEventWriter(ledger).check_completion()
+        self.assertTrue(result.passed)
+        evidence = next(event.payload["evidence"] for event in ledger.events if event.type == "evidence/added")
+        self.assertEqual(evidence["subject"], "source.access:test")
+        self.assertTrue(evidence["value"])
+        self.assertEqual(
+            set(evidence["metadata"]),
+            {"resource", "hash", "chars", "public_payload_excerpt"},
+        )
+        self.assertEqual(evidence["metadata"]["resource"], "http://127.0.0.1:8123/data")
+        self.assertEqual(len(evidence["metadata"]["hash"]), 64)
+        self.assertIn('"api_key": "<redacted>"', evidence["metadata"]["public_payload_excerpt"])
+
+    def test_external_resource_is_not_supported_or_fetched(self) -> None:
+        fetched = False
+
+        def fetch(_url: str) -> tuple[str, bytes]:
+            nonlocal fetched
+            fetched = True
+            return _url, b"{}"
+
+        provider = PublicSourceAccessObservationProvider(fetch_bytes=fetch)
+        evidence = provider.before_run(_source_contract("https://example.com/data"))
+
+        self.assertEqual(evidence, ())
+        self.assertFalse(fetched)
+
+    def test_credentialed_resource_is_not_supported_or_fetched(self) -> None:
+        fetched = False
+
+        def fetch(_url: str) -> tuple[str, bytes]:
+            nonlocal fetched
+            fetched = True
+            return _url, b"{}"
+
+        provider = PublicSourceAccessObservationProvider(fetch_bytes=fetch)
+        evidence = provider.before_run(_source_contract("http://user:pass@127.0.0.1:8123/data?token=secret"))
+
+        self.assertEqual(evidence, ())
+        self.assertFalse(fetched)
+
+    def test_redirect_to_external_resource_fails_closed_without_evidence(self) -> None:
+        provider = PublicSourceAccessObservationProvider(
+            fetch_bytes=lambda _url: ("https://example.com/data", b"{}")
+        )
+        ledger = SessionLedger("source-redirect")
+        bridge = DeerFlowPolicyBridge(
+            contract_builder=_StaticContractBuilder(_source_contract()),
+            observation_providers=(provider,),
+        )
+
+        bridge.start(ledger, task_id="source-only", task_prompt="Open http://127.0.0.1:8123/data", public_schema=None)
+        result = TaskEventWriter(ledger).check_completion()
+
+        self.assertFalse(result.passed)
+        self.assertFalse(any(event.type == "evidence/added" for event in ledger.events))
+        failure = next(event.payload["failure"] for event in ledger.events if event.type == "failure/classified")
+        self.assertEqual(failure["error_type"], "OBSERVATION_SNAPSHOT_FAILED")
+
+    def test_oversize_payload_fails_closed_without_evidence(self) -> None:
+        provider = PublicSourceAccessObservationProvider(
+            fetch_bytes=lambda _url: ("http://127.0.0.1:8123/data", b"x" * (64 * 1024 + 1))
+        )
+        ledger = SessionLedger("source-oversize")
+        bridge = DeerFlowPolicyBridge(
+            contract_builder=_StaticContractBuilder(_source_contract()),
+            observation_providers=(provider,),
+        )
+
+        bridge.start(ledger, task_id="source-only", task_prompt="Open http://127.0.0.1:8123/data", public_schema=None)
+        result = TaskEventWriter(ledger).check_completion()
+
+        self.assertFalse(result.passed)
+        self.assertFalse(any(event.type == "evidence/added" for event in ledger.events))
+        failure = next(event.payload["failure"] for event in ledger.events if event.type == "failure/classified")
+        self.assertIn("exceeds", failure["message"])
+
+    def test_fetch_error_fails_closed_without_pretending_success(self) -> None:
+        provider = PublicSourceAccessObservationProvider(
+            fetch_bytes=lambda _url: (_ for _ in ()).throw(OSError("connection refused"))
+        )
+        ledger = SessionLedger("source-error")
+        bridge = DeerFlowPolicyBridge(
+            contract_builder=_StaticContractBuilder(_source_contract()),
+            observation_providers=(provider,),
+        )
+
+        bridge.start(ledger, task_id="source-only", task_prompt="Open http://127.0.0.1:8123/data", public_schema=None)
+        result = TaskEventWriter(ledger).check_completion()
+
+        self.assertFalse(result.passed)
+        self.assertFalse(any(event.type == "evidence/added" for event in ledger.events))
+        failure = next(event.payload["failure"] for event in ledger.events if event.type == "failure/classified")
+        self.assertEqual(failure["error_type"], "OBSERVATION_SNAPSHOT_FAILED")
 
 
 if __name__ == "__main__":

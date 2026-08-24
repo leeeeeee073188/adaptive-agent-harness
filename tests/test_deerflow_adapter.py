@@ -20,6 +20,7 @@ from adaptive_harness.integrations.deerflow_policy import (
     FileArtifactObservationProvider,
     HttpJsonMatchObservationProvider,
     OutputFileCountObservationProvider,
+    PublicSourceAccessObservationProvider,
     StructuredDeerFlowObservationProvider,
 )
 from adaptive_harness.integrations.realreplica_contract import realreplica_contract_builder
@@ -613,6 +614,36 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("latest_completion", second)
         self.assertIn("recent_recoveries", second)
 
+    async def test_before_run_source_snapshot_is_visible_in_first_model_turn_context(self) -> None:
+        client = _MiddlewareClient()
+        bridge = DeerFlowPolicyBridge(
+            contract_builder=RuleBasedTaskContractBuilder(),
+            observation_providers=(
+                PublicSourceAccessObservationProvider(
+                    fetch_bytes=lambda _url: ("http://127.0.0.1:8123/data", b'{"status":"ready"}')
+                ),
+            ),
+        )
+
+        result = await DeerFlowRuntimeAdapter(
+            client,
+            _FakeEnvironment(),
+            policy_bridge=bridge,
+        ).run(
+            DeerFlowRunRequest("Open http://127.0.0.1:8123/data and summarize it.", "thread-source"),
+            run_id="run-source-context",
+        )
+
+        header = next(event for event in result.ledger.events if event.type == "request/header")
+        evidence = header.payload["context"]["task"]["evidence"]
+        prepared = client.prepared_by_turn[0]
+        self.assertTrue(result.completed)
+        self.assertEqual(len(client.calls), 1)
+        self.assertEqual(evidence[0]["subject"], "source.access:e13a38f574a7")
+        self.assertTrue(evidence[0]["value"])
+        self.assertEqual(evidence[0]["metadata"]["resource"], "http://127.0.0.1:8123/data")
+        self.assertIn('"public_payload_excerpt"', prepared)
+        self.assertIn('\\"status\\": \\"ready\\"', prepared)
 
     async def test_policy_bridge_fails_closed_when_turn_budget_expires(self) -> None:
         client = _TurnClient(

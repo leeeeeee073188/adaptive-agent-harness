@@ -14,7 +14,7 @@ from enum import StrEnum
 from typing import Any, Protocol
 
 from adaptive_harness.task_contract import Criterion, CriterionKind
-from adaptive_harness.task_state import CriterionAssessment, CriterionStatus, TaskState
+from adaptive_harness.task_state import CriterionAssessment, CriterionStatus, RuleBasedContractChecker, TaskState
 
 PHASE_EVALUATED = "phase/evaluated"
 
@@ -73,29 +73,16 @@ class RuleBasedPhaseController:
             for criterion in required_by_id.values()
             if criterion.kind is CriterionKind.ARTIFACT_EXISTS
         }
-        completion = state.latest_completion
-        if completion is None or not completion.assessments:
-            unmet = tuple(required_by_id)
-            synthetic = tuple(
-                CriterionAssessment(criterion_id, CriterionStatus.PENDING, "No evidence assessment yet.")
-                for criterion_id in unmet
-            )
-            if any(_is_source_obligation(required_by_id[item.criterion_id], artifact_ids) for item in synthetic):
-                return PhaseDecision(
-                    Phase.ACQUIRING,
-                    unmet,
-                    "source access obligations exist before the first evidence assessment.",
-                    ("observe", "inspect", "gather_evidence"),
-                    "Acquire required public source evidence before synthesis; avoid blind artifact retries.",
-                    _summarize_unmet(required_by_id, synthetic),
-                )
+        completion = state.latest_completion or RuleBasedContractChecker().check(state)
+        if not completion.assessments:
+            unmet = tuple(required_by_id) or completion.missing
             return PhaseDecision(
                 Phase.CONTRACTED,
                 unmet,
                 "Task contract exists but has no evidence assessment yet.",
                 ("assess_contract", "observe"),
                 "Take one bounded assessment step before planning more work.",
-                _summarize_unmet(required_by_id, synthetic),
+                (),
             )
 
         relevant = tuple(

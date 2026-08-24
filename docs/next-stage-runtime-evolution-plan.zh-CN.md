@@ -1,6 +1,6 @@
 # 下一阶段：Runtime Conformance 与 Offline Evolution 接线方案
 
-状态：Evidence Workspace v3 真实 canary 回退并保持 Shadow；v3.1 零模型门禁通过，仅允许一个替代 Development canary
+状态：v3/v3.1 真实 canary 均回退并保持 Shadow；v3.2 零模型门禁通过，仅允许同任务一个 canary
 前置版本：`3f589aa`  
 约束：禁止完整 107 任务；确定性门禁通过前禁止付费模型调用。
 
@@ -141,6 +141,8 @@ SessionLedger
 后续因果回放见 `evidence/a23-runtime-failure-analysis/summary.json`，v3 的历史 Context/Contract gate 与容器接线分别见 `evidence/a24-next-generation-gate/summary.json` 和 `evidence/a25-v3-container-conformance/summary.json`。二者绑定相同 source/Profile fingerprint，且只允许配置中的一个 Development canary；任何失败、无进展循环或质量回退都会继续保持 Shadow。
 
 v3 的真实回退记录在 `evidence/a26-v3-live-canary/`：0/5、无产物、350,771 Token、46 Tool，因此未替代 v2.6。v3.1 的 source-first phase、local-resource governor 与三 turn 配置由 `evidence/a27-v3-1-gate/summary.json` 和 `evidence/a28-v3-1-container-conformance/summary.json` 绑定；仍只允许同一 Development 任务的一次替代 canary。
+
+v3.1 的真实结果记录在 `evidence/a29-v3-1-live-canary/`：Token/耗时下降，但仍未访问公共 API、未生成产物。v3.2 使用安全 loopback GET materializer 在首轮前物化显式公共来源，并在第二次本地缓存阻断时提前结束 turn；对应 A30/A31 gate 仍禁止任何任务扩展。
 
 ## 测试规格摘要
 

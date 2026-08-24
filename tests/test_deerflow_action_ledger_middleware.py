@@ -450,6 +450,57 @@ class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
         self.assertIsNone(observed.status)
         self.assertIsNone(next_read.status)
 
+
+    def test_second_local_cache_block_ends_current_turn_and_audits_error(self) -> None:
+        with patch.dict(os.environ, {"ADAPTIVE_MAX_READS_PER_RESOURCE": "1"}):
+            middleware = DeerFlowToolActionLedgerMiddleware()
+        audits: list[dict[str, Any]] = []
+
+        with bind_action_audit_sink(audits.append):
+            first = middleware.wrap_tool_call(
+                _request(call_id="read-1", name="read_file", args={"path": "/task/workspace/end.md"}, turn=1),
+                lambda request: ToolMessage("data", tool_call_id=request.tool_call["id"]),
+            )
+            first_block = middleware.wrap_tool_call(
+                _request(call_id="block-1", name="read_file", args={"path": "/task/workspace/end.md"}, turn=1),
+                lambda request: ToolMessage("should not run", tool_call_id=request.tool_call["id"]),
+            )
+            second_block = middleware.wrap_tool_call(
+                _request(call_id="block-2", name="read_file", args={"path": "/task/workspace/end.md"}, turn=1),
+                lambda request: ToolMessage("should not run", tool_call_id=request.tool_call["id"]),
+            )
+
+        self.assertIsNone(first.status)
+        self.assertEqual(first_block.status, "error")
+        self.assertIsInstance(second_block, Command)
+        self.assertEqual(second_block.goto, "__end__")
+        message = second_block.update["messages"][0]
+        self.assertEqual(message.status, "error")
+        self.assertIn("Policy recovery", message.content)
+        self.assertEqual(audits[-1]["record"]["error_type"], "TOOL_ERROR")
+
+    def test_local_cache_block_count_resets_next_turn(self) -> None:
+        with patch.dict(os.environ, {"ADAPTIVE_MAX_READS_PER_RESOURCE": "1"}):
+            middleware = DeerFlowToolActionLedgerMiddleware()
+
+        with bind_action_audit_sink(lambda _payload: None):
+            middleware.wrap_tool_call(
+                _request(call_id="read-1", name="read_file", args={"path": "/task/workspace/reset.md"}, turn=1),
+                lambda request: ToolMessage("data", tool_call_id=request.tool_call["id"]),
+            )
+            turn_one_block = middleware.wrap_tool_call(
+                _request(call_id="block-1", name="read_file", args={"path": "/task/workspace/reset.md"}, turn=1),
+                lambda request: ToolMessage("should not run", tool_call_id=request.tool_call["id"]),
+            )
+            turn_two_block = middleware.wrap_tool_call(
+                _request(call_id="block-2", name="read_file", args={"path": "/task/workspace/reset.md"}, turn=2),
+                lambda request: ToolMessage("should not run", tool_call_id=request.tool_call["id"]),
+            )
+
+        self.assertEqual(turn_one_block.status, "error")
+        self.assertEqual(turn_two_block.status, "error")
+        self.assertNotIsInstance(turn_two_block, Command)
+
     def test_cacheable_local_read_budget_does_not_block_http_resources(self) -> None:
         with patch.dict(os.environ, {"ADAPTIVE_MAX_READS_PER_RESOURCE": "1"}):
             middleware = DeerFlowToolActionLedgerMiddleware()
@@ -488,13 +539,14 @@ class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
                     ),
                     lambda request: ToolMessage("data", tool_call_id=request.tool_call["id"]),
                 )
-                return result.status
+                return "end" if isinstance(result, Command) else result.status
 
         with ThreadPoolExecutor(max_workers=8) as executor:
             statuses = list(executor.map(execute, range(8)))
 
         self.assertEqual(statuses.count(None), 3)
-        self.assertEqual(statuses.count("error"), 5)
+        self.assertEqual(statuses.count("error") + statuses.count("end"), 5)
+        self.assertGreaterEqual(statuses.count("end"), 1)
         self.assertEqual(len(audits), 8)
 
     def test_nonmutating_action_budget_resets_each_policy_turn(self) -> None:

@@ -1,0 +1,144 @@
+{
+  "baseline_run_id": "adaptive-deerflow-minibench16-development",
+  "claim_boundary": "One Development task only. The selected candidate did not pass; it remains Shadow and cannot justify more paid tasks, Transfer, Held-out, or MiniBench-wide success-rate claims.",
+  "completed_run_count": 4,
+  "full_107_run": false,
+  "incomplete_runs": [],
+  "observed_total_tokens": 1070198,
+  "paid_expansion_allowed": false,
+  "runs": [
+    {
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "decision": "reference",
+      "delta_vs_baseline": {
+        "capacity_score": 0.0,
+        "elapsed_sec": 0.0,
+        "token_fraction": 0.0,
+        "tool_calls": 0,
+        "total_tokens": 0
+      },
+      "elapsed_sec": 135.782,
+      "integrity_passed": true,
+      "ledger_event_count": 0,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 0,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 0,
+        "check_count": 0,
+        "dispositions": {}
+      },
+      "run_id": "adaptive-deerflow-minibench16-development",
+      "tool_calls": 18,
+      "total_tokens": 266169,
+      "variant": "vanilla_deerflow"
+    },
+    {
+      "capacity_score": 0.4,
+      "checks_passed": 2,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.4,
+        "elapsed_sec": -60.628000000000014,
+        "token_fraction": -0.11120378406200572,
+        "tool_calls": 24,
+        "total_tokens": -29599
+      },
+      "elapsed_sec": 75.154,
+      "integrity_passed": true,
+      "ledger_event_count": 2855,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 1,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 3,
+        "check_count": 32,
+        "dispositions": {
+          "allow": 13,
+          "block_scope": 6,
+          "record": 9,
+          "replan": 4
+        }
+      },
+      "run_id": "adaptive-harness-runtime-evolution-v2-6-development",
+      "tool_calls": 42,
+      "total_tokens": 236570,
+      "variant": "adaptive_harness_runtime_evolution_v2_6"
+    },
+    {
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.0,
+        "elapsed_sec": -55.84400000000001,
+        "token_fraction": 0.3178506888480627,
+        "tool_calls": 28,
+        "total_tokens": 84602
+      },
+      "elapsed_sec": 79.938,
+      "integrity_passed": true,
+      "ledger_event_count": 1699,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 0,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 3,
+        "check_count": 40,
+        "dispositions": {
+          "allow": 1,
+          "block_scope": 10,
+          "record": 21,
+          "replan": 8
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-development",
+      "tool_calls": 46,
+      "total_tokens": 350771,
+      "variant": "adaptive_harness_evidence_workspace_v3"
+    },
+    {
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "decision": "keep_shadow",
+      "delta_vs_baseline": {
+        "capacity_score": 0.0,
+        "elapsed_sec": -79.45000000000002,
+        "token_fraction": -0.1859006871574075,
+        "tool_calls": 24,
+        "total_tokens": -49481
+      },
+      "elapsed_sec": 56.332,
+      "integrity_passed": true,
+      "ledger_event_count": 563,
+      "model": "deepseek-v4-flash-vision-exp",
+      "output_file_count": 0,
+      "passed": false,
+      "resource": {
+        "blocked_tool_results": 5,
+        "check_count": 34,
+        "dispositions": {
+          "allow": 1,
+          "record": 28,
+          "replan": 5
+        }
+      },
+      "run_id": "adaptive-harness-evidence-workspace-v3-1-development",
+      "tool_calls": 42,
+      "total_tokens": 216688,
+      "variant": "adaptive_harness_evidence_workspace_v3_1"
+    }
+  ],
+  "scope": "paid single-task Development runtime evolution",
+  "selected_candidate_decision": "keep_shadow",
+  "selected_candidate_passed": false,
+  "selected_candidate_run_id": "adaptive-harness-runtime-evolution-v2-6-development",
+  "selected_candidate_variant": "adaptive_harness_runtime_evolution_v2_6",
+  "selection_reason": "highest public capacity score, then lower observed tokens and latency",
+  "task_id": "cli-google-trends-data-quality-audit"
+}

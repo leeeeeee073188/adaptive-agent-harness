@@ -274,6 +274,15 @@ task-run resource read budget across tools and turns, and reserves a third
 turn for the source → artifact → validation progression. This replacement is
 also single-canary-only.
 
+The v3.1 canary then reduced Tokens and latency but still ignored explicit
+source URLs. v3.2 treats safe, model-visible loopback GET obligations as a
+deterministic evidence-acquisition workflow: before the first model turn it
+materializes bounded, redacted public payload evidence, rejects external
+redirects and credentials, and lets the phase projection start at synthesis
+when source evidence is already present. A second cache-budget block ends the
+current turn instead of paying for more equivalent calls. These controls remain
+Profile-fingerprinted, container-probed, and single-canary-only.
+
 Later Context Shadows are separate Profile versions and are not merged with
 that pair. A reused historical Vanilla result is exploratory only. Context v1.1
 remains rejected historical evidence because the run used the superseded cost

@@ -43,6 +43,9 @@ REQUIRED = tuple(
         (26, "v3-live-canary"),
         (27, "v3-1-gate"),
         (28, "v3-1-container-conformance"),
+        (29, "v3-1-live-canary"),
+        (30, "v3-2-gate"),
+        (31, "v3-2-container-conformance"),
     )
 )
 OPTIONAL = (
@@ -54,6 +57,9 @@ OPTIONAL = (
     "a26-v3-live-canary/pair.json",
     "a26-v3-live-canary/diagnosis.json",
     "a28-v3-1-container-conformance/container-wiring.json",
+    "a29-v3-1-live-canary/pair.json",
+    "a29-v3-1-live-canary/diagnosis.json",
+    "a31-v3-2-container-conformance/container-wiring.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -119,6 +125,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_1_gate = doc("a27-v3-1-gate/summary.json") if not missing else {}
     v3_1_conformance = doc("a28-v3-1-container-conformance/summary.json") if not missing else {}
     v3_1_wiring = documents.get("a28-v3-1-container-conformance/container-wiring.json", {})
+    v3_1_live = doc("a29-v3-1-live-canary/summary.json") if not missing else {}
+    v3_2_gate = doc("a30-v3-2-gate/summary.json") if not missing else {}
+    v3_2_conformance = doc("a31-v3-2-container-conformance/summary.json") if not missing else {}
+    v3_2_wiring = documents.get("a31-v3-2-container-conformance/container-wiring.json", {})
     selected_live_row = next(
         (
             row
@@ -356,6 +366,35 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         )
         and v3_1_gate.get("executable_policy_profile_fingerprint")
         == v3_1_wiring.get("executable_policy_profile_fingerprint"),
+        "v3_1_live_selected_candidate": v3_1_live.get("selected_candidate_variant"),
+        "v3_1_live_paid_expansion_allowed": v3_1_live.get("paid_expansion_allowed"),
+        "v3_1_live_row": next(
+            (
+                row
+                for row in v3_1_live.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_evidence_workspace_v3_1"
+            ),
+            None,
+        ),
+        "v3_2_gate_passed": v3_2_gate.get("passed"),
+        "v3_2_single_canary_allowed": v3_2_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v3_2_paid_expansion_allowed": v3_2_gate.get("paid_expansion_allowed"),
+        "v3_2_candidate_variant": (
+            (v3_2_conformance.get("profiles") or {}).get("candidate") or {}
+        ).get("name"),
+        "v3_2_paid_canary_allowed": (
+            v3_2_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v3_2_source_hash_matches": bool(v3_2_gate.get("adaptive_source_sha256"))
+        and v3_2_gate.get("adaptive_source_sha256")
+        == v3_2_wiring.get("adaptive_source_sha256"),
+        "v3_2_profile_fingerprint_matches": bool(
+            v3_2_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v3_2_gate.get("executable_policy_profile_fingerprint")
+        == v3_2_wiring.get("executable_policy_profile_fingerprint"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -470,6 +509,22 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v3_1_paid_canary_allowed"] is True
         and claims["v3_1_source_hash_matches"] is True
         and claims["v3_1_profile_fingerprint_matches"] is True,
+        "v3_1_regression_not_promoted": (
+            (claims["v3_1_live_row"] or {}).get("passed") is False
+            and (claims["v3_1_live_row"] or {}).get("capacity_score") == 0.0
+            and (claims["v3_1_live_row"] or {}).get("output_file_count") == 0
+            and claims["v3_1_live_selected_candidate"]
+            == "adaptive_harness_runtime_evolution_v2_6"
+            and claims["v3_1_live_paid_expansion_allowed"] is False
+        ),
+        "v3_2_gate_is_single_canary_only": claims["v3_2_gate_passed"] is True
+        and claims["v3_2_single_canary_allowed"] is True
+        and claims["v3_2_paid_expansion_allowed"] is False,
+        "v3_2_container_gate_cleared": claims["v3_2_candidate_variant"]
+        == "adaptive_harness_evidence_workspace_v3_2"
+        and claims["v3_2_paid_canary_allowed"] is True
+        and claims["v3_2_source_hash_matches"] is True
+        and claims["v3_2_profile_fingerprint_matches"] is True,
     }
     return {
         "schema_version": 1,
@@ -497,8 +552,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and "
             "container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. "
             "A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile "
-            "to one replacement Development canary only. Transfer, Held-out, and further task expansion "
-            "remain disabled."
+            "to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and "
+            "latency but still produced no artifact. A30/A31 bind the loopback public-source materializer "
+            "and early cache-block turn termination to one v3.2 canary. Transfer, Held-out, and further "
+            "task expansion remain disabled."
         ),
     }
 

@@ -380,6 +380,8 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
                 "progress/checked",
                 "state/updated",
                 "completion/checked",
+                "phase/evaluated",
+                "state/updated",
                 "step/end",
                 "turn/end",
                 "runtime/end",

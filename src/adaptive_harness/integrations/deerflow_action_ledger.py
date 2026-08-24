@@ -71,6 +71,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         self._read_counts: dict[str, dict[str, int]] = {}
         self._read_inflight: dict[str, dict[str, tuple[tuple[str, ...], int]]] = {}
         self._resource_epochs: dict[str, int] = {}
+        self._local_cache_blocks: dict[str, int] = {}
         self._ledgers: OrderedDict[str, ToolActionLedger] = OrderedDict()
         self._state_lock = Lock()
 
@@ -90,6 +91,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                 self._read_counts.pop(evicted_key, None)
                 self._read_inflight.pop(evicted_key, None)
                 self._resource_epochs.pop(evicted_key, None)
+                self._discard_turn_state_locked(evicted_key)
         else:
             self._ledgers.move_to_end(key)
         return ledger
@@ -127,6 +129,17 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         if not inflight:
             self._read_inflight.pop(run_key, None)
         return reserved
+
+    def _record_local_cache_block_locked(self, turn_key: str) -> int:
+        count = self._local_cache_blocks.get(turn_key, 0) + 1
+        self._local_cache_blocks[turn_key] = count
+        return count
+
+    def _discard_turn_state_locked(self, run_key: str) -> None:
+        prefix = f"{run_key}:policy-turn:"
+        for key in tuple(self._local_cache_blocks):
+            if key.startswith(prefix):
+                self._local_cache_blocks.pop(key, None)
 
     def _observe(
         self,
@@ -248,15 +261,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
                     local_resources,
                 )
             if budget_exhausted:
-                return ToolMessage(
-                    content=(
-                        "[HARNESS LOCAL RESOURCE CACHE REQUIRED] Read-only access blocked because "
-                        "all local resources in this call already reached the task-run read budget. "
-                        "Use the Visible Evidence Workspace, deliver from existing evidence, or change strategy."
-                    ),
-                    tool_call_id=call.id,
-                    status="error",
-                )
+                return self._local_cache_block_result(call.id, _turn_key(request))
         if session is None or not session.is_action_blocked(call):
             threshold = (
                 self._config.max_same_scope_reads
@@ -288,6 +293,29 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             content="Harness blocked this repeated no-progress Action Scope.",
             tool_call_id=call.id,
             status="error",
+        )
+
+    def _local_cache_block_result(self, call_id: str, turn_key: str) -> ToolMessage | Command:
+        content = (
+            "[HARNESS LOCAL RESOURCE CACHE REQUIRED] Read-only access blocked because "
+            "all local resources in this call already reached the task-run read budget. "
+            "Use the Visible Evidence Workspace, deliver from existing evidence, or change strategy."
+        )
+        with self._state_lock:
+            count = self._record_local_cache_block_locked(turn_key)
+        if count < 2:
+            return ToolMessage(content=content, tool_call_id=call_id, status="error")
+        return Command(
+            update={
+                "messages": [
+                    ToolMessage(
+                        content=f"{content} Ending this model loop so Policy recovery can replan.",
+                        tool_call_id=call_id,
+                        status="error",
+                    )
+                ]
+            },
+            goto=END,
         )
 
 
@@ -324,10 +352,21 @@ def _tool_result(call_id: str, result: ToolMessage | Command) -> ToolResult:
         error_type = "TOOL_ERROR" if getattr(result, "status", None) == "error" else None
         return ToolResult(call_id, _content_text(result.content), error_type=error_type)
     update = getattr(result, "update", None)
+    error_type = "TOOL_ERROR" if _command_contains_error_message(update) else None
     return ToolResult(
         call_id,
         json.dumps(update if update is not None else str(result), ensure_ascii=False, default=str),
+        error_type=error_type,
     )
+
+
+def _command_contains_error_message(update: Any) -> bool:
+    if not isinstance(update, Mapping):
+        return False
+    messages = update.get("messages")
+    if not isinstance(messages, list):
+        return False
+    return any(getattr(message, "status", None) == "error" for message in messages)
 
 
 def _content_text(content: Any) -> str:

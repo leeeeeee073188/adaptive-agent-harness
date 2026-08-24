@@ -141,6 +141,7 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "executable_policy_profile_assembled": True,
                 "max_completion_turns_frozen": True,
                 "local_resource_read_budget_frozen": True,
+                "public_source_materializer_wired": True,
                 "ledger_persisted": True,
                 "policy_bridge_enabled": True,
                 "policy_profile_fingerprint_matches": True,

@@ -224,6 +224,9 @@ def main() -> int:
             "realreplica_action_ledger_wired": (
                 "adaptive_action_ledger_enabled=adaptive_source is not None" in runner_text
             ),
+            "public_source_materializer_wired": (
+                "PublicSourceAccessObservationProvider()" in runner_text
+            ),
             "realreplica_runner_copies_source": "/tmp/adaptive-src/adaptive_harness" in runner_text,
             "realreplica_runner_persists_ledger": "adaptive-ledger.jsonl" in runner_text,
             "runner_probe_used_zero_models": adaptive.get("model_calls") == 0,
@@ -234,6 +237,7 @@ def main() -> int:
                 "realreplica_candidate_config_enabled",
                 "realreplica_context_profile_wired",
                 "realreplica_action_ledger_wired",
+                "public_source_materializer_wired",
                 "realreplica_runner_copies_source",
                 "realreplica_runner_persists_ledger",
                 "max_completion_turns_frozen",

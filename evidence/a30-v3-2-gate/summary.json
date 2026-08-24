@@ -1,0 +1,101 @@
+{
+  "adaptive_source_sha256": "6c4619a940da590398cabc469eddd9377786b7f81d58c16849e9ccd6dbd44621",
+  "blockers": [],
+  "candidate_single_development_canary_allowed": true,
+  "context_replay": {
+    "blockers": [],
+    "budget_tokens": 4096,
+    "history_dropped": true,
+    "max_estimated_tokens": 3841,
+    "passed": true,
+    "secret_findings": 0,
+    "snapshot_count": 5,
+    "task_excerpt_overlap_count": 85,
+    "visible_workspace_selected": true
+  },
+  "contract": {
+    "artifact_criterion_count": 1,
+    "artifact_shape_criterion_present": true,
+    "criterion_count": 4,
+    "source_access_criteria_present": true,
+    "source_access_criterion_count": 2
+  },
+  "core_leakage": {
+    "finding_count": 0,
+    "findings": [],
+    "guardrail_literal_count": 36,
+    "guardrail_literal_interpretation": "generic evaluator-leakage terms are allowed only as defensive denylist/validation vocabulary; direct benchmark task ids, reward files, and private verifier paths fail this gate",
+    "passed": true
+  },
+  "cross_turn_tests": {
+    "command": [
+      "/home/ligui/workspace/Agent/adaptive-agent-harness/.venv/bin/python",
+      "-m",
+      "unittest",
+      "tests.test_deerflow_context_middleware",
+      "tests.test_policy_session"
+    ],
+    "passed": true,
+    "returncode": 0,
+    "stderr_tail": "......................\n----------------------------------------------------------------------\nRan 22 tests in 0.007s\n\nOK\n",
+    "stdout_tail": "",
+    "test_count": 22,
+    "test_modules": [
+      "tests.test_deerflow_context_middleware",
+      "tests.test_policy_session"
+    ]
+  },
+  "executable_policy_profile_fingerprint": "1d6ecca4685b3a93fb93297b14b1cb55db0f8687e7687f78c595c97057bed946",
+  "fail_closed": false,
+  "historical_artifact": {
+    "diagnostic_count": 1,
+    "diagnostic_types": [
+      "artifact_missing"
+    ],
+    "rejected": true,
+    "shape_checked": true
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "new_tokens": 0,
+  "paid_expansion_allowed": false,
+  "passed": true,
+  "repository_public_artifact_scan": {
+    "finding_count": 0,
+    "findings": [],
+    "passed": true,
+    "policy": "Public task/run identifiers are allowed in analysis documentation and aggregate evidence; credentials and evaluator-private file paths are forbidden.",
+    "public_task_reference_count": 145
+  },
+  "runtime_conformance": {
+    "command": [
+      "/home/ligui/workspace/Agent/adaptive-agent-harness/.venv/bin/python",
+      "-m",
+      "unittest",
+      "tests.test_evidence_workspace",
+      "tests.test_context",
+      "tests.test_phase",
+      "tests.test_policy_session",
+      "tests.test_deerflow_policy",
+      "tests.test_deerflow_context_middleware",
+      "tests.test_deerflow_action_ledger_middleware",
+      "tests.test_recovery"
+    ],
+    "passed": true,
+    "returncode": 0,
+    "stderr_tail": "...........................................................................................\n----------------------------------------------------------------------\nRan 91 tests in 0.061s\n\nOK\n",
+    "stdout_tail": "",
+    "test_count": 91,
+    "test_modules": [
+      "tests.test_evidence_workspace",
+      "tests.test_context",
+      "tests.test_phase",
+      "tests.test_policy_session",
+      "tests.test_deerflow_policy",
+      "tests.test_deerflow_context_middleware",
+      "tests.test_deerflow_action_ledger_middleware",
+      "tests.test_recovery"
+    ]
+  },
+  "scope": "next-generation zero-model adaptive harness gate"
+}

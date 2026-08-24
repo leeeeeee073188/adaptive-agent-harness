@@ -141,7 +141,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 
 ## 6. 简历Bullet（建议版本）
 
-- 设计并实现事件溯源Agent Harness：自研Plugin Kernel、typed ServiceKey、Turn/Step lifecycle、append-only Ledger及可重建TaskState，参考并扩展DeepSeek Harness与Youtu-Agent的分层思路，累计271项零模型测试与4/4历史轨迹精确回放。
+- 设计并实现事件溯源Agent Harness：自研Plugin Kernel、typed ServiceKey、Turn/Step lifecycle、append-only Ledger及可重建TaskState，参考并扩展DeepSeek Harness与Youtu-Agent的分层思路，累计282项零模型测试与4/4历史轨迹精确回放。
 - 实现五层Task-aware Context Working Set与DeerFlow模型调用中间件：在4条历史轨迹99个完整快照上估算消息面压缩中位数49.95%，并用不可变Profile记录v1质量失败、v1.1成本失败、v1.2继续Shadow，避免把单题1.0包装成架构收益。
 - 构建Tool Action Ledger与Verification Budget，将7条轨迹200次调用按Intent/Resource/Mutation epoch压缩为145个cluster；observe-only反事实在2条stable-pass控制上0告警、2条失败控制上16告警，因80.5%分类覆盖不足而拒绝直接拦截。
 - 建立Wilson门禁的跨界面Tool Advice：补齐Browser/API后分类覆盖100%，7条成功控制0告警、2条失败控制全命中；实测拒绝v1.4成本回归，并对v1.5的近基线Token结果因0次Advice触发而拒绝因果归因。
@@ -151,6 +151,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 - 基于真实`deepseek-v4-flash-vision-exp`失败轨迹迭代Runtime Evolution：从1.82M Token/176 Tool的工具风暴收敛到v2.6的236,570 Token/42 Tool，并把单任务公开检查从0/5提升到2/5；因最终未通过和Tool仍回归，主动保持Shadow并撤销质量/成本更差的v2.7。
 - 从v2.6/v2.7轨迹定位Context starvation、浅层Completion和跨Turn状态回退，设计Visible Evidence Workspace、公共Source/Artifact Contract、Evidence-driven Soft Phase与Evidence-gap Recovery；历史轨迹和固定容器零模型门禁通过后仍只授权一个Development canary。
 - v3真实canary证明“证据可见”不足以自动改变动作选择：虽然failure state已进入上下文，模型仍用路径别名和批量shell重复读取并回退到0/5；据此加入跨工具/Turn的resource级预算和source-first阶段，而不是放宽Token/Tool上限。
+- v3.1把Token从350,771降到216,688却仍未访问显式公共API；进一步将安全loopback GET做成可审计的source obligation materializer，让Harness在首轮前物化有限、脱敏、可验证的公共证据，而非继续依赖模型自行发现。
 
 ## 7. 90秒面试讲述
 
