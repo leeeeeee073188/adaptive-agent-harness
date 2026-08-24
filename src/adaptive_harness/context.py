@@ -18,6 +18,7 @@ from adaptive_harness.evaluation import (
 )
 
 CONTEXT_SELECTED = "context/selected"
+CONTEXT_POLICY_VERSION = "task-aware-v1.1"
 
 
 class ContextLayer(StrEnum):
@@ -154,7 +155,7 @@ class TaskAwareContextManager:
             for layer in ContextLayer
         }
         audit = {
-            "policy": "task-aware-v1",
+            "policy": CONTEXT_POLICY_VERSION,
             "budget_tokens": self.budget.max_input_tokens,
             "estimated_input_tokens": selection.estimated_tokens,
             "immutable_overflow": selection.immutable_overflow,
@@ -609,7 +610,7 @@ def _history_groups(
 
 def _working_set_messages(items: Sequence[ContextItem]) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
     payload = {
-        "policy": "task-aware-v1",
+        "policy": CONTEXT_POLICY_VERSION,
         "items": [item.render() for item in items],
     }
     return (

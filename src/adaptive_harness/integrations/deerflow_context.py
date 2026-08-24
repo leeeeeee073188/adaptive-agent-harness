@@ -16,7 +16,11 @@ from langchain.agents.middleware import AgentMiddleware
 from langchain.agents.middleware.types import ModelCallResult, ModelRequest, ModelResponse
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 
-from adaptive_harness.context import ContextBudget, TaskAwareContextManager
+from adaptive_harness.context import (
+    CONTEXT_POLICY_VERSION,
+    ContextBudget,
+    TaskAwareContextManager,
+)
 from adaptive_harness.context_audit import emit_context_audit
 
 _AUTHORITY_MARKER = "HARNESS_CONTEXT_AUTHORITY"
@@ -102,7 +106,7 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
         except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
             emit_context_audit(
                 {
-                    "policy": "task-aware-v1",
+                    "policy": CONTEXT_POLICY_VERSION,
                     "adapter": "deerflow-model-middleware-v1",
                     "failed_open": True,
                     "error_type": type(error).__name__,
@@ -121,7 +125,7 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
         except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
             emit_context_audit(
                 {
-                    "policy": "task-aware-v1",
+                    "policy": CONTEXT_POLICY_VERSION,
                     "adapter": "deerflow-model-middleware-v1",
                     "failed_open": True,
                     "error_type": type(error).__name__,
@@ -175,4 +179,3 @@ def _merge_system_message(message: SystemMessage | None, authority: str) -> Syst
         name=message.name,
         id=message.id,
     )
-
