@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Mapping
+from threading import Lock
 from typing import Any, override
 
 from langchain.agents.middleware import AgentMiddleware, ToolCallLimitMiddleware
@@ -62,6 +64,8 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         if self._max_nonmutating_actions < 1:
             raise ValueError("ADAPTIVE_MAX_NONMUTATING_ACTIONS_PER_TURN must be positive")
         self._turn_budget = NonMutatingTurnBudget(self._max_nonmutating_actions)
+        self._delivery_satisfied: set[str] = set()
+        self._delivery_lock = Lock()
         self._ledgers: OrderedDict[str, ToolActionLedger] = OrderedDict()
 
     def _ledger(self, request: ToolCallRequest) -> ToolActionLedger:
@@ -89,6 +93,9 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         )
         tool_result = _tool_result(call.id, result)
         record, decision = self._ledger(request).observe(call, tool_result)
+        if tool_result.error_type is None and _is_delivery_write(call):
+            with self._delivery_lock:
+                self._delivery_satisfied.add(_run_key(request))
         advice_applied = bool(
             self._config.mode is VerificationMode.ADVISE
             and decision.disposition is VerificationDisposition.WARN
@@ -139,10 +146,9 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         )
         semantics = classify_tool_action(call.name, call.arguments)
         ledger = self._ledger(request)
-        delivery_required = _delivery_required(request.state) and not any(
-            record.semantics.mutating and record.error_type is None
-            for record in ledger.records
-        )
+        with self._delivery_lock:
+            delivery_satisfied = _run_key(request) in self._delivery_satisfied
+        delivery_required = _delivery_required(request.state) and not delivery_satisfied
         if delivery_required and not semantics.mutating:
             return ToolMessage(
                 content=(
@@ -235,4 +241,24 @@ def _delivery_required(state: Any) -> bool:
     return any(
         "[HARNESS DELIVERY REQUIRED]" in _content_text(getattr(message, "content", ""))
         for message in messages
+    )
+
+
+def _is_delivery_write(call: ToolCall) -> bool:
+    path = str(call.arguments.get("path") or "").replace("\\", "/")
+    output_path = path.startswith(("/task/outputs/", "outputs/"))
+    if call.name in {"write_file", "str_replace"}:
+        return output_path
+    if call.name != "bash":
+        return False
+    command = str(call.arguments.get("command") or "")
+    if not re.search(r"(?:/task/outputs/|\boutputs/)", command):
+        return False
+    return bool(
+        re.search(
+            r"(?:>{1,2}|\btee\b|\bcp\b|\bmv\b|write_text|write_bytes|"
+            r"json\.dump|to_csv|open\s*\([^\n]{0,200}['\"](?:w|a|x))",
+            command,
+            re.IGNORECASE,
+        )
     )
