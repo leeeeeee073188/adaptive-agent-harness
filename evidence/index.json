@@ -101,22 +101,42 @@
       "sha256": "8c4690e364b1b07e596f0d9a6ea6924d5146510226a2e1521553656133216d4c"
     },
     {
-      "bytes": 3576,
+      "bytes": 3578,
       "path": "a20-runtime-evolution/summary.json",
-      "sha256": "54ed6916ceb5bd8ac06642c454a8e1860672d6fa89eb2303c91dc9d86d781eb2"
+      "sha256": "e9a5adef79d226c9be9e9c2e4f24595556b926e079d8648f01df5e227427b338"
     },
     {
-      "bytes": 2048,
+      "bytes": 2935,
+      "path": "a21-live-v2-canary/summary.json",
+      "sha256": "4c15b58d35298ab349a1606abd85a48ec3ef64f29d08f37b2549de604803384e"
+    },
+    {
+      "bytes": 7779,
+      "path": "a22-live-model-evolution/summary.json",
+      "sha256": "e713e1772b77ca58874b668a2686ea818b8f576d5954f363fc4635b79bf9431d"
+    },
+    {
+      "bytes": 2236,
       "path": "a20-runtime-evolution/container-wiring.json",
-      "sha256": "6d92885e65d686e2c360ea9e4f057a7d46ded15ef5167c1207e347b086a10527"
+      "sha256": "8d02498ecf0c47547b8fea221d73edf6f6c94690e16e4a8a42cdac98259e2171"
     },
     {
-      "bytes": 1289,
+      "bytes": 1324,
       "path": "a20-runtime-evolution/review.json",
-      "sha256": "ce311923d41741ae77f949b5c910381d7ba11d5eeb9b37e4095711be48535bdc"
+      "sha256": "22b23f9447a9b76e80594187d75c7db639455b8a3f6b48d7af0e5d8491699036"
+    },
+    {
+      "bytes": 3041,
+      "path": "a22-live-model-evolution/pair-v2-6.json",
+      "sha256": "00c4614c81e7126b76535748faeb083e4b3d0917f27ae0afa4202788736641a8"
+    },
+    {
+      "bytes": 2467,
+      "path": "a22-live-model-evolution/review.json",
+      "sha256": "cf2944667270e35172b866950889eac6c8490113fccb66ceb607bc0c262fe6b7"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim task-success uplift: the paid Candidate remains disabled until a fresh primary-model Development baseline and Stable-pass Controls exist.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. Transfer, Held-out, and further task expansion remain disabled.",
   "claims": {
     "action_ledger_classified_fraction": 0.8049999999999999,
     "action_ledger_enforcement_ready": false,
@@ -142,8 +162,23 @@
     "context_v1_2_tool_call_delta": 7,
     "contract_coverage": 16,
     "core_business_vocabulary_findings": 0,
+    "current_realreplica_unit_tests": 67,
     "evolution_online_mutation_enabled": false,
     "historical_replay_exact": "4/4",
+    "live_completed_run_count": 7,
+    "live_full_107_run": false,
+    "live_observed_total_tokens": 4269837,
+    "live_paid_expansion_allowed": false,
+    "live_review_passed": true,
+    "live_selected_candidate_decision": "keep_shadow",
+    "live_selected_candidate_variant": "adaptive_harness_runtime_evolution_v2_6",
+    "live_selected_capacity_score": 0.4,
+    "live_selected_checks_passed": 2,
+    "live_selected_checks_total": 5,
+    "live_selected_passed": false,
+    "live_selected_row_present": true,
+    "live_selected_token_fraction_vs_baseline": -0.11120378406200572,
+    "live_task_id": "cli-google-trends-data-quality-audit",
     "minibench_task_count": 16,
     "paid_expansion_continued": false,
     "paired_canary_attributable_harness_token_delta": 0,
@@ -171,6 +206,7 @@
     "runtime_evolution_zero_model_passed": true,
     "tool_advice_gate_eligible": true,
     "tool_advice_second_task_started": false,
+    "tool_advice_stage_unit_tests": 93,
     "tool_advice_v1_4_promoted": false,
     "tool_advice_v1_5_advice_applied": 0,
     "tool_advice_v1_5_quality": 1.0,
@@ -178,9 +214,9 @@
     "tool_advice_v1_5_token_delta_fraction": 0.01312146065863813,
     "tool_advice_v1_5_tool_delta": 7,
     "tool_enforcement_gate_eligible": false,
-    "zero_model_unit_tests": 93
+    "zero_model_unit_tests": 179
   },
-  "git_head": "4c08c91478251005f61d3c7b6e8c3057eb99f77c",
+  "git_head": "dfdff865176ec7e4f26ee96215b8b857e270c617",
   "invariants": {
     "action_ledger_observe_only": true,
     "action_ledger_stable_controls_unwarned": true,
@@ -191,6 +227,11 @@
     "context_stage_not_full_benchmark": true,
     "core_business_semantics_decoupled": true,
     "evolution_is_offline_governed": true,
+    "live_candidate_has_partial_measured_gain": true,
+    "live_candidate_not_overclaimed": true,
+    "live_review_cleared": true,
+    "live_selected_row_resolves": true,
+    "live_test_remains_single_task": true,
     "minibench_not_full_107": true,
     "no_completion_false_blocks": true,
     "no_secret_findings": true,
