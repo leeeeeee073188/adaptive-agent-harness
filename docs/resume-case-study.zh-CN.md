@@ -123,6 +123,12 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 
 首个paired canary观测到Candidate Token +65.6%，但两侧prompt/config/model/image fingerprint完全一致、Candidate只有1 Turn、counterfactual event replay完全一致，因此该cell可归因Harness model-token delta为0，差值标记为provider/trajectory variance。由于只有4个可比vanilla样本、CV 22.4%，项目仍停止后续付费扩跑。
 
+### Runtime Evolution v2 真实模型结果
+
+统一切换到`deepseek-v4-flash-vision-exp`后，只运行一个Development canary。Vanilla使用266,169 Token、18次工具调用后未生成产物；早期v2因工具风暴达到1,815,707 Token、176次工具调用并失败。通过原子工具预算、LangGraph model-batch终止和delivery-first recovery，v2.6成功生成JSON，将公开检查从0/5提升到2/5、Capacity从0.0提升到0.4，观察Token降至236,570（相对Vanilla -11.1%），耗时从135.8秒降至75.2秒，但工具调用仍增至42次且最终任务未通过。
+
+后续v2.7增加公开artifact review turn后回退到1/5、348,639 Token，因此被撤销。最终选择v2.6为Shadow，不运行Transfer、Held-out或更多任务。可声明“恢复产物交付、显著缓解工具风暴，并取得部分公开质量/成本改善”，不能声明RealReplicaBench成功率提升。
+
 ## 5. 主动拒绝/未上线的方案
 
 - Browser Progress Guard和Form Tools：付费canary无收益，删除；
@@ -135,17 +141,18 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 
 ## 6. 简历Bullet（建议版本）
 
-- 设计并实现事件溯源Agent Harness：自研Plugin Kernel、typed ServiceKey、Turn/Step lifecycle、append-only Ledger及可重建TaskState，参考DeepSeek Harness与Youtu-Agent实现Runtime/Policy/Evaluation/Evolution解耦，累计93项零模型测试与4/4历史轨迹精确回放。
+- 设计并实现事件溯源Agent Harness：自研Plugin Kernel、typed ServiceKey、Turn/Step lifecycle、append-only Ledger及可重建TaskState，参考DeepSeek Harness与Youtu-Agent实现Runtime/Policy/Evaluation/Evolution解耦，累计179项零模型测试与4/4历史轨迹精确回放。
 - 实现五层Task-aware Context Working Set与DeerFlow模型调用中间件：在4条历史轨迹99个完整快照上估算消息面压缩中位数49.95%，并用不可变Profile记录v1质量失败、v1.1成本失败、v1.2继续Shadow，避免把单题1.0包装成架构收益。
 - 构建Tool Action Ledger与Verification Budget，将7条轨迹200次调用按Intent/Resource/Mutation epoch压缩为145个cluster；observe-only反事实在2条stable-pass控制上0告警、2条失败控制上16告警，因80.5%分类覆盖不足而拒绝直接拦截。
 - 建立Wilson门禁的跨界面Tool Advice：补齐Browser/API后分类覆盖100%，7条成功控制0告警、2条失败控制全命中；实测拒绝v1.4成本回归，并对v1.5的近基线Token结果因0次Advice触发而拒绝因果归因。
 - 构建离线受控Evolution Plane：不可变Profile版本经paired Shadow及integrity/leakage/质量置信区间/Token成本/回归门禁后才能晋升，决策全量Ledger化且支持确定性Rollback；Core与RealReplica业务语义通过Extractor/Provider接口解耦。
 - 构建Capability-negotiated Completion与Durable Recovery链路，在冻结MiniBench16上实现Contract/Provider任务覆盖16/16；历史counterfactual捕获5/10 missing-state/artifact类失败且成功任务误拦截0/6，12条人工失败标签Recovery映射覆盖12/12、blind retry为0。
 - 建立成本敏感paired evaluation与Wilson置信门禁：固定model/image/seed/Profile fingerprint，发现首个Candidate虽保持1.0质量但单次Token观测+65.6%，通过surface fingerprint和counterfactual replay判定不可归因于Harness，并停止后续付费扩跑，避免用单次成功掩盖成本不确定性。
+- 基于真实`deepseek-v4-flash-vision-exp`失败轨迹迭代Runtime Evolution：从1.82M Token/176 Tool的工具风暴收敛到v2.6的236,570 Token/42 Tool，并把单任务公开检查从0/5提升到2/5；因最终未通过和Tool仍回归，主动保持Shadow并撤销质量/成本更差的v2.7。
 
 ## 7. 90秒面试讲述
 
-“这个项目不是围绕Bench写特判，而是增强模型Harness。我把DeerFlow降为Runtime Provider，自研Plugin Kernel、Ledger、Contract/Evidence和五层Task-aware Context，所有模型可见选择都能审计。Context v1过度压缩后失败，v1.1恢复1.0但Token增加111%，所以Reject；v1.2把Token降到方向性+9.23%并保持相同产物，但工具和耗时仍高、样本只有1个，因此仍不晋升。这个例子说明自进化不是在线改Prompt，而是不可变Profile经过质量、成本、泄漏和回归门禁。RealReplica只负责外部验证，项目价值是通用架构、失败可解释和证据纪律。”
+“这个项目不是围绕Bench写特判，而是增强模型Harness。我把DeerFlow降为Runtime Provider，自研Plugin Kernel、Ledger、Contract/Evidence和五层Task-aware Context，所有模型可见选择都能审计。真实DeepSeek v4视觉模型测试先暴露1.82M Token、176次工具调用的工具风暴；我通过原子预算、graph termination和delivery-first recovery把它收敛到236,570 Token，并将公开检查从0/5提升到2/5。但因为最终仍未通过且Tool仍回归，我把它保留为Shadow并停止扩跑。这个例子说明自进化不是在线改Prompt，而是不可变Profile经过质量、成本、泄漏和回归门禁。RealReplica只负责外部验证，项目价值是通用架构、失败可解释和证据纪律。”
 
 ## 8. 声明边界
 

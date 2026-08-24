@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "scope": "paid single-task Development Runtime Evolution v2 final review",
+  "passed": true,
+  "reviews": [
+    {
+      "role": "code-reviewer",
+      "verdict": "approved_no_high_or_medium_blockers",
+      "high_findings": 0,
+      "medium_findings": 0,
+      "resolved_findings": [
+        "strictly require one vanilla baseline and at least one candidate",
+        "never authorize paid expansion from a single-task result",
+        "bind index claims to the selected failed 2/5 row and negative Token delta",
+        "remove verifier check identifiers and private reason text"
+      ]
+    },
+    {
+      "role": "verifier",
+      "verdict": "source_derivation_and_claim_boundaries_verified",
+      "checks": {
+        "a21_reproducible_from_run_artifacts": true,
+        "a22_reproducible_from_run_artifacts": true,
+        "selected_candidate_is_v2_6": true,
+        "selected_candidate_failed": true,
+        "selected_candidate_remains_shadow": true,
+        "full_107_not_run": true,
+        "transfer_not_run": true,
+        "heldout_not_run": true,
+        "active_realreplica_config_is_v2_6": true,
+        "paid_expansion_allowed": false
+      }
+    }
+  ],
+  "verification": {
+    "adaptive_unit_tests": 179,
+    "realreplica_unit_tests": 67,
+    "runtime_conformance_gate_tests": 50,
+    "adaptive_ruff_passed": true,
+    "compileall_passed": true,
+    "git_diff_check_passed": true,
+    "a21_source_derivation_passed": true,
+    "a22_source_derivation_passed": true,
+    "secret_findings": 0,
+    "verifier_private_detail_findings": 0,
+    "analysis_model_calls": 0,
+    "analysis_new_model_tokens": 0
+  },
+  "selected_result": {
+    "variant": "adaptive_harness_runtime_evolution_v2_6",
+    "passed": false,
+    "checks_passed": 2,
+    "checks_total": 5,
+    "capacity_score": 0.4,
+    "total_tokens": 236570,
+    "token_fraction_vs_baseline": -0.11120378406200572,
+    "tool_calls": 42,
+    "decision": "keep_shadow",
+    "paid_expansion_allowed": false
+  },
+  "known_caveats": [
+    "The selected candidate failed the only Development task and cannot support a task-success or MiniBench-wide uplift claim.",
+    "Tool calls increased from 18 to 42 and the no-progress-loop gate still failed, so the tool storm is only mitigated, not eliminated.",
+    "Interrupted v2.1 and v2.2 spend is excluded from the completed-run Token total.",
+    "No Transfer, Held-out, additional-task, or full-107 execution is authorized."
+  ]
+}

@@ -35,11 +35,15 @@ REQUIRED = tuple(
         (18, "tool-action-ledger"),
         (19, "tool-advice"),
         (20, "runtime-evolution"),
+        (21, "live-v2-canary"),
+        (22, "live-model-evolution"),
     )
 )
 OPTIONAL = (
     "a20-runtime-evolution/container-wiring.json",
     "a20-runtime-evolution/review.json",
+    "a22-live-model-evolution/pair-v2-6.json",
+    "a22-live-model-evolution/review.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -95,8 +99,24 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     advice = doc("a19-tool-advice/summary.json") if not missing else {}
     runtime_evolution = doc("a20-runtime-evolution/summary.json") if not missing else {}
     runtime_review = documents.get("a20-runtime-evolution/review.json", {})
+    live_evolution = doc("a22-live-model-evolution/summary.json") if not missing else {}
+    live_review = documents.get("a22-live-model-evolution/review.json", {})
+    selected_live_row = next(
+        (
+            row
+            for row in live_evolution.get("runs") or ()
+            if row.get("run_id") == live_evolution.get("selected_candidate_run_id")
+        ),
+        None,
+    )
     claims = {
-        "zero_model_unit_tests": advice.get("test_count"),
+        "zero_model_unit_tests": (runtime_review.get("verification") or {}).get(
+            "adaptive_unit_tests"
+        ),
+        "tool_advice_stage_unit_tests": advice.get("test_count"),
+        "current_realreplica_unit_tests": (
+            runtime_review.get("verification") or {}
+        ).get("realreplica_unit_tests"),
         "core_business_vocabulary_findings": architecture.get(
             "core_business_vocabulary_findings"
         ),
@@ -215,6 +235,30 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "single_canary_default"
         ),
         "runtime_evolution_review_passed": runtime_review.get("passed"),
+        "live_completed_run_count": live_evolution.get("completed_run_count"),
+        "live_task_id": live_evolution.get("task_id"),
+        "live_full_107_run": live_evolution.get("full_107_run"),
+        "live_observed_total_tokens": live_evolution.get("observed_total_tokens"),
+        "live_selected_candidate_variant": live_evolution.get(
+            "selected_candidate_variant"
+        ),
+        "live_selected_candidate_decision": live_evolution.get(
+            "selected_candidate_decision"
+        ),
+        "live_paid_expansion_allowed": live_evolution.get("paid_expansion_allowed"),
+        "live_review_passed": live_review.get("passed"),
+        "live_selected_row_present": selected_live_row is not None,
+        "live_selected_passed": (selected_live_row or {}).get("passed"),
+        "live_selected_capacity_score": (selected_live_row or {}).get(
+            "capacity_score"
+        ),
+        "live_selected_checks_passed": (selected_live_row or {}).get(
+            "checks_passed"
+        ),
+        "live_selected_checks_total": (selected_live_row or {}).get("checks_total"),
+        "live_selected_token_fraction_vs_baseline": (
+            (selected_live_row or {}).get("delta_vs_baseline") or {}
+        ).get("token_fraction"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -265,6 +309,21 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         is True,
         "runtime_evolution_review_cleared": claims["runtime_evolution_review_passed"]
         is True,
+        "live_test_remains_single_task": (claims["live_completed_run_count"] or 0) >= 1
+        and claims["live_task_id"] == "cli-google-trends-data-quality-audit"
+        and claims["live_full_107_run"] is False,
+        "live_selected_row_resolves": claims["live_selected_row_present"] is True,
+        "live_review_cleared": claims["live_review_passed"] is True,
+        "live_candidate_not_overclaimed": claims["live_selected_candidate_decision"]
+        == "keep_shadow"
+        and claims["live_selected_passed"] is False
+        and claims["live_paid_expansion_allowed"] is False,
+        "live_candidate_has_partial_measured_gain": (
+            claims["live_selected_capacity_score"] == 0.4
+            and claims["live_selected_checks_passed"] == 2
+            and claims["live_selected_checks_total"] == 5
+            and (claims["live_selected_token_fraction_vs_baseline"] or 0) < 0
+        ),
     }
     return {
         "schema_version": 1,
@@ -285,8 +344,9 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. "
             "A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller "
             "boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does "
-            "not claim task-success uplift: the paid Candidate remains disabled until a fresh primary-model "
-            "Development baseline and Stable-pass Controls exist."
+            "not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: "
+            "v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed "
+            "and remains Shadow. Transfer, Held-out, and further task expansion remain disabled."
         ),
     }
 

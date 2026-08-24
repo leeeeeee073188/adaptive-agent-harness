@@ -1,6 +1,6 @@
 # 下一阶段：Runtime Conformance 与 Offline Evolution 接线方案
 
-状态：实现完成，零模型门禁通过；付费 Candidate 因新模型基线与稳定回归控制缺失而保持禁用
+状态：实现与真实单任务 Development 迭代完成；v2.6 选为 Shadow，禁止扩跑
 前置版本：`3f589aa`  
 约束：禁止完整 107 任务；确定性门禁通过前禁止付费模型调用。
 
@@ -136,7 +136,7 @@ SessionLedger
 - Runtime Conformance 不一致；
 - Candidate 成功率无提升且新增无效动作。
 
-当前门禁结果见 `evidence/a20-runtime-evolution/summary.json`：Runtime/partition/Profile 零模型检查通过，更新后的容器 wiring 使用 0 次模型调用；付费 Candidate 仍因当前 Primary Model 缺少 Development baseline 和对应 Stable-pass Controls 而禁止运行。
+零模型门禁见 `evidence/a20-runtime-evolution/summary.json`。真实模型迭代见 `evidence/a22-live-model-evolution/summary.json`：v2.6 在同一 Development 任务上取得部分公开质量提升并降低观察 Token，但仍未通过且有工具调用回归，因此保持 Shadow；Transfer、Held-out 和更多任务继续禁用。
 
 ## 测试规格摘要
 

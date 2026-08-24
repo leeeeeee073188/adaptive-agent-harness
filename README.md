@@ -107,4 +107,6 @@ RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能�
 
 下一阶段的 Runtime Conformance、共享 Policy Session、Ledger→Rollout、Distiller Adapter 和零模型门禁已经落地。`evidence/a20-runtime-evolution/summary.json` 明确区分“架构检查通过”和“允许付费 Candidate”：前者已通过，后者在新模型 Development baseline 与 Stable-pass Controls 生成前保持 false。
 
+真实 `deepseek-v4-flash-vision-exp` 单任务 Development 实验随后暴露了新的失败链：Vanilla 在 266,169 Token 后未交付；初版 v2 因工具风暴上升到 1,815,707 Token。经过原子工具预算、图执行终止和 delivery-first recovery，v2.6 交付了 JSON，将公开检查从 0/5 提升到 2/5、Capacity 从 0.0 提升到 0.4，同时相对 Vanilla 的观察 Token 降低 11.1%、耗时降低 44.7%。但任务仍未通过、工具调用仍增加，因此 v2.6 只保留为 Shadow，未运行 Transfer、Held-out 或更多任务。机器证据见 `evidence/a22-live-model-evolution/summary.json`。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

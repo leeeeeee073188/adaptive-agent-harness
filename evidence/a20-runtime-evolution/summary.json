@@ -45,7 +45,7 @@
   },
   "historical_baseline": {
     "complete": false,
-    "development_available": 0,
+    "development_available": 1,
     "development_required": 8
   },
   "model_calls": 0,
@@ -68,8 +68,8 @@
     },
     "candidate": {
       "model": "deepseek-v4-flash-vision-exp",
-      "name": "adaptive_harness_runtime_evolution_v2",
-      "profile_fingerprint": "cce719bb4d292aed11abaa5145ac555e5aceebc3542a85c7692606d90dd59faa",
+      "name": "adaptive_harness_runtime_evolution_v2_6",
+      "profile_fingerprint": "ab4cd9ce61c0218fd0f188867ad6e42e6423b7c863e5fd457a41b5f39f15af56",
       "runtime_image": "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
       "seed": 20260818
     },
@@ -92,7 +92,7 @@
     ],
     "passed": true,
     "returncode": 0,
-    "stderr_tail": "..................................................\n----------------------------------------------------------------------\nRan 50 tests in 0.326s\n\nOK\n",
+    "stderr_tail": "..................................................\n----------------------------------------------------------------------\nRan 50 tests in 0.141s\n\nOK\n",
     "stdout_tail": "",
     "test_count": 50,
     "test_modules": [

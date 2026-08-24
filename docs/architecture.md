@@ -232,6 +232,17 @@ claim to replace RealReplicaBench's official Held-out split. Paid execution is
 staged by role, and a final Candidate is the only configuration allowed to use
 the internal Held-out partition.
 
+## First live Runtime Evolution result
+
+The first paid primary-model Development cell falsified the assumption that
+same-scope Advice alone bounded cost: v2 reached 1.82M observed Tokens and 176
+tool calls. Successive generic controls added atomic pre-handler admission,
+model-batch termination, and output-write-verified delivery recovery. The best
+measured candidate, v2.6, moved public capacity from 0.0 to 0.4 and used 11.1%
+fewer observed Tokens than Vanilla, but still failed the task and increased
+tool calls from 18 to 42. It is therefore Shadow evidence, not a promoted
+success, and no Transfer or Held-out execution is authorized.
+
 Later Context Shadows are separate Profile versions and are not merged with
 that pair. A reused historical Vanilla result is exploratory only. Context v1.1
 remains rejected historical evidence because the run used the superseded cost

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -13,6 +16,9 @@ class EvidenceIndexTests(unittest.TestCase):
         index = build_index(root / "evidence")
 
         self.assertTrue(index["verified"])
+        self.assertEqual(index["claims"]["zero_model_unit_tests"], 179)
+        self.assertEqual(index["claims"]["tool_advice_stage_unit_tests"], 93)
+        self.assertEqual(index["claims"]["current_realreplica_unit_tests"], 67)
         self.assertEqual(index["claims"]["minibench_task_count"], 16)
         self.assertEqual(index["claims"]["provider_enforced_task_coverage"], 16)
         self.assertEqual(index["claims"]["completion_failures_blocked"], 5)
@@ -41,7 +47,32 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertFalse(index["claims"]["runtime_evolution_paid_candidate_allowed"])
         self.assertTrue(index["claims"]["runtime_evolution_single_canary_default"])
         self.assertTrue(index["claims"]["runtime_evolution_review_passed"])
+        self.assertEqual(
+            index["claims"]["live_selected_candidate_variant"],
+            "adaptive_harness_runtime_evolution_v2_6",
+        )
+        self.assertEqual(index["claims"]["live_selected_candidate_decision"], "keep_shadow")
+        self.assertFalse(index["claims"]["live_paid_expansion_allowed"])
+        self.assertFalse(index["claims"]["live_selected_passed"])
+        self.assertEqual(index["claims"]["live_selected_capacity_score"], 0.4)
+        self.assertLess(index["claims"]["live_selected_token_fraction_vs_baseline"], 0)
         self.assertEqual(index["secret_findings"], [])
+
+    def test_rejects_live_evidence_without_a_token_improvement(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            copied = Path(tmp) / "evidence"
+            shutil.copytree(root / "evidence", copied)
+            summary_path = copied / "a22-live-model-evolution/summary.json"
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            selected = next(row for row in summary["runs"] if row["run_id"] == summary["selected_candidate_run_id"])
+            selected["delta_vs_baseline"]["token_fraction"] = 0.01
+            summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+            index = build_index(copied)
+
+        self.assertFalse(index["verified"])
+        self.assertFalse(index["invariants"]["live_candidate_has_partial_measured_gain"])
 
 
 if __name__ == "__main__":

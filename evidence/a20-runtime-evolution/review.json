@@ -23,7 +23,7 @@
     }
   ],
   "verification": {
-    "adaptive_unit_tests": 173,
+    "adaptive_unit_tests": 179,
     "realreplica_unit_tests": 67,
     "zero_model_gate_tests": 50,
     "adaptive_ruff_passed": true,
@@ -33,7 +33,7 @@
     "new_model_tokens": 0
   },
   "known_caveats": [
-    "Paid Candidate remains disabled until a fresh primary-model Development baseline and Stable-pass Controls exist.",
+    "Paid expansion remains disabled: one Development baseline and the failed v2.6 Shadow are insufficient, and fresh Stable-pass Controls do not exist.",
     "RealReplicaBench full-repository Ruff has unrelated pre-existing findings; changed files and unit suites pass.",
     "No project mypy/pyright configuration is installed, so compileall and Ruff are the available static checks."
   ]
