@@ -2307,10 +2307,10 @@ Bench任务特例 → Core条件分支 → 表面覆盖率
 - 4条历史轨迹99个完整快照反事实：消息面估算压缩中位数49.95%，但该指标不等于实际Provider Token；
 - v1单题Shadow：0.0、143,570 Token、26 tool calls、0产物；因工具事实丢失导致重复读取，Reject；
 - v1.1修复工具事实后：同题1.0、2,120 rows，但320,936 Token、32 tool calls；相对较早同题Vanilla探索性对照Token +111.1%、tool +23，成本门禁Reject；
-- v1.2按执行参数（忽略description/reason/label）+结果哈希识别`repeated_unchanged`，在v1.1末态反事实中将61条历史编译为7条消息/4,090估算Token，保留8条工具事实并给出3个no-progress signal；尚未付费运行，保持Shadow；
+- v1.2按执行参数（忽略description/reason/label）+结果哈希识别`repeated_unchanged`；同题Shadow保持1.0、产物SHA与探索性Vanilla一致，Token 166,070（方向性+9.23%，较v1.1下降48.25%），Tool 16次（较v1.1减少16次），但相对探索性Vanilla仍+7次、耗时+76.8%，且仅一个非fresh-pair样本，Keep Shadow；
 - 本阶段只执行MiniBench16中的1个Development任务，没有运行完整107；证据：`evidence/a17-task-aware-context/summary.json`。
 
-下一步先用零模型轨迹继续降低重复Bash/验证调用；只有v1.2或后续Profile在单题成本和质量同时过门禁后，才允许进入MiniBench下一任务。
+下一步从Tool routing与Verification Budget降低12次Bash中的重复partial-data验证；只有后续Profile在质量、Token、Tool和Latency门禁同时通过后，才允许进入MiniBench下一任务。
 
 # 36. 关键风险
 

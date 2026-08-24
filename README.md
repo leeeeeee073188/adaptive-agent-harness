@@ -78,7 +78,7 @@ External adapters
 
 上下文被拆为 Immutable Task、Active State、Evidence、Failure、Experience 五层，并按可配置比例与相关性/新近性/状态重要度/失败重要度/证据价值评分。首个任务和工具调用/结果组保持原子；被淘汰的大结果留下脱敏的参数、结果哈希、有限预览和重复次数。动态工具数据保持 user authority，静态防注入规则保持 system authority；每次选择以 `context/selected` 写入 Ledger，但审计事件不复制敏感正文。
 
-该模块的 Shadow 迭代也展示了 Evolution 门禁的作用：`v1` 因过度压缩导致重复读取并失败；`v1.1` 恢复到 1.0，但相对探索性 Vanilla 对照 Token +111.1%、工具调用 +23，因此仍 Reject。`v1.2` 修复“不同 description 被误判为不同调用”，只完成零模型反事实和容器接线，尚未付费执行、保持 Shadow。
+该模块的 Shadow 迭代也展示了 Evolution 门禁的作用：`v1` 因过度压缩导致重复读取并失败；`v1.1` 恢复到 1.0，但相对探索性 Vanilla 对照 Token +111.1%、工具调用 +23，因此 Reject。`v1.2` 修复“不同 description 被误判为不同调用”后，同题保持1.0和字节级相同产物，Token降至166,070（方向性+9.23%），但工具调用仍+7、耗时+76.8%，且只有一个非fresh-pair样本，因此继续Shadow。
 
 ## 验证
 

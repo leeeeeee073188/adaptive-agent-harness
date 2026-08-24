@@ -129,6 +129,14 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "context_v1_1_promoted": (context.get("context_v1_1") or {}).get("decision")
         == "promote",
         "context_v1_2_status": (context.get("context_v1_2") or {}).get("status"),
+        "context_v1_2_quality": (context.get("context_v1_2") or {}).get("capacity_score"),
+        "context_v1_2_token_delta_fraction": (
+            context.get("context_v1_2") or {}
+        ).get("token_delta_fraction_vs_exploratory_control"),
+        "context_v1_2_tool_call_delta": (context.get("context_v1_2") or {}).get(
+            "tool_call_delta_vs_exploratory_control"
+        ),
+        "context_v1_2_decision": (context.get("context_v1_2") or {}).get("decision"),
         "context_stage_minibench_tasks_executed": (context.get("gates") or {}).get(
             "minibench_tasks_executed_this_stage"
         ),
@@ -146,7 +154,8 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "evolution_is_offline_governed": claims["evolution_online_mutation_enabled"] is False,
         "context_cost_regression_not_promoted": claims["context_v1_1_promoted"] is False,
         "context_next_candidate_stays_shadow": claims["context_v1_2_status"]
-        == "shadow_unexecuted",
+        == "shadow_observed"
+        and claims["context_v1_2_decision"] == "keep_shadow",
         "context_stage_not_full_benchmark": claims["context_stage_minibench_tasks_executed"] == 1,
     }
     return {
@@ -160,8 +169,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "secret_findings": secret_findings,
         "claim_boundary": (
             "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development "
-            "task as exploratory Shadows; v1.1 recovered quality but was rejected for cost, and v1.2 "
-            "remains unexecuted Shadow. No full 107-task run was performed."
+            "task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 "
+            "recovered the exact output at +9.23% directional Token cost, but remains Shadow because "
+            "tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full "
+            "107-task run was performed."
         ),
     }
 

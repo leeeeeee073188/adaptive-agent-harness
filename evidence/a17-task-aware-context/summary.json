@@ -34,8 +34,27 @@
     "variant": "adaptive_harness_context_v1_1"
   },
   "context_v1_2": {
+    "capacity_score": 1.0,
     "container_probe_passed": true,
-    "final_snapshot_counterfactual": {
+    "context_audit_calls": 14,
+    "context_failed_open_calls": 0,
+    "decision": "keep_shadow",
+    "decision_reasons": [
+      "Only one exploratory non-fresh-pair sample; minimum promotion sample count is five.",
+      "Token delta is within the directional 10% gate, but tool calls and latency remain materially above the exploratory control."
+    ],
+    "elapsed_delta_fraction_vs_exploratory_control": 0.7681476418318522,
+    "elapsed_sec": 64.67,
+    "integrity_passed": true,
+    "max_estimated_message_surface_tokens": 4091,
+    "minibench16_preflight_ready": true,
+    "next_optimization_target": "Tool routing and bounded verification; 12 of 16 calls were bash, including repeated partial_data validation.",
+    "output_files": 1,
+    "output_matches_exploratory_control_sha256": true,
+    "output_rows": 2120,
+    "output_sha256": "9fdc19be24398b4fa2937a114cee698186474d286bc5adc6e25e95c271631627",
+    "passed": true,
+    "pre_run_counterfactual": {
       "estimated_input_tokens": 4090,
       "messages_after": 7,
       "messages_before": 61,
@@ -43,10 +62,15 @@
       "required_paths_retained": true,
       "selected_tool_facts": 8
     },
-    "minibench16_preflight_ready": true,
-    "paid_runs": 0,
     "profile_fingerprint": "866ea8928de829cd3b5dcf99088b1b82cd3478d61548ce299f31a691fb9be375",
-    "status": "shadow_unexecuted"
+    "status": "shadow_observed",
+    "token_delta_fraction_vs_exploratory_control": 0.09227116369926533,
+    "token_delta_fraction_vs_v1_1": -0.4825448064411596,
+    "tool_call_delta_vs_exploratory_control": 7,
+    "tool_call_delta_vs_v1_1": -16,
+    "tool_calls": 16,
+    "total_tokens": 166070,
+    "variant": "adaptive_harness_context_v1_2"
   },
   "exploratory_control": {
     "capacity_score": 1.0,
@@ -61,12 +85,17 @@
   "gates": {
     "authority_role_separated": true,
     "expansion_stopped_after_cost_regression": true,
+    "expansion_stopped_after_v1_2_single_task": true,
     "experience_leakage_filter_enabled": true,
     "minibench_tasks_executed_this_stage": 1,
     "no_full_107_run": true,
+    "paid_candidate_rollouts_this_stage": 3,
     "tool_protocol_atomic": true,
+    "unique_minibench_tasks_executed_this_stage": 1,
     "v1_1_not_promoted": true,
-    "v1_2_not_promoted_without_paid_evidence": true,
+    "v1_2_not_promoted_with_single_exploratory_sample": true,
+    "v1_2_quality_gate_passed": true,
+    "v1_2_token_directional_gate_passed": true,
     "v1_not_promoted": true
   },
   "historical_counterfactual": {
@@ -79,8 +108,8 @@
   },
   "model_calls_for_offline_analysis": 0,
   "new_model_tokens_for_offline_analysis": 0,
-  "paid_shadow_runs": 2,
-  "paid_shadow_total_tokens": 464506,
+  "paid_shadow_runs": 3,
+  "paid_shadow_total_tokens": 630576,
   "scope": "P18 Task-aware Context Working Set and governed Shadow iteration",
   "test_count": 83
 }

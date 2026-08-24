@@ -136,7 +136,9 @@ Historical zero-model replay over 4 runs/99 complete snapshots estimates a
 provider Token measurement. Two one-task Development Shadows then falsified
 premature optimism: v1 lost tool facts and failed, while v1.1 passed at 1.0 but
 used 320,936 Tokens (+111.1% versus an earlier non-paired Vanilla control) and
-32 tool calls. Both are rejected; repeat-aware v1.2 remains unexecuted Shadow.
+32 tool calls. Both are rejected. Repeat-aware v1.2 recovered the identical
+output with 166,070 Tokens (+9.23%) and 16 tool calls, but remains Shadow:
+there is only one non-fresh-pair sample, and tool/latency costs remain high.
 
 ## Evaluation stop rule
 
@@ -151,8 +153,9 @@ not “proven candidate cost regression.”
 Later Context Shadows are separate Profile versions and are not merged with
 that pair. A reused historical Vanilla result is exploratory only. Context v1.1
 crossed the 10% promotion cost gate, so MiniBench expansion stopped after one
-Development task even though quality recovered; v1.2 cannot promote from
-counterfactual estimates alone.
+Development task even though quality recovered. v1.2 also stops after that
+same task: one exploratory success cannot satisfy the five-sample promotion
+gate, especially with +7 tool calls and +76.8% elapsed time.
 
 ## Capability-negotiated completion
 

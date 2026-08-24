@@ -82,7 +82,7 @@ RealReplica的mail/calendar/document规则和Gmail/Docs/Workbench Provider已从
 
 Context不是无限历史，而是五层决策工作集：Immutable Task、Active State、Evidence、Failure/Recovery、Admissible Experience。选择器在Profile Token预算内评分，并保持工具调用/结果原子性；被淘汰的大结果留下脱敏参数、结果哈希、预览和重复次数。动态数据保持Human role，静态防注入规则保持System role，选择决策写入Ledger但不复制正文。
 
-这项能力经历了可审计的失败迭代：v1过度压缩后反复read并触发loop guard；v1.1通过同一Development任务，但Token 320,936、工具32次，相对较早的同题Vanilla探索性对照分别+111.1%和+23，成本门禁Reject；v1.2使用执行参数+结果哈希识别无进展重复，目前只通过反事实和容器探针，未晋升。
+这项能力经历了可审计的失败迭代：v1过度压缩后反复read并触发loop guard；v1.1通过同一Development任务，但Token 320,936、工具32次，相对较早的同题Vanilla探索性对照分别+111.1%和+23，成本门禁Reject；v1.2使用执行参数+结果哈希识别无进展重复，同题保持1.0且产物SHA一致，Token降到166,070（方向性+9.23%），但Tool仍+7、耗时+76.8%，单样本不足以晋升。
 
 ## 4. 已验证结果
 
@@ -95,7 +95,7 @@ Context不是无限历史，而是五层决策工作集：Immutable Task、Activ
 | Context历史反事实 | 4 runs / 99 snapshots；估算消息面压缩中位数49.95% |
 | Context v1 | 0.0；143,570 Token；Reject |
 | Context v1.1 | 1.0；320,936 Token；成本门禁Reject |
-| Context v1.2 | 零模型/容器门禁通过；未付费、保持Shadow |
+| Context v1.2 | 1.0；166,070 Token；产物SHA一致；Keep Shadow |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |
@@ -127,7 +127,7 @@ Context不是无限历史，而是五层决策工作集：Immutable Task、Activ
 
 ## 7. 90秒面试讲述
 
-“这个项目不是围绕Bench写特判，而是增强模型Harness。我把DeerFlow降为Runtime Provider，自研Plugin Kernel、Ledger、Contract/Evidence和五层Task-aware Context，所有模型可见选择都能审计。Context v1过度压缩后失败，v1.1恢复1.0但Token增加111%，所以Evolution门禁仍然Reject；v1.2只做零模型反事实，没有继续烧MiniBench。这个例子说明自进化不是在线改Prompt，而是不可变Profile经过质量、成本、泄漏和回归门禁。RealReplica只负责外部验证，项目价值是通用架构、失败可解释和证据纪律。”
+“这个项目不是围绕Bench写特判，而是增强模型Harness。我把DeerFlow降为Runtime Provider，自研Plugin Kernel、Ledger、Contract/Evidence和五层Task-aware Context，所有模型可见选择都能审计。Context v1过度压缩后失败，v1.1恢复1.0但Token增加111%，所以Reject；v1.2把Token降到方向性+9.23%并保持相同产物，但工具和耗时仍高、样本只有1个，因此仍不晋升。这个例子说明自进化不是在线改Prompt，而是不可变Profile经过质量、成本、泄漏和回归门禁。RealReplica只负责外部验证，项目价值是通用架构、失败可解释和证据纪律。”
 
 ## 8. 声明边界
 

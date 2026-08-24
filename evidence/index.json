@@ -86,12 +86,12 @@
       "sha256": "9f7afc3818431ef901f8b42a8f0b1873316e241946441d1c3001848b843d52a6"
     },
     {
-      "bytes": 3159,
+      "bytes": 4607,
       "path": "a17-task-aware-context/summary.json",
-      "sha256": "6f7b72f89cd4fb9fbab525432fc54b3dbb255444d9fb0b3a8cb240a2946d7827"
+      "sha256": "f1cae516cdc8b047b34df3fe6fa03c3117917174a5c616674d9ec1813d06b8b2"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost, and v1.2 remains unexecuted Shadow. No full 107-task run was performed.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed.",
   "claims": {
     "blind_retry_recommendations": 0,
     "browser_guard_deployed": false,
@@ -103,7 +103,11 @@
     "context_v1_1_promoted": false,
     "context_v1_1_quality": 1.0,
     "context_v1_1_token_delta_fraction": 1.110851678165758,
-    "context_v1_2_status": "shadow_unexecuted",
+    "context_v1_2_decision": "keep_shadow",
+    "context_v1_2_quality": 1.0,
+    "context_v1_2_status": "shadow_observed",
+    "context_v1_2_token_delta_fraction": 0.09227116369926533,
+    "context_v1_2_tool_call_delta": 7,
     "contract_coverage": 16,
     "core_business_vocabulary_findings": 0,
     "evolution_online_mutation_enabled": false,
@@ -121,7 +125,7 @@
     "recovery_practice_enabled": false,
     "zero_model_unit_tests": 83
   },
-  "git_head": "74ac56f9512fff929259a12896cd4e642582e783",
+  "git_head": "c7b2b3291d9cf28d146f664c6f17c3d1859c76d8",
   "invariants": {
     "all_evidence_present": true,
     "context_cost_regression_not_promoted": true,
