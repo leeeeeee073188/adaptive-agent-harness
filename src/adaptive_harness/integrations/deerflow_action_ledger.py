@@ -224,10 +224,11 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
             self._ledger_locked(run_key)
             delivery_satisfied = run_key in self._delivery_satisfied
         delivery_required = _delivery_required(request.state) and not delivery_satisfied
-        if delivery_required and not semantics.mutating:
+        if delivery_required and not _advances_delivery(call, semantics):
+            blocked_kind = "non-output write" if semantics.mutating else "plain read"
             return ToolMessage(
                 content=(
-                    "[HARNESS DELIVERY REQUIRED] Plain read blocked. Write a required artifact or "
+                    f"[HARNESS DELIVERY REQUIRED] {blocked_kind} blocked. Write a required artifact or "
                     "run a direct task-provided synthesis script. Do not create an empty placeholder "
                     "solely to unlock inspection."
                 ),
@@ -433,6 +434,16 @@ def _is_delivery_write(call: ToolCall) -> bool:
             re.IGNORECASE,
         )
     )
+
+
+def _advances_delivery(call: ToolCall, semantics: Any) -> bool:
+    if _is_delivery_write(call):
+        return True
+    return semantics.intent in {
+        ToolIntent.NAVIGATE,
+        ToolIntent.TRANSFORM,
+        ToolIntent.INTERACT,
+    }
 
 
 def _cacheable_local_resources(semantics) -> tuple[str, ...]:

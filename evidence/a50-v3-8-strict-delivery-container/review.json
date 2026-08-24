@@ -1,0 +1,20 @@
+{
+  "scope": "v3.8 strict delivery-gate review",
+  "verdict": "approve_single_development_canary",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 1,
+  "verified": {
+    "delivery_non_output_write_blocked": true,
+    "delivery_synthesis_transform_allowed": true,
+    "delivery_environment_interaction_allowed": true,
+    "provisional_copy_guard": true,
+    "thinking_request_effort": "high",
+    "secret_findings": 0
+  },
+  "watch_item": "A pre-existing workspace helper can still be classified as TRANSFORM; bind future expansion to an initial-source manifest or provenance check.",
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false
+}

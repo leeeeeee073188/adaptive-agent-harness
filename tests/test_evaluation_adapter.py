@@ -140,6 +140,7 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "global_nonmutating_budget_enforced": True,
                 "delivery_first_gate_enforced": True,
                 "delivery_synthesis_transform_allowed": True,
+                "delivery_non_output_write_blocked": True,
                 "embedded_client_stream_exercised": True,
                 "executable_policy_profile_assembled": True,
                 "max_completion_turns_frozen": True,

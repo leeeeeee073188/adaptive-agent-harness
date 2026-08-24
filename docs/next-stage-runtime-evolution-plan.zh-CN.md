@@ -162,6 +162,8 @@ v3.6 引入 source-grounded synthesis 基础层与 provisional-copy guard。核�
 
 v3.6 live（A45）因 recovery 优先级回退到 0/5：Artifact 不存在时 grounding assessment 是 `BLOCKED`，但 failure classifier 提前选择了 lineage gap，未请求首次交付。v3.7 将 lineage failure 限定为 grounding `UNSATISFIED`，缺失 Artifact 继续走 `ARTIFACT_ERROR + WRITE_PARTIAL`。A46/A47 通过 311 项单测和容器 probe 验证 copy guard、thinking=high 与交付恢复共存；尚未执行付费 canary。
 
+v3.7 live（A48）虽进入正确 recovery，却在 Turn 2 写入多个非输出 Python helper，未生成最终 Artifact。v3.8 的 delivery gate 只允许 `_is_delivery_write`、直接 `TRANSFORM` 和 `NAVIGATE/INTERACT`，明确阻止非输出 `WRITE`；这既约束 CLI 文件任务的临时脚本风暴，也保留 Browser/API 状态转换。A49/A50 零模型与容器门禁通过。
+
 该单任务 canary 只用于关闭已知失败链，不是综合能力评测。只有它通过后，才进入低成本 Development 跨类型矩阵：CLI text/easy、File text/medium、Browser text/medium、API text/hard、Browser vision/hard 各一项。矩阵失败立即停止；通过后冻结 Profile/Experience Store，再分别运行 4 项 Transfer 与 4 项 Held-out，禁止根据后两者在线调参。LLM Judge 只在任务 rubric 实际声明主观检查时调用，当前 CLI 数据审计仍使用 5 项确定性 verifier。
 
 ## 测试规格摘要

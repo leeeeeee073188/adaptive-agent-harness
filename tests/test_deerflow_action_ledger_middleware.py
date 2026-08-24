@@ -131,6 +131,55 @@ def _delivery_required_state() -> dict[str, Any]:
 
 
 class DeerFlowToolActionLedgerMiddlewareTests(unittest.TestCase):
+    def test_delivery_gate_blocks_non_output_script_write(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("written", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="script-write",
+                    name="write_file",
+                    args={"path": "workspace/retry.py", "content": "print('retry')"},
+                    turn=2,
+                    state=_delivery_required_state(),
+                ),
+                handler,
+            )
+
+        self.assertFalse(called)
+        self.assertEqual(result.status, "error")
+        self.assertIn("non-output write blocked", result.content)
+
+    def test_delivery_gate_keeps_environment_interaction_available(self) -> None:
+        middleware = DeerFlowToolActionLedgerMiddleware()
+        called = False
+
+        def handler(request):
+            nonlocal called
+            called = True
+            return ToolMessage("clicked", tool_call_id=request.tool_call["id"])
+
+        with bind_action_audit_sink(lambda _payload: None):
+            result = middleware.wrap_tool_call(
+                _request(
+                    call_id="browser-click",
+                    name="browser_click",
+                    args={"ref": "submit"},
+                    turn=2,
+                    state=_delivery_required_state(),
+                ),
+                handler,
+            )
+
+        self.assertTrue(called)
+        self.assertEqual(result.content, "clicked")
+
     def test_object_runtime_context_run_id_keeps_epoch_monotonic_without_policy_session(self) -> None:
         from langgraph.prebuilt.tool_node import ToolCallRequest
 

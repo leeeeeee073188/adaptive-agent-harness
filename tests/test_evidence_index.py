@@ -209,6 +209,18 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertTrue(
             index["claims"]["v3_7_blocked_grounding_preserves_artifact_recovery"]
         )
+        self.assertEqual(index["claims"]["v3_7_live_row"]["capacity_score"], 0.0)
+        self.assertEqual(index["claims"]["v3_7_live_row"]["total_tokens"], 439869)
+        self.assertEqual(index["claims"]["v3_7_live_row"]["output_file_count"], 0)
+        self.assertFalse(index["claims"]["v3_7_live_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["v3_8_gate_passed"])
+        self.assertTrue(index["claims"]["v3_8_single_canary_allowed"])
+        self.assertFalse(index["claims"]["v3_8_paid_expansion_allowed"])
+        self.assertEqual(index["claims"]["v3_8_candidate_variant"], "adaptive_harness_source_grounding_v3_8")
+        self.assertTrue(index["claims"]["v3_8_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["v3_8_source_hash_matches"])
+        self.assertTrue(index["claims"]["v3_8_profile_fingerprint_matches"])
+        self.assertTrue(index["claims"]["v3_8_delivery_non_output_write_blocked"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

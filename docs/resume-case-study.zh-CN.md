@@ -120,6 +120,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | v3.5 thinking=high | 2/5；765,768 Token；62 Tool；epoch 已修复但复制公开中间结果，不晋升 |
 | v3.6 Source Grounding | Claim/Source lineage core；A43/A44 copy反事实与容器门禁通过；未付费运行 |
 | v3.6 live / v3.7 gate | v3.6 0/5无产物；v3.7 修复 blocked-grounding 恢复优先级，A46/A47 通过 |
+| v3.7 live / v3.8 gate | v3.7 0/5、439,869 Token；v3.8 阻止 delivery recovery 写非输出脚本 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

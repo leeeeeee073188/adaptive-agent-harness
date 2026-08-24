@@ -1,0 +1,16 @@
+{
+  "scope": "independent v3.8 pre-canary verification",
+  "verdict": "pass_single_development_canary",
+  "adaptive_tests_passed": 313,
+  "realreplica_tests_passed": 73,
+  "delivery_non_output_write_blocked": true,
+  "delivery_synthesis_transform_allowed": true,
+  "delivery_environment_interaction_allowed": true,
+  "provisional_copy_guard_enforced": true,
+  "thinking_request_effort": "high",
+  "model_calls": 0,
+  "allowed_task": "cli-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false,
+  "execution_blocker": "Commit and clean both worktrees before execution."
+}

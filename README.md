@@ -121,6 +121,8 @@ v3.6 不再继续调 Prompt，而是增加 Source Grounding 深模块：`SourceH
 
 v3.6 真实 canary 随后暴露 recovery priority 错误：Artifact 缺失时 grounding criterion 只是依赖阻断，却被归类为 `SYNTHESIS_LINEAGE_GAP`，使首次交付恢复消失；结果 0/5、无产物、320,755 Token。v3.7 只在 grounding assessment 明确 `UNSATISFIED` 时进入 lineage recovery，`BLOCKED` 仍由 Artifact delivery 恢复处理；A46/A47 在单测和 pinned container 中锁定该顺序，尚未付费运行。
 
+v3.7 live（A48）正确进入 Artifact delivery recovery，但原门禁仍允许写任意非输出脚本；模型因此用整个恢复 Turn 反复生成 helper scripts，最终 0/5、无产物、439,869 Token。v3.8 将 delivery progress 收紧为最终输出写入、直接 task-provided transform 或必要环境交互，阻止非输出 write；A49/A50 通过 313 项测试与容器 probe，尚未付费运行。
+
 所有后续 DeerFlow 测试默认 `thinking=enabled`、`reasoning_effort=high`；历史归档配置保持原值，只在明确标记的 ablation 中关闭或改变强度。
 
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

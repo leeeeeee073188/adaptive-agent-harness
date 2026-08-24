@@ -62,6 +62,9 @@ REQUIRED = tuple(
         (45, "v3-6-live"),
         (46, "v3-7-grounding-recovery-gate"),
         (47, "v3-7-grounding-recovery-container"),
+        (48, "v3-7-live"),
+        (49, "v3-8-strict-delivery-gate"),
+        (50, "v3-8-strict-delivery-container"),
     )
 )
 OPTIONAL = (
@@ -110,6 +113,12 @@ OPTIONAL = (
     "a47-v3-7-grounding-recovery-container/review.json",
     "a47-v3-7-grounding-recovery-container/verification.json",
     "a47-v3-7-grounding-recovery-container/readiness.json",
+    "a48-v3-7-live/pair.json",
+    "a48-v3-7-live/diagnosis.json",
+    "a50-v3-8-strict-delivery-container/container-wiring.json",
+    "a50-v3-8-strict-delivery-container/review.json",
+    "a50-v3-8-strict-delivery-container/verification.json",
+    "a50-v3-8-strict-delivery-container/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -203,6 +212,11 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v3_7_gate = doc("a46-v3-7-grounding-recovery-gate/summary.json") if not missing else {}
     v3_7_conformance = doc("a47-v3-7-grounding-recovery-container/summary.json") if not missing else {}
     v3_7_wiring = documents.get("a47-v3-7-grounding-recovery-container/container-wiring.json", {})
+    v3_7_live = doc("a48-v3-7-live/summary.json") if not missing else {}
+    v3_7_diagnosis = documents.get("a48-v3-7-live/diagnosis.json", {})
+    v3_8_gate = doc("a49-v3-8-strict-delivery-gate/summary.json") if not missing else {}
+    v3_8_conformance = doc("a50-v3-8-strict-delivery-container/summary.json") if not missing else {}
+    v3_8_wiring = documents.get("a50-v3-8-strict-delivery-container/container-wiring.json", {})
     selected_live_row = next(
         (
             row
@@ -675,6 +689,40 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "v3_7_blocked_grounding_preserves_artifact_recovery": (
             v3_7_wiring.get("checks") or {}
         ).get("blocked_grounding_preserves_artifact_recovery"),
+        "v3_7_live_selected_candidate": v3_7_live.get("selected_candidate_variant"),
+        "v3_7_live_paid_expansion_allowed": v3_7_live.get("paid_expansion_allowed"),
+        "v3_7_live_row": next(
+            (
+                row
+                for row in v3_7_live.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_source_grounding_v3_7"
+            ),
+            None,
+        ),
+        "v3_7_diagnosis_row": next(
+            (
+                row
+                for row in v3_7_diagnosis.get("runs") or ()
+                if row.get("variant") == "adaptive_harness_source_grounding_v3_7"
+            ),
+            None,
+        ),
+        "v3_8_gate_passed": v3_8_gate.get("passed"),
+        "v3_8_single_canary_allowed": v3_8_gate.get("candidate_single_development_canary_allowed"),
+        "v3_8_paid_expansion_allowed": v3_8_gate.get("paid_expansion_allowed"),
+        "v3_8_candidate_variant": (((v3_8_conformance.get("profiles") or {}).get("candidate") or {}).get("name")),
+        "v3_8_paid_canary_allowed": (v3_8_conformance.get("paid_candidate_canary") or {}).get("allowed"),
+        "v3_8_source_hash_matches": bool(v3_8_gate.get("adaptive_source_sha256"))
+        and v3_8_gate.get("adaptive_source_sha256")
+        == v3_8_wiring.get("adaptive_source_sha256"),
+        "v3_8_profile_fingerprint_matches": bool(
+            v3_8_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v3_8_gate.get("executable_policy_profile_fingerprint")
+        == v3_8_wiring.get("executable_policy_profile_fingerprint"),
+        "v3_8_delivery_non_output_write_blocked": (
+            v3_8_wiring.get("checks") or {}
+        ).get("delivery_non_output_write_blocked"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -920,6 +968,24 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v3_7_source_hash_matches"] is True
         and claims["v3_7_profile_fingerprint_matches"] is True
         and claims["v3_7_blocked_grounding_preserves_artifact_recovery"] is True,
+        "v3_7_regression_not_promoted": (
+            (claims["v3_7_live_row"] or {}).get("passed") is False
+            and (claims["v3_7_live_row"] or {}).get("capacity_score") == 0.0
+            and (claims["v3_7_live_row"] or {}).get("total_tokens") == 439869
+            and (claims["v3_7_live_row"] or {}).get("output_file_count") == 0
+            and ((claims["v3_7_diagnosis_row"] or {}).get("signals") or {}).get("mutation_epoch_regression") is False
+            and claims["v3_7_live_selected_candidate"] == "adaptive_harness_runtime_evolution_v2_6"
+            and claims["v3_7_live_paid_expansion_allowed"] is False
+        ),
+        "v3_8_gate_is_single_canary_only": claims["v3_8_gate_passed"] is True
+        and claims["v3_8_single_canary_allowed"] is True
+        and claims["v3_8_paid_expansion_allowed"] is False,
+        "v3_8_container_gate_cleared": claims["v3_8_candidate_variant"]
+        == "adaptive_harness_source_grounding_v3_8"
+        and claims["v3_8_paid_canary_allowed"] is True
+        and claims["v3_8_source_hash_matches"] is True
+        and claims["v3_8_profile_fingerprint_matches"] is True
+        and claims["v3_8_delivery_non_output_write_blocked"] is True,
     }
     return {
         "schema_version": 1,
@@ -967,8 +1033,11 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "copy is rejected in replay and in the pinned container. A45 records a v3.6 recovery-order "
             "regression: blocked grounding masked the missing artifact, so no output was produced. A46/A47 "
             "verify that only an explicitly unsatisfied grounding criterion becomes a lineage failure and "
-            "artifact delivery recovery remains available. This is a copy guard, not full factual "
-            "verification. Transfer, Held-out, and further task expansion remain disabled."
+            "artifact delivery recovery remains available. A48 records that v3.7 requested delivery but "
+            "the model spent the turn writing non-output helper scripts and still produced no artifact. "
+            "A49/A50 make delivery recovery reject non-output writes while preserving task transforms and "
+            "environment interactions. This is a copy guard, not full factual verification. Transfer, "
+            "Held-out, and further task expansion remain disabled."
         ),
     }
 

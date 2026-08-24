@@ -232,6 +232,10 @@ def main() -> int:
                 "delivery_synthesis_transform_allowed"
             )
             is True,
+            "delivery_non_output_write_blocked": adaptive.get(
+                "delivery_non_output_write_blocked"
+            )
+            is True,
             "textual_tool_errors_fail_closed": adaptive.get(
                 "textual_tool_errors_fail_closed"
             )
