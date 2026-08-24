@@ -94,9 +94,14 @@
       "bytes": 2242,
       "path": "a18-tool-action-ledger/summary.json",
       "sha256": "a0213ea73fa2d09293a6d533ba3e670ffa76b77729690d8cd3fa64da3c527079"
+    },
+    {
+      "bytes": 4786,
+      "path": "a19-tool-advice/summary.json",
+      "sha256": "8c4690e364b1b07e596f0d9a6ea6924d5146510226a2e1521553656133216d4c"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow.",
   "claims": {
     "action_ledger_classified_fraction": 0.8049999999999999,
     "action_ledger_enforcement_ready": false,
@@ -135,9 +140,18 @@
     "provider_enforced_task_coverage": 16,
     "recovery_category_mapping": "12/12",
     "recovery_practice_enabled": false,
-    "zero_model_unit_tests": 89
+    "tool_advice_gate_eligible": true,
+    "tool_advice_second_task_started": false,
+    "tool_advice_v1_4_promoted": false,
+    "tool_advice_v1_5_advice_applied": 0,
+    "tool_advice_v1_5_quality": 1.0,
+    "tool_advice_v1_5_status": "shadow_observed",
+    "tool_advice_v1_5_token_delta_fraction": 0.01312146065863813,
+    "tool_advice_v1_5_tool_delta": 7,
+    "tool_enforcement_gate_eligible": false,
+    "zero_model_unit_tests": 93
   },
-  "git_head": "e5e771c846fe85c3b805add4c5d8f1b9c4fa4e16",
+  "git_head": "b89afafc622f9a95c3ce35a604b2893420aee77f",
   "invariants": {
     "action_ledger_observe_only": true,
     "action_ledger_stable_controls_unwarned": true,
@@ -154,6 +168,10 @@
     "paid_expansion_stopped": true,
     "practice_fail_closed": true,
     "provider_task_coverage_16": true,
+    "tool_advice_cost_regression_not_promoted": true,
+    "tool_advice_did_not_expand": true,
+    "tool_advice_not_enforcement": true,
+    "tool_advice_v1_5_stays_shadow": true,
     "unvalidated_guard_disabled": true
   },
   "missing": [],

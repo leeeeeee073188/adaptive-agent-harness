@@ -2261,11 +2261,11 @@ Dev20 20任务历史回放：
 
 ## P16：Resume-safe Evidence Index / Case Study（已完成）
 
-- `scripts/build_evidence_index.py` 强制检查A1–A18机器证据存在性、SHA-256与secret marker；
+- `scripts/build_evidence_index.py` 强制检查A1–A19机器证据存在性、SHA-256与secret marker；
 - `evidence/index.json` 将每个简历指标映射到证据，并验证MiniBench不是107任务、Provider task coverage=16、Completion成功误拦截=0、Practice关闭、Guard未部署、付费扩跑已停止；
 - 明确claim boundary：尚无MiniBench整体成功率提升，只有一个paired cell；
 - 新增 `docs/resume-case-study.zh-CN.md`，包含架构、创新、真实指标、主动拒绝方案、简历Bullet、90秒面试讲述和不可声明事项；
-- 当前机器校验 `verified=true`、secret findings为空、零模型测试89项。
+- 当前机器校验 `verified=true`、secret findings为空、零模型测试93项。
 
 下一步仍是补充成功Browser对照或最小确定性Recovery outcome；证据不足时继续保持Guard与Practice关闭，不为了简历数字扩跑完整Benchmark。
 
@@ -2326,6 +2326,19 @@ Bench任务特例 → Core条件分支 → 表面覆盖率
 - 本阶段没有运行新的MiniBench任务，更没有运行完整107；证据：`evidence/a18-tool-action-ledger/summary.json`。
 
 下一步优先扩展通用Browser/API Intent分类和成功控制，而不是立即把Warn升级为Advice或Block；分类/误报门禁满足后才考虑同题单Candidate Shadow。
+
+## P20：Cross-surface Advice Gate（两次同题Shadow已完成）
+
+- 新增Browser Navigate / Observe / Interact与API mutation Intent；7条基准轨迹200个Action分类覆盖从80.5%升到100%；
+- 5条确定性Browser和2条stable-pass控制均0告警，2条历史失败控制均被覆盖；
+- 使用Wilson区间门禁：false-warning upper=0.354、failure-signal lower=0.342，仅允许非阻断Advice，`enforcement_eligible=false`；
+- v1.4只在第22次调用、第三个最终验证后触发1次Advice；同题1.0、189,696 Token、23 Tool，相对探索性Vanilla Token +24.77%、Tool +14，Reject；
+- v1.5将同scope且结果不变的第4次Read纳入Advice，并保持结果发生变化的Read不告警、3次调试读取允许；
+- v1.5同题1.0、154,036 Token（方向性+1.31%，较v1.4下降18.8%）、16 Tool、83.5秒；输出2,120行语义完全一致，仅LF/CRLF不同；
+- v1.5实际Advice触发0次，因此Token改善不能归因于策略；Tool仍+7、Latency +128%、仅一个非fresh-pair样本，Keep Shadow；
+- v1.4/v1.5均未扩到第二题，本项目仍未运行完整107；证据：`evidence/a19-tool-advice/summary.json`。
+
+下一步不继续堆Advice阈值。应先构建fresh paired或同Profile重复样本分离Provider方差，并把Tool/Latency纳入Evolution资源门禁；在此之前不晋升v1.5。
 
 # 36. 关键风险
 

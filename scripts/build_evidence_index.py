@@ -33,6 +33,7 @@ REQUIRED = tuple(
         (16, "architecture-evolution"),
         (17, "task-aware-context"),
         (18, "tool-action-ledger"),
+        (19, "tool-advice"),
     )
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
@@ -86,8 +87,9 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     architecture = doc("a16-architecture-evolution/summary.json") if not missing else {}
     context = doc("a17-task-aware-context/summary.json") if not missing else {}
     actions = doc("a18-tool-action-ledger/summary.json") if not missing else {}
+    advice = doc("a19-tool-advice/summary.json") if not missing else {}
     claims = {
-        "zero_model_unit_tests": actions.get("test_count"),
+        "zero_model_unit_tests": advice.get("test_count"),
         "core_business_vocabulary_findings": architecture.get(
             "core_business_vocabulary_findings"
         ),
@@ -160,6 +162,26 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         ),
         "action_ledger_v1_3_status": (actions.get("v1_3") or {}).get("status"),
         "action_ledger_v1_3_paid_runs": (actions.get("v1_3") or {}).get("paid_runs"),
+        "tool_advice_gate_eligible": (advice.get("advice_gate") or {}).get("eligible"),
+        "tool_enforcement_gate_eligible": (advice.get("advice_gate") or {}).get(
+            "enforcement_eligible"
+        ),
+        "tool_advice_v1_4_promoted": (advice.get("v1_4") or {}).get("decision")
+        == "promote",
+        "tool_advice_v1_5_status": (advice.get("v1_5") or {}).get("status"),
+        "tool_advice_v1_5_quality": (advice.get("v1_5") or {}).get("capacity_score"),
+        "tool_advice_v1_5_token_delta_fraction": (advice.get("v1_5") or {}).get(
+            "token_delta_fraction_vs_exploratory_control"
+        ),
+        "tool_advice_v1_5_tool_delta": (advice.get("v1_5") or {}).get(
+            "tool_call_delta_vs_exploratory_control"
+        ),
+        "tool_advice_v1_5_advice_applied": (advice.get("v1_5") or {}).get(
+            "advice_applied"
+        ),
+        "tool_advice_second_task_started": (advice.get("gates") or {}).get(
+            "second_task_started"
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -185,6 +207,13 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "action_ledger_v1_3_unexecuted": claims["action_ledger_v1_3_status"]
         == "shadow_unexecuted"
         and claims["action_ledger_v1_3_paid_runs"] == 0,
+        "tool_advice_not_enforcement": claims["tool_advice_gate_eligible"] is True
+        and claims["tool_enforcement_gate_eligible"] is False,
+        "tool_advice_cost_regression_not_promoted": claims["tool_advice_v1_4_promoted"]
+        is False,
+        "tool_advice_v1_5_stays_shadow": claims["tool_advice_v1_5_status"]
+        == "shadow_observed",
+        "tool_advice_did_not_expand": claims["tool_advice_second_task_started"] is False,
     }
     return {
         "schema_version": 1,
@@ -201,7 +230,8 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "recovered the exact output at +9.23% directional Token cost, but remains Shadow because "
             "tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full "
             "107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only "
-            "evidence and is not claimed to reduce calls."
+            "evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for "
+            "cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow."
         ),
     }
 

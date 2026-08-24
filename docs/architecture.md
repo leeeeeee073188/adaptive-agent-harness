@@ -165,6 +165,21 @@ zero warnings; two historical failures had 16. With 39 unknown actions and only
 two success controls, enforcement is explicitly not ready. Profile v1.3 has a
 network-disabled container probe and MiniBench preflight but zero paid runs.
 
+P20 adds explicit browser navigation/observation/interaction semantics and API
+mutation handling. Classification reaches 100% on the same 200 actions; five
+deterministic browser controls plus two stable-pass controls remain unwarned,
+while both historical failure controls are signaled. Wilson bounds qualify only
+non-blocking Advice (false-warning upper 0.354, failure-signal lower 0.342), not
+enforcement.
+
+Paid single-task Shadows again prevent optimistic claims. v1.4 Advice fired once
+at the final verification, too late to reduce work, and was rejected at 189,696
+Tokens/23 tools. v1.5 targets the fourth unchanged read and returned the same
+2,120 semantic rows at 154,036 Tokens (+1.31% versus an older non-paired
+Vanilla control), but used 16 tools, took 83.5 seconds, and fired zero Advice.
+It remains Shadow because the directional improvement is not attributable to
+the policy and tool/latency/sample gates remain open.
+
 ## Evaluation stop rule
 
 A paired cell must pass integrity, quality, semantic-output, Ledger-evidence,

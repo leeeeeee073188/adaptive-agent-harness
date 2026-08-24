@@ -85,7 +85,9 @@ External adapters
 
 P19把工具轨迹投影为可回放的Intent、Resource、Data field、Mutation epoch和结果哈希，而不是只统计Tool call数量。Verification Budget在成功写入后重置；同范围或连续验证超预算时生成Warn事实。DeerFlow中间件默认`observe`，不会阻断或改写工具结果。
 
-7条轨迹的零模型反事实覆盖200条Action：80.5%被分类，聚合为145个cluster并产生22个验证告警；2条stable-pass控制告警为0，2条历史失败控制产生16个告警。当前39条Unknown和成功控制数量仍不足，因此`v1.3`保持未付费Shadow，不能声称已经减少工具调用。
+扩展Browser/API语义后，7条轨迹的200个Action达到100%分类；5条确定性Browser和2条stable-pass控制均0告警，2条历史失败控制均被覆盖。Wilson门禁只允许非阻断Advice，不允许Enforcement。
+
+实际Shadow仍按成本门禁处理：v1.4只在最后一次验证触发1次Advice，却达到189,696 Token、23 Tool，Reject；v1.5加入“第4次同scope且结果不变的Read”Advice后，同题1.0、154,036 Token（方向性+1.31%），但实际0次Advice触发、Tool仍+7、耗时+128%，因此改善不可归因于策略并继续Shadow。
 
 ## 验证
 
@@ -95,7 +97,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 PYTHONPATH=src python3 -m compileall -q src tests scripts
 ```
 
-当前 89 项零模型测试覆盖 Core/integration 边界、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Task-aware Context、Tool Action Ledger、Progress/Recovery，以及 Evolution 的 Shadow/Promote/Reject/Rollback 与 JSONL replay。
+当前 93 项零模型测试覆盖 Core/integration 边界、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Task-aware Context、Tool Action Ledger/Advice Gate、Progress/Recovery，以及 Evolution 的 Shadow/Promote/Reject/Rollback 与 JSONL replay。
 
 RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能力与难度，未运行完整 107 任务。本阶段只执行同一 Development 任务的两个探索性 Context Shadow，不能声称总体通过率提升。历史证据、成本停止规则和可声明边界见 [`evidence/index.json`](evidence/index.json)。
 

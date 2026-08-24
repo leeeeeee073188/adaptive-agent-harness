@@ -1,0 +1,149 @@
+{
+  "advice_gate": {
+    "eligible": true,
+    "enforcement_eligible": false,
+    "failure_controls": 2,
+    "failure_controls_signaled": 2,
+    "failure_signal_wilson_lower": 0.34237195288961925,
+    "false_warning_wilson_upper": 0.35433884297520657,
+    "mode": "non_blocking_advice",
+    "success_controls": 7,
+    "success_controls_warned": 0
+  },
+  "all_passed": true,
+  "claim_boundary": "v1.5 is a single exploratory Development result against a reused older Vanilla control. It preserves quality and has near-baseline Tokens, but Advice did not trigger and Tool/latency remain high; no causal or MiniBench-wide improvement is claimed.",
+  "exploratory_control": {
+    "capacity_score": 1.0,
+    "elapsed_sec": 36.575,
+    "integrity_passed": true,
+    "output_files": 1,
+    "passed": true,
+    "tool_calls": 9,
+    "total_tokens": 152041,
+    "variant": "vanilla_deerflow"
+  },
+  "gates": {
+    "advice_not_enforcement": true,
+    "no_full_107_run": true,
+    "no_tool_calls_blocked": true,
+    "second_task_started": false,
+    "unique_minibench_tasks_executed": 1,
+    "v1_4_not_promoted": true,
+    "v1_5_not_promoted": true
+  },
+  "historical_counterfactual": {
+    "action_clusters": 184,
+    "action_records": 239,
+    "classified_fraction": 1.0,
+    "deterministic_browser_controls": {
+      "control_count": 5,
+      "rows": [
+        {
+          "actions": 4,
+          "id": "first_class_form_submit",
+          "unknown_actions": 0,
+          "warnings": 0
+        },
+        {
+          "actions": 3,
+          "id": "safe_workspace_preparation",
+          "unknown_actions": 0,
+          "warnings": 0
+        },
+        {
+          "actions": 3,
+          "id": "public_mcp_plus_browser",
+          "unknown_actions": 0,
+          "warnings": 0
+        },
+        {
+          "actions": 5,
+          "id": "bounded_debug_then_first_class",
+          "unknown_actions": 0,
+          "warnings": 0
+        },
+        {
+          "actions": 3,
+          "id": "artifact_capture_after_submit",
+          "unknown_actions": 0,
+          "warnings": 0
+        }
+      ],
+      "unknown_actions": 0,
+      "warned_controls": 0,
+      "warning_count": 0
+    },
+    "historical_failure_controls": {
+      "count": 2,
+      "signaled": 2
+    },
+    "intent_counts": {
+      "discover": 14,
+      "interact": 23,
+      "navigate": 3,
+      "observe": 36,
+      "present": 5,
+      "read": 82,
+      "verify": 62,
+      "write": 14
+    },
+    "run_count": 9,
+    "stable_efficient_controls": {
+      "count": 2,
+      "warned": 0
+    },
+    "verification_warnings": 58
+  },
+  "scope": "P20 Cross-surface Intent coverage and non-blocking Tool Advice Shadows",
+  "test_count": 93,
+  "v1_4": {
+    "action_audits": 23,
+    "advice_applied": 1,
+    "capacity_score": 1.0,
+    "context_audits": 16,
+    "context_failed_open": 0,
+    "decision": "reject",
+    "elapsed_delta_fraction_vs_exploratory_control": 0.49697881066302113,
+    "elapsed_sec": 54.752,
+    "integrity_passed": true,
+    "output_files": 1,
+    "passed": true,
+    "reason": "Advice fired only during the third final verification and did not reduce work; Token and Tool gates regressed.",
+    "token_delta_fraction_vs_exploratory_control": 0.24766345919850566,
+    "tool_call_delta_vs_exploratory_control": 14,
+    "tool_calls": 23,
+    "total_tokens": 189696,
+    "variant": "adaptive_harness_context_v1_4",
+    "warnings": 1
+  },
+  "v1_5": {
+    "action_audits": 16,
+    "advice_applied": 0,
+    "capacity_score": 1.0,
+    "container_probe_passed": true,
+    "context_audits": 13,
+    "context_failed_open": 0,
+    "decision": "keep_shadow",
+    "elapsed_delta_fraction_vs_exploratory_control": 1.2831715652768283,
+    "elapsed_sec": 83.507,
+    "exploratory_control_sha256": "9fdc19be24398b4fa2937a114cee698186474d286bc5adc6e25e95c271631627",
+    "integrity_passed": true,
+    "minibench16_preflight_ready": true,
+    "output_files": 1,
+    "passed": true,
+    "profile_fingerprint": "017d775355ffc21e71593fd24208ee711b80cf07289207a10c29afc6ccd7a21b",
+    "raw_difference": "LF versus CRLF serialization only",
+    "raw_output_sha256": "1cd81bcba1d8182fb445837e3eb98479116f4430e029c30d3bbab0b60630cb5e",
+    "reason": "Best directional Token result (+1.31%) but Tool +7, latency +128%, one non-fresh-pair sample, and zero Advice triggers; improvement is not attributable to Advice.",
+    "semantic_rows_equal_to_exploratory_control": true,
+    "status": "shadow_observed",
+    "token_delta_fraction_vs_exploratory_control": 0.01312146065863813,
+    "token_delta_fraction_vs_v1_4": -0.18798498650472334,
+    "tool_call_delta_vs_exploratory_control": 7,
+    "tool_call_delta_vs_v1_4": -7,
+    "tool_calls": 16,
+    "total_tokens": 154036,
+    "variant": "adaptive_harness_context_v1_5",
+    "warnings": 0
+  }
+}
