@@ -16,6 +16,7 @@ from preflight_minibench16 import DEFAULT_IMAGE, _variant_specs
 
 from adaptive_harness.integrations.realreplica import RealReplicaMiniBenchAdapter
 from adaptive_harness.model_routes import PRIMARY_MODEL
+from adaptive_harness.profiles import candidate_policy_profile
 
 ROOT = Path(__file__).resolve().parents[1]
 DEERFLOW_PYTHON = "/opt/deer-flow/backend/.venv/bin/python"
@@ -153,6 +154,27 @@ def main() -> int:
             "embedded_client_stream_exercised": adaptive.get("turns") == 2,
             "ledger_persisted": ledger_path.is_file() and ledger_path.stat().st_size > 0,
             "policy_bridge_enabled": adaptive.get("completed") is True,
+            "executable_policy_profile_assembled": adaptive.get(
+                "policy_profile_plugins"
+            )
+            == [
+                "context",
+                "response_completion",
+                "task_contract_builder",
+                "evidence_completion",
+                "semantic_progress",
+                "durable_recovery",
+                "resource_guardrail",
+            ],
+            "policy_profile_fingerprint_matches": adaptive.get(
+                "policy_profile_fingerprint"
+            )
+            == candidate_policy_profile(
+                context_config={
+                    "max_input_tokens": 4096,
+                    "recent_history_fraction": 0.20,
+                }
+            ).fingerprint(),
             "context_middleware_imported": adaptive.get("context_middleware_imported") is True,
             "action_ledger_middleware_imported": (
                 adaptive.get("action_ledger_middleware_imported") is True
@@ -160,9 +182,17 @@ def main() -> int:
             "action_ledger_request_shape_valid": (
                 adaptive.get("action_ledger_request_shape_valid") is True
             ),
+            "action_scope_block_enforced": adaptive.get(
+                "action_scope_block_enforced"
+            )
+            is True,
             "context_middleware_request_shape_valid": (
                 adaptive.get("context_middleware_request_shape_valid") is True
             ),
+            "context_profile_session_bound": adaptive.get(
+                "context_profile_session_bound"
+            )
+            is True,
             "pinned_candidate_config_loaded": True,
             "realreplica_candidate_config_enabled": "adaptive_policy_enabled: true" in config_text,
             "realreplica_context_profile_wired": "adaptive_context_enabled=adaptive_source is not None" in runner_text,
@@ -221,7 +251,11 @@ def _run(*command: str) -> str:
 
 def _sha256_tree(root: Path) -> str:
     digest = hashlib.sha256()
-    for path in sorted(candidate for candidate in root.rglob("*") if candidate.is_file()):
+    for path in sorted(
+        candidate
+        for candidate in root.rglob("*.py")
+        if candidate.is_file() and "__pycache__" not in candidate.parts
+    ):
         digest.update(path.relative_to(root).as_posix().encode())
         digest.update(b"\0")
         digest.update(path.read_bytes())

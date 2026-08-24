@@ -5,46 +5,35 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
+from adaptive_harness.capabilities import AcceptFinalCompletion, ModelResponse
 from adaptive_harness.ledger import SessionLedger
-from adaptive_harness.progress import ProgressDetector, ProgressResult, ProgressSnapshot, ProgressStatus
+from adaptive_harness.policy_session import PolicySession
+from adaptive_harness.progress import ProgressDetector, ProgressResult, ProgressSnapshot
 from adaptive_harness.recovery import (
     RecoveryOutcomeEvaluator,
-    TaskFailureCategory,
-    TaskFailureContext,
-    TaskRecoveryAction,
     TaskRecoveryDecision,
     TaskRecoveryExecutor,
     TaskRecoveryPolicy,
 )
-from adaptive_harness.resource_guardrail import (
-    GuardrailObservation,
-    NoProgressDisposition,
-    ResourceGuardrail,
-)
+from adaptive_harness.resource_guardrail import ResourceGuardrail
 from adaptive_harness.task_contract import (
     ContractBuilder,
     CriterionKind,
-    RuleBasedTaskContractBuilder,
     TaskContract,
 )
 from adaptive_harness.task_state import (
     ContractCompletionResult,
     Evidence,
-    EvidenceCompletionGate,
     EvidenceKind,
     EvidenceSource,
     Failure,
-    RecoveryExecutionRecord,
-    RecoveryRecord,
     TaskCompletionGate,
     TaskEventWriter,
-    TaskStateProjector,
 )
 
 if TYPE_CHECKING:
@@ -272,21 +261,52 @@ class DeerFlowPolicyBridge:
         progress_detector: ProgressDetector | None = None,
         recovery_outcome_evaluator: RecoveryOutcomeEvaluator | None = None,
         resource_guardrail: ResourceGuardrail | None = None,
+        policy_session: PolicySession | None = None,
+        allow_unverified_completion: bool = False,
     ) -> None:
-        if max_completion_turns < 1:
-            raise ValueError("max_completion_turns must be at least one")
-        if unsupported_criteria not in {"reject", "observe_only"}:
-            raise ValueError("unsupported_criteria must be 'reject' or 'observe_only'")
-        self.contract_builder = contract_builder or RuleBasedTaskContractBuilder()
-        self.completion_gate = completion_gate or EvidenceCompletionGate()
         self.observation_providers = tuple(observation_providers)
-        self.max_completion_turns = max_completion_turns
-        self.unsupported_criteria = unsupported_criteria
-        self.recovery_policy = recovery_policy
-        self.recovery_executor = recovery_executor
-        self.progress_detector = progress_detector
-        self.recovery_outcome_evaluator = recovery_outcome_evaluator
-        self.resource_guardrail = resource_guardrail
+        self.policy_session = policy_session or PolicySession(
+            response_completion_policy=AcceptFinalCompletion(),
+            contract_builder=contract_builder,
+            completion_gate=completion_gate,
+            max_completion_turns=max_completion_turns,
+            unsupported_criteria=unsupported_criteria,
+            criterion_supported=self._criterion_supported,
+            recovery_policy=recovery_policy,
+            recovery_executor=recovery_executor,
+            progress_detector=progress_detector,
+            recovery_outcome_evaluator=recovery_outcome_evaluator,
+            resource_guardrail=resource_guardrail,
+            allow_unverified_completion=allow_unverified_completion,
+        )
+        if (
+            policy_session is not None
+            and max_completion_turns != policy_session.max_completion_turns
+        ):
+            raise ValueError(
+                "max_completion_turns must match the injected PolicySession"
+            )
+
+    @property
+    def max_completion_turns(self) -> int:
+        return self.policy_session.max_completion_turns
+
+    @property
+    def unsupported_criteria(self) -> str:
+        return self.policy_session.unsupported_criteria
+
+    def prepare_context(
+        self,
+        messages: Sequence[Mapping[str, Any]],
+        *,
+        environment_state: Mapping[str, Any],
+        task_state: Mapping[str, Any],
+    ) -> Any:
+        return self.policy_session.prepare_context(
+            messages,
+            environment_state=environment_state,
+            task_state=task_state,
+        )
 
     def start(
         self,
@@ -296,33 +316,12 @@ class DeerFlowPolicyBridge:
         task_prompt: str,
         public_schema: Mapping[str, object] | None,
     ) -> TaskContract:
-        contract = self.contract_builder.build(task_id, task_prompt, public_schema)
-        if self.unsupported_criteria == "observe_only":
-            criteria = tuple(
-                criterion
-                if not criterion.required or self._criterion_supported(criterion)
-                else replace(criterion, required=False)
-                for criterion in contract.criteria
-            )
-            contract = TaskContract(
-                contract.task_id,
-                contract.original_request,
-                criteria,
-                contract.public_schema_hash,
-            )
-        TaskEventWriter(ledger).create_contract(contract)
-        ledger.append(
-            "policy/configured",
-            {
-                "completion_gate": "evidence",
-                "unsupported_criteria": self.unsupported_criteria,
-                "enforced_criterion_ids": [
-                    criterion.id for criterion in contract.criteria if criterion.required
-                ],
-                "observe_only_criterion_ids": [
-                    criterion.id for criterion in contract.criteria if not criterion.required
-                ],
-            },
+        contract = self.policy_session.start_contract(
+            ledger,
+            task_id=task_id,
+            task_prompt=task_prompt,
+            public_schema=public_schema,
+            criterion_supported=self._criterion_supported,
         )
         writer = TaskEventWriter(ledger)
         for provider_index, provider in enumerate(self.observation_providers):
@@ -340,7 +339,7 @@ class DeerFlowPolicyBridge:
                         source=EvidenceSource.RUNTIME_OBSERVATION,
                         metadata={"provider": type(provider).__name__},
                     )
-                )
+        )
         return contract
 
     def observe_turn(
@@ -368,29 +367,14 @@ class DeerFlowPolicyBridge:
                 )
 
     def begin_turn(self, ledger: SessionLedger) -> ProgressSnapshot | None:
-        if self.progress_detector is None:
-            return None
-        state = TaskStateProjector().project(ledger.events)
-        return self.progress_detector.snapshot(state)
+        return self.policy_session.begin_turn(ledger)
 
     def check_progress(
         self,
         ledger: SessionLedger,
         before: ProgressSnapshot | None,
     ) -> ProgressResult | None:
-        if self.progress_detector is None or before is None:
-            return None
-        state = TaskStateProjector().project(ledger.events)
-        result = self.progress_detector.detect(before, self.progress_detector.snapshot(state))
-        ledger.append("progress/checked", result.to_payload())
-        TaskEventWriter(ledger).update_state(
-            {
-                "progress.last_status": result.status.value,
-                "progress.last_fingerprint": result.after_fingerprint,
-            },
-            reason="semantic progress checked",
-        )
-        return result
+        return self.policy_session.check_progress(ledger, before)
 
     def check_resources(
         self,
@@ -399,197 +383,23 @@ class DeerFlowPolicyBridge:
         *,
         turn: int,
     ) -> tuple[dict[str, object], ...]:
-        if self.resource_guardrail is None:
-            return ()
-        audited = [
-            event
-            for event in ledger.events
-            if event.type == "tool/action-audited" and event.turn == turn
-        ]
-        decisions: list[dict[str, object]] = []
-        for index, event in enumerate(audited):
-            record = event.payload.get("record") or {}
-            if not isinstance(record, Mapping):
-                continue
-            intent = str(record.get("intent") or "")
-            observation = GuardrailObservation(
-                action_scope=str(record.get("scope_key") or ""),
-                strategy_fingerprint=str(record.get("argument_fingerprint") or ""),
-                mutation_epoch=int(record.get("mutation_epoch") or 0),
-                semantic_progress=bool(
-                    progress is not None
-                    and progress.status is ProgressStatus.PROGRESSED
-                    and index == len(audited) - 1
-                ),
-                post_mutation_verification=(
-                    intent in {"read", "observe", "verify"}
-                    and int(record.get("mutation_epoch") or 0) > 0
-                ),
-            )
-            decision = self.resource_guardrail.observe(observation)
-            payload: dict[str, object] = {
-                "action_event_seq": event.seq,
-                "scope_key": observation.action_scope,
-                "strategy_fingerprint": observation.strategy_fingerprint,
-                "mutation_epoch": observation.mutation_epoch,
-                **decision.to_payload(),
-            }
-            ledger.append("resource/no-progress-checked", payload, turn=turn)
-            decisions.append(payload)
-            if decision.disposition in {
-                NoProgressDisposition.REPLAN,
-                NoProgressDisposition.BLOCK_SCOPE,
-            }:
-                TaskEventWriter(ledger).classify_failure(
-                    Failure(
-                        id=f"resource:t{turn}:a{event.seq}",
-                        error_type=(
-                            "LOOP"
-                            if decision.disposition is NoProgressDisposition.BLOCK_SCOPE
-                            else "NO_PROGRESS"
-                        ),
-                        message=decision.reason,
-                        source=EvidenceSource.RUNTIME_OBSERVATION,
-                        metadata={"scope_key": observation.action_scope},
-                    )
-                )
-        if decisions:
-            maximum = max(int(item["consecutive_no_progress"]) for item in decisions)
-            blocked = any(item["disposition"] == "block_scope" for item in decisions)
-            TaskEventWriter(ledger).update_state(
-                {
-                    "resource.no_progress_streak": maximum,
-                    "resource.blocked_scope": blocked,
-                },
-                reason="resource guardrail evaluated",
-            )
-        return tuple(decisions)
+        return self.policy_session.check_resources(ledger, progress, turn=turn)
 
     def check_completion(
         self,
         ledger: SessionLedger,
+        *,
+        response_text: str | None = None,
     ) -> tuple[ContractCompletionResult, str | None, TaskRecoveryDecision | None]:
-        state = TaskStateProjector().project(ledger.events)
-        if (
-            self.unsupported_criteria == "observe_only"
-            and state.contract is not None
-            and not any(criterion.required for criterion in state.contract.criteria)
-        ):
-            result = ContractCompletionResult(
-                True,
-                (),
-                (),
-                "No provider-backed criteria; completion gate is observe-only.",
-            )
-        else:
-            result = self.completion_gate.verify(state)
-        feedback = None if result.passed else self.completion_gate.feedback(result)
-        ledger.append("completion/checked", {**result.to_payload(), "feedback": feedback})
-        self._evaluate_pending_recovery(ledger, result)
-        recovery = None
-        if not result.passed and self.recovery_policy is not None:
-            context = self._failure_context(state, result)
-            recovery = self.recovery_policy.decide(context)
-            TaskEventWriter(ledger).record_recovery(
-                RecoveryRecord(context.primary, context.secondary, recovery)
-            )
-            actions = ", ".join(action.value for action in recovery.actions)
-            feedback = f"{feedback}\nRecovery actions: {actions}."
-            if self.recovery_executor is not None:
-                execution = self.recovery_executor.execute(
-                    recovery,
-                    missing=result.missing,
-                )
-                TaskEventWriter(ledger).record_recovery_execution(
-                    RecoveryExecutionRecord(execution)
-                )
-                if execution.directives:
-                    feedback = f"{feedback}\n" + "\n".join(execution.directives)
-        return result, feedback, recovery
-
-    def _evaluate_pending_recovery(
-        self,
-        ledger: SessionLedger,
-        completion: ContractCompletionResult,
-    ) -> None:
-        if self.recovery_outcome_evaluator is None:
-            return
-        evaluated = {
-            int(event.payload["execution_seq"])
-            for event in ledger.events
-            if event.type == "recovery/outcome-evaluated"
-        }
-        pending = [
-            event
-            for event in ledger.events
-            if event.type == "recovery/executed" and event.seq not in evaluated
-        ]
-        if not pending:
-            return
-        execution_event = pending[-1]
-        progress_events = [
-            event
-            for event in ledger.events
-            if event.type == "progress/checked" and event.seq > execution_event.seq
-        ]
-        if not progress_events:
-            return
-        execution = RecoveryExecutionRecord.from_payload(execution_event.payload).execution
-        outcome = self.recovery_outcome_evaluator.evaluate(
-            execution_seq=execution_event.seq,
-            execution=execution,
-            progress_status=str(progress_events[-1].payload["status"]),
-            completion_passed=completion.passed,
+        return self.policy_session.check_completion(
+            ledger,
+            response=(ModelResponse(content=response_text) if response_text is not None else None),
         )
-        TaskEventWriter(ledger).record_recovery_outcome(outcome)
 
     def _criterion_supported(self, criterion: Any) -> bool:
         return any(
             bool(getattr(provider, "supports", lambda _criterion: False)(criterion))
             for provider in self.observation_providers
-        )
-
-    def _failure_context(
-        self,
-        state: Any,
-        result: ContractCompletionResult,
-    ) -> TaskFailureContext:
-        by_id = {
-            criterion.id: criterion
-            for criterion in (state.contract.criteria if state.contract is not None else ())
-        }
-        failed_kinds = {
-            by_id[assessment.criterion_id].kind
-            for assessment in result.assessments
-            if assessment.status.value != "satisfied" and assessment.criterion_id in by_id
-        }
-        primary = (
-            TaskFailureCategory.ARTIFACT_ERROR
-            if CriterionKind.ARTIFACT_EXISTS in failed_kinds
-            else TaskFailureCategory.CONSTRAINT_MISS
-            if CriterionKind.EXACT_COUNT in failed_kinds
-            else TaskFailureCategory.STATE_INCONSISTENCY
-            if CriterionKind.OBSERVATION_EQUALS in failed_kinds
-            else TaskFailureCategory.PREMATURE_FINISH
-        )
-        attempts: dict[TaskRecoveryAction, int] = {}
-        for record in state.recoveries:
-            for action in record.decision.actions:
-                attempts[action] = attempts.get(action, 0) + 1
-        secondary = [TaskFailureCategory.PREMATURE_FINISH]
-        progress_status = state.values.get("progress.last_status")
-        if progress_status == ProgressStatus.NO_PROGRESS.value:
-            secondary.append(TaskFailureCategory.NO_PROGRESS)
-        elif progress_status == ProgressStatus.REGRESSED.value:
-            secondary.append(TaskFailureCategory.STATE_INCONSISTENCY)
-        repeated_action_count = int(state.values.get("resource.no_progress_streak") or 0)
-        if state.values.get("resource.blocked_scope"):
-            secondary.append(TaskFailureCategory.LOOP)
-        return TaskFailureContext(
-            primary,
-            tuple(secondary),
-            repeated_action_count=repeated_action_count,
-            attempts=attempts,
         )
 
 

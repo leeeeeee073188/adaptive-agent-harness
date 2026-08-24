@@ -8,6 +8,7 @@ from collections import Counter
 from pathlib import Path
 
 from adaptive_harness.evaluation import RolloutRecord, summarize_paired_rollouts
+from adaptive_harness.integrations.minibench_gate import evaluate_partition_integrity
 from adaptive_harness.integrations.realreplica import (
     EvaluationRole,
     RealReplicaMiniBenchAdapter,
@@ -15,7 +16,11 @@ from adaptive_harness.integrations.realreplica import (
     stable_profile_fingerprint,
 )
 from adaptive_harness.model_routes import PRIMARY_MODEL
-from scripts.preflight_minibench16 import DEFAULT_IMAGE, _bridge_evidence_valid
+from scripts.preflight_minibench16 import (
+    DEFAULT_IMAGE,
+    _adaptive_source_sha256,
+    _bridge_evidence_valid,
+)
 
 IMAGE = "realreplicabench/deerflow:test"
 
@@ -48,6 +53,7 @@ class EvaluationAdapterTests(unittest.TestCase):
         self.assertEqual(len(dataset.tasks_for_role(EvaluationRole.DEVELOPMENT)), 8)
         self.assertEqual(len(dataset.tasks_for_role(EvaluationRole.TRANSFER)), 4)
         self.assertEqual(len(dataset.tasks_for_role(EvaluationRole.HELDOUT)), 4)
+        self.assertTrue(evaluate_partition_integrity(dataset).passed)
         self.assertEqual(len(dataset.fingerprint), 64)
 
     def test_selection_order_drift_fails_closed(self) -> None:
@@ -122,13 +128,18 @@ class EvaluationAdapterTests(unittest.TestCase):
             "runtime_image": DEFAULT_IMAGE,
             "dataset_fingerprint": "dataset-fp",
             "candidate_profile_fingerprint": "candidate-fp",
+            "adaptive_source_sha256": _adaptive_source_sha256(),
             "model_calls": 0,
             "realreplica_candidate_runner_wired": True,
             "checks": {
                 "adaptive_package_imported": True,
+                "action_scope_block_enforced": True,
+                "context_profile_session_bound": True,
                 "embedded_client_stream_exercised": True,
+                "executable_policy_profile_assembled": True,
                 "ledger_persisted": True,
                 "policy_bridge_enabled": True,
+                "policy_profile_fingerprint_matches": True,
             },
         }
         _write_json(path, payload)
@@ -141,6 +152,16 @@ class EvaluationAdapterTests(unittest.TestCase):
             )
         )
         payload["checks"].pop("ledger_persisted")
+        _write_json(path, payload)
+        self.assertFalse(
+            _bridge_evidence_valid(
+                path,
+                dataset_fingerprint="dataset-fp",
+                candidate_profile_fingerprint="candidate-fp",
+            )
+        )
+        payload["checks"]["ledger_persisted"] = True
+        payload["adaptive_source_sha256"] = "stale-source"
         _write_json(path, payload)
         self.assertFalse(
             _bridge_evidence_valid(
@@ -162,7 +183,16 @@ def _write_minibench_fixture(root: Path) -> list[str]:
     categories = ["cli", "browser", "file", "api"]
     difficulties = ["easy"] * 4 + ["medium"] * 4 + ["hard"] * 8
     capabilities = ["text-only", "browser-text", "vision", "text-only"] * 4
-    evaluation_roles = ["development"] * 8 + ["transfer"] * 4 + ["heldout"] * 4
+    transfer_indices = {0, 5, 10, 15}
+    heldout_indices = {2, 7, 8, 13}
+    evaluation_roles = [
+        "transfer"
+        if index in transfer_indices
+        else "heldout"
+        if index in heldout_indices
+        else "development"
+        for index in range(16)
+    ]
     task_ids = [f"task-{index:02d}" for index in range(16)]
     tasks = []
     for index, task_id in enumerate(task_ids):

@@ -12,12 +12,14 @@ from adaptive_harness.capabilities import (
 )
 from adaptive_harness.context import ContextBudget, TaskAwareContextManager
 from adaptive_harness.kernel import Kernel, PluginContext
+from adaptive_harness.resource_guardrail import ResourceGuardrail
 from adaptive_harness.runtime import AgentDriver
 from adaptive_harness.services import (
     COMPLETION_POLICY,
     CONTEXT_MANAGER,
     ENVIRONMENT,
     MODEL,
+    RESOURCE_GUARDRAIL,
     TASK_COMPLETION_GATE,
     TASK_CONTRACT_BUILDER,
     TOOL_RUNTIME,
@@ -156,6 +158,50 @@ class ReliabilityRuntimePlugin:
         )
 
 
+class GuardrailModel:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def complete(self, request):
+        self.calls += 1
+        if self.calls <= 4:
+            return ModelResponse(
+                tool_calls=(
+                    ToolCall(
+                        f"inspect-{self.calls}",
+                        "inspect_artifact",
+                        {"path": "outputs/report.csv"},
+                    ),
+                )
+            )
+        return ModelResponse(content="finished", usage={"total_tokens": 8})
+
+
+class GuardrailRuntimePlugin:
+    name = "guardrail-runtime"
+    requires = ()
+
+    def __init__(self) -> None:
+        self.executions = 0
+
+    def _inspect(self, path: str) -> str:
+        self.executions += 1
+        return "no change"
+
+    async def mount(self, context: PluginContext) -> None:
+        context.provide(ENVIRONMENT, FakeEnvironment())
+        context.provide(MODEL, GuardrailModel())
+        context.provide(CONTEXT_MANAGER, PassthroughContextManager())
+        context.provide(COMPLETION_POLICY, AcceptFinalCompletion())
+        context.provide(RESOURCE_GUARDRAIL, ResourceGuardrail())
+        context.provide(
+            TOOL_RUNTIME,
+            ToolRuntime(
+                [ToolDefinition("inspect_artifact", "inspect output artifact", self._inspect)],
+            ),
+        )
+
+
 class TaskAwareRuntimePlugin:
     name = "task-aware-runtime"
     requires = ()
@@ -179,7 +225,10 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         kernel = Kernel()
         await kernel.mount(TaskAwareRuntimePlugin())
 
-        result = await AgentDriver(kernel).run("do the task", run_id="run-context")
+        result = await AgentDriver(
+            kernel,
+            allow_unverified_completion=True,
+        ).run("do the task", run_id="run-context")
 
         events = result.ledger.events
         selections = [event for event in events if event.type == "context/selected"]
@@ -201,7 +250,10 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         kernel = Kernel()
         await kernel.mount(RuntimePlugin())
 
-        result = await AgentDriver(kernel).run("do the task", run_id="run-1")
+        result = await AgentDriver(
+            kernel,
+            allow_unverified_completion=True,
+        ).run("do the task", run_id="run-1")
 
         self.assertTrue(result.completed)
         self.assertEqual(result.content, "finished")
@@ -209,6 +261,9 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             [event.type for event in result.ledger.events],
             [
+                "runtime/start",
+                "task/contract-created",
+                "policy/configured",
                 "turn/start",
                 "user/message",
                 "step/start",
@@ -216,13 +271,21 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
                 "assistant/message",
                 "tool/call",
                 "tool/result",
+                "tool/action-audited",
+                "progress/checked",
+                "state/updated",
+                "resource/no-progress-checked",
+                "state/updated",
                 "step/end",
                 "step/start",
                 "request/header",
                 "assistant/message",
+                "progress/checked",
+                "state/updated",
                 "completion/checked",
                 "step/end",
                 "turn/end",
+                "runtime/end",
             ],
         )
         self.assertIn("ok", str(result.ledger.derive_messages()))
@@ -235,14 +298,17 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         await kernel.mount(ContractPlugin())
         await kernel.mount(RuntimePlugin())
 
-        result = await AgentDriver(kernel).run(
+        result = await AgentDriver(
+            kernel,
+            allow_unverified_completion=True,
+        ).run(
             "Write outputs/report.csv.",
             run_id="run-contract",
             task_id="public-task",
         )
 
-        self.assertEqual(result.ledger.events[0].type, "task/contract-created")
-        contract = result.ledger.events[0].payload["contract"]
+        contract_event = next(event for event in result.ledger.events if event.type == "task/contract-created")
+        contract = contract_event.payload["contract"]
         self.assertEqual(contract["task_id"], "public-task")
         self.assertEqual(contract["criteria"][0]["parameters"]["path"], "outputs/report.csv")
         first_header = next(event for event in result.ledger.events if event.type == "request/header")
@@ -269,7 +335,10 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         kernel = Kernel()
         await kernel.mount(CompletionRuntimePlugin(gate_enabled=True))
 
-        result = await AgentDriver(kernel).run(
+        result = await AgentDriver(
+            kernel,
+            allow_unverified_completion=True,
+        ).run(
             "Write outputs/report.csv.",
             run_id="run-gated",
         )
@@ -287,7 +356,10 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         kernel = Kernel()
         await kernel.mount(CompletionRuntimePlugin(gate_enabled=False))
 
-        result = await AgentDriver(kernel).run(
+        result = await AgentDriver(
+            kernel,
+            allow_unverified_completion=True,
+        ).run(
             "Write outputs/report.csv.",
             run_id="run-ungated",
         )
@@ -300,7 +372,10 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         kernel = Kernel()
         await kernel.mount(ReliabilityRuntimePlugin())
 
-        result = await AgentDriver(kernel).run("Do the task.", run_id="run-retry")
+        result = await AgentDriver(
+            kernel,
+            allow_unverified_completion=True,
+        ).run("Do the task.", run_id="run-retry")
 
         failure = next(event for event in result.ledger.events if event.type == "failure/classified")
         tool_result = next(event for event in result.ledger.events if event.type == "tool/result")
@@ -309,3 +384,27 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(failure.payload["failure"]["metadata"]["recovery"], "retry")
         self.assertEqual(tool_result.payload["metadata"]["attempts"], 2)
         self.assertLess(failure.seq, tool_result.seq)
+
+    async def test_driver_escalates_repeated_no_progress_scopes(self) -> None:
+        kernel = Kernel()
+        plugin = GuardrailRuntimePlugin()
+        await kernel.mount(plugin)
+
+        result = await AgentDriver(
+            kernel,
+            allow_unverified_completion=True,
+        ).run("Inspect the artifact.", run_id="run-guardrail")
+
+        guardrail = [event for event in result.ledger.events if event.type == "resource/no-progress-checked"]
+        action_audits = [event for event in result.ledger.events if event.type == "tool/action-audited"]
+        self.assertTrue(result.completed)
+        self.assertEqual(
+            [event.payload["disposition"] for event in guardrail[:3]],
+            ["record", "replan", "block_scope"],
+        )
+        self.assertEqual(len(action_audits), 4)
+        self.assertEqual(plugin.executions, 3)
+        self.assertEqual(
+            sum(event.type == "resource/action-blocked" for event in result.ledger.events),
+            1,
+        )

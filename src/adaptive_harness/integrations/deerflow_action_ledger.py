@@ -16,11 +16,14 @@ from langgraph.types import Command
 from adaptive_harness.action_audit import emit_action_audit
 from adaptive_harness.action_ledger import (
     ToolActionLedger,
+    ToolIntent,
     VerificationBudgetConfig,
     VerificationDisposition,
     VerificationMode,
+    classify_tool_action,
 )
 from adaptive_harness.capabilities import ToolCall, ToolResult
+from adaptive_harness.policy_session import current_policy_session
 
 _MAX_RUN_LEDGERS = 128
 _ADVICE = (
@@ -93,7 +96,8 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         request: ToolCallRequest,
         handler: Callable[[ToolCallRequest], ToolMessage | Command],
     ) -> ToolMessage | Command:
-        return self._observe(request, handler(request))
+        blocked = self._blocked_result(request)
+        return self._observe(request, blocked if blocked is not None else handler(request))
 
     @override
     async def awrap_tool_call(
@@ -101,7 +105,47 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         request: ToolCallRequest,
         handler: Callable[[ToolCallRequest], Awaitable[ToolMessage | Command]],
     ) -> ToolMessage | Command:
-        return self._observe(request, await handler(request))
+        blocked = self._blocked_result(request)
+        return self._observe(
+            request,
+            blocked if blocked is not None else await handler(request),
+        )
+
+    def _blocked_result(self, request: ToolCallRequest) -> ToolMessage | None:
+        session = current_policy_session()
+        if session is None:
+            return None
+        raw = request.tool_call
+        call = ToolCall(
+            str(raw.get("id") or "missing-id"),
+            str(raw.get("name") or "unknown"),
+            dict(raw.get("args") or {}),
+        )
+        if not session.is_action_blocked(call):
+            semantics = classify_tool_action(call.name, call.arguments)
+            threshold = (
+                self._config.max_same_scope_reads
+                if semantics.intent is ToolIntent.READ
+                else self._config.max_same_scope
+                if semantics.intent in {ToolIntent.OBSERVE, ToolIntent.VERIFY}
+                else None
+            )
+            exhausted = bool(
+                threshold is not None
+                and any(
+                    cluster.scope_key == semantics.scope_key
+                    and cluster.attempts >= threshold
+                    and cluster.repeated_unchanged
+                    for cluster in self._ledger(request).clusters()
+                )
+            )
+            if not exhausted:
+                return None
+        return ToolMessage(
+            content="Harness blocked this repeated no-progress Action Scope.",
+            tool_call_id=call.id,
+            status="error",
+        )
 
 
 def _run_key(request: ToolCallRequest) -> str:
@@ -129,4 +173,3 @@ def _content_text(content: Any) -> str:
     if isinstance(content, str):
         return content
     return json.dumps(content, ensure_ascii=False, default=str)
-

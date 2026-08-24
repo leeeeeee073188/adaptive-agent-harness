@@ -1,6 +1,6 @@
 # 下一阶段：Runtime Conformance 与 Offline Evolution 接线方案
 
-状态：Goal 执行中  
+状态：实现完成，零模型门禁通过；付费 Candidate 因新模型基线与稳定回归控制缺失而保持禁用
 前置版本：`3f589aa`  
 约束：禁止完整 107 任务；确定性门禁通过前禁止付费模型调用。
 
@@ -65,6 +65,8 @@ SessionLedger
 
 完成标准：同一套测试向量可同时运行于 Fake Adapter 与 DeerFlow Adapter，差异仅允许出现在 provider-specific 原始事件翻译层。
 
+完成证据：`runtime_contract.py`、`tests/test_runtime_conformance.py`；两个 Adapter 共享 canonical lifecycle、凭据前置拒绝、异常 Ledger 保留和 No-progress 序列。
+
 ### S2：提取 Kernel Policy Session
 
 建立 Core-owned Policy Session：
@@ -84,6 +86,8 @@ SessionLedger
 
 完成标准：Completion/Progress/Recovery/Resource/Experience 不再存在两套条件分支；Fake 与 DeerFlow 的规范决策序列一致。
 
+完成证据：`policy_session.py`；`AgentDriver` 直接使用 `KernelPolicySession`，`DeerFlowPolicyBridge` 仅保留 Observation Provider/Facade 并委托相同 Session。
+
 ### S3：SessionLedger → DevelopmentRollout
 
 新增离线转换器：
@@ -97,6 +101,8 @@ SessionLedger
 
 完成标准：历史 Ledger 可自动进入现有 `OfflineExperienceEvolution`，且任务身份和评测私有内容不会到达 Distiller。
 
+完成证据：`ledger_rollout.py`、`tests/test_ledger_rollout.py`，包含可信 Development allowlist、稳定 fingerprint 和评测字段 fail-closed。
+
 ### S4：可替换 Distiller Adapter
 
 建立严格的 Distiller 边界：
@@ -109,6 +115,8 @@ SessionLedger
 - 每个 group 至多一次总结/蒸馏调用，低于 3 个来源任务或无结果差异时零调用。
 
 完成标准：Mock 端到端完成 Ledger→Rollout→Candidate；任何泄漏或结构异常均 fail closed 且不部分写入 Store。
+
+完成证据：`distiller.py`、`tests/test_distiller_adapter.py`、`tests/test_offline_evolution_e2e.py`；Model Distiller 默认关闭，Deterministic Fake 完成零模型 E2E。
 
 ### S5：MiniBench 8/4/4 门禁
 
@@ -127,6 +135,8 @@ SessionLedger
 - Profile/Experience fingerprint 不可复现；
 - Runtime Conformance 不一致；
 - Candidate 成功率无提升且新增无效动作。
+
+当前门禁结果见 `evidence/a20-runtime-evolution/summary.json`：Runtime/partition/Profile 零模型检查通过，更新后的容器 wiring 使用 0 次模型调用；付费 Candidate 仍因当前 Primary Model 缺少 Development baseline 和对应 Stable-pass Controls 而禁止运行。
 
 ## 测试规格摘要
 

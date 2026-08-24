@@ -79,6 +79,12 @@ flowchart TD
 9. Profile Promotion and Experience Promotion are separate append-only
    lifecycles. Structured Experiences require three Development sources and
    two disjoint Transfer tasks before promotion; runtime retrieval is read-only.
+10. Fake and DeerFlow execution now share a runtime-independent request/result
+    contract and one Core-owned Policy Session. DeerFlow retains only transport,
+    event translation and Observation Provider responsibilities.
+11. Canonical Ledgers can become Development Rollouts only through a trusted
+    partition allowlist and fail-closed evaluation-data sanitizer. Model-backed
+    distillation is disabled by default; deterministic offline E2E uses no model.
 
 ## Primary model route
 

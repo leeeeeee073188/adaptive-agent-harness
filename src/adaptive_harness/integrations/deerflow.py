@@ -15,10 +15,16 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 from adaptive_harness.action_audit import bind_action_audit_sink
-from adaptive_harness.capabilities import Environment
+from adaptive_harness.capabilities import Environment, PreparedContext
 from adaptive_harness.context import CONTEXT_SELECTED
 from adaptive_harness.context_audit import bind_context_audit_sink
 from adaptive_harness.ledger import SessionLedger
+from adaptive_harness.policy_session import bind_policy_session
+from adaptive_harness.runtime_contract import (
+    RuntimeRequest,
+    RuntimeResult,
+    reject_runtime_credentials,
+)
 from adaptive_harness.task_state import TaskStateProjector
 
 if TYPE_CHECKING:
@@ -105,7 +111,10 @@ class DeerFlowRuntimeAdapter:
         ledger = SessionLedger(run_id, ledger_path)
         adapter: DeerFlowEventAdapter | None = None
         _reject_secret_options(request.client_options)
+        reject_runtime_credentials(request.client_options)
+        reject_runtime_credentials(request.context)
         try:
+            ledger.append("runtime/start", {"runtime": "deerflow"})
             await self.environment.build()
             if self.policy_bridge is not None:
                 return self._run_with_policy_bridge(request, run_id, ledger)
@@ -153,6 +162,7 @@ class DeerFlowRuntimeAdapter:
         finally:
             await self.environment.cleanup()
 
+
     def _run_with_policy_bridge(
         self,
         request: DeerFlowRunRequest,
@@ -179,6 +189,13 @@ class DeerFlowRuntimeAdapter:
                     turn=turn,
                 )
             task_state = TaskStateProjector().project(ledger.events).to_context()
+            prepared_context = self.policy_bridge.prepare_context(
+                [{"role": "user", "content": message}],
+                environment_state=dict(self.environment.state()),
+                task_state=task_state,
+            )
+            if isinstance(prepared_context, PreparedContext):
+                ledger.append(CONTEXT_SELECTED, dict(prepared_context.audit), turn=turn)
             ledger.append(
                 "request/header",
                 {
@@ -204,18 +221,19 @@ class DeerFlowRuntimeAdapter:
             )
             canonical_start = len(ledger.events)
             try:
-                with bind_context_audit_sink(
-                    lambda payload: ledger.append(CONTEXT_SELECTED, payload, turn=turn)
-                ):
-                    with bind_action_audit_sink(
-                        lambda payload: ledger.append("tool/action-audited", payload, turn=turn)
+                with bind_policy_session(self.policy_bridge.policy_session):
+                    with bind_context_audit_sink(
+                        lambda payload: ledger.append(CONTEXT_SELECTED, payload, turn=turn)
                     ):
-                        for raw_event in self.client.stream(
-                            message,
-                            thread_id=request.thread_id,
-                            **dict(request.client_options),
+                        with bind_action_audit_sink(
+                            lambda payload: ledger.append("tool/action-audited", payload, turn=turn)
                         ):
-                            adapter.append(ledger, _event_mapping(raw_event))
+                            for raw_event in self.client.stream(
+                                message,
+                                thread_id=request.thread_id,
+                                **dict(request.client_options),
+                            ):
+                                adapter.append(ledger, _event_mapping(raw_event))
                 summary = _summary_with_count(
                     adapter.finish(ledger),
                     len(ledger.events) - canonical_start,
@@ -233,7 +251,10 @@ class DeerFlowRuntimeAdapter:
             self.policy_bridge.observe_turn(ledger, contract, summary, turn=turn)
             progress = self.policy_bridge.check_progress(ledger, progress_before)
             self.policy_bridge.check_resources(ledger, progress, turn=turn)
-            completion, feedback, recovery = self.policy_bridge.check_completion(ledger)
+            completion, feedback, recovery = self.policy_bridge.check_completion(
+                ledger,
+                response_text=summary.response_text,
+            )
             ledger.append(
                 "turn/end",
                 {"reason": "completed" if completion.passed else "completion_rejected"},
@@ -266,6 +287,36 @@ class DeerFlowRuntimeAdapter:
             combined,
             False,
             turn,
+        )
+
+
+class CanonicalDeerFlowRuntimeAdapter:
+    """Expose DeerFlow through the runtime-independent Harness contract."""
+
+    def __init__(self, runtime: DeerFlowRuntimeAdapter) -> None:
+        self.runtime = runtime
+
+    async def run(self, request: RuntimeRequest) -> RuntimeResult:
+        reject_runtime_credentials(request.client_options)
+        reject_runtime_credentials(request.context)
+        result = await self.runtime.run(
+            DeerFlowRunRequest(
+                request.task,
+                request.thread_id or request.run_id or "deerflow-thread",
+                client_options=request.client_options,
+                tool_schemas=request.tool_schemas,
+                context=request.context,
+                task_id=request.task_id,
+                public_schema=request.public_schema,
+            ),
+            run_id=request.run_id,
+            ledger_path=request.ledger_path,
+        )
+        return RuntimeResult(
+            result.run_id,
+            result.ledger,
+            result.completed,
+            result.summary.response_text,
         )
 
 

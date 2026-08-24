@@ -59,9 +59,11 @@ External adapters
 | `context.py` | 五层上下文评分、Token预算、工具协议原子性、紧凑工具事实和泄漏过滤 |
 | `action_ledger.py` | Tool Intent/Resource投影、Mutation epoch、重复验证预算与可回放决策 |
 | `assembly.py` | Profile → Plugin Factory → Kernel 的可执行、失败回收装配 |
+| `runtime_contract.py` / `policy_session.py` | Runtime 无关请求/结果契约，以及 Completion/Progress/Recovery/Resource/Context 统一策略会话 |
 | `resource_guardrail.py` | No-progress 的记录、重规划与 Action Scope 阻断决策 |
 | `evolution.py` | Profile 版本、Shadow 评估、晋升/拒绝/回滚治理 |
 | `experience_evolution.py` | Development Rollout 分组、轨迹去泄漏与组间相对 Candidate 蒸馏 |
+| `ledger_rollout.py` / `distiller.py` | 可信 Ledger 转换、稳定 fingerprint、默认关闭的模型 Distiller 与零模型 Fake |
 | `experience_store.py` | Candidate Experience、Transfer Validation、晋升/隔离/退休、检索与结果归因 |
 | `integrations/deerflow*.py` | DeerFlow stream/event/runtime 桥接 |
 | `integrations/realreplica*.py` | Bench 专属 Contract 语义、Observation Provider 与评测适配 |
@@ -102,5 +104,7 @@ PYTHONPATH=src python3 -m compileall -q src tests scripts
 零模型测试覆盖 Core/integration 边界、Executable Profile Assembly、Plugin/Ledger/Runtime、Contract/Evidence、Tool Reliability、Task-aware Context、Tool Action Ledger、Resource Guardrail、Progress/Recovery，以及 Profile/Experience 两套独立生命周期与 JSONL replay。
 
 RealReplicaBench 仅作为外部验证：冻结 MiniBench16 覆盖类型、能力与难度，并内部隔离为 8 Development / 4 Transfer Validation / 4 Held-out Evaluation；不会运行完整 107 任务。当前新模型还没有新的总体成功率证据，不能声称总体通过率提升。历史证据和可声明边界见 [`evidence/index.json`](evidence/index.json)。
+
+下一阶段的 Runtime Conformance、共享 Policy Session、Ledger→Rollout、Distiller Adapter 和零模型门禁已经落地。`evidence/a20-runtime-evolution/summary.json` 明确区分“架构检查通过”和“允许付费 Candidate”：前者已通过，后者在新模型 Development baseline 与 Stable-pass Controls 生成前保持 false。
 
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

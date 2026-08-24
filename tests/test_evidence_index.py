@@ -30,6 +30,17 @@ class EvidenceIndexTests(unittest.TestCase):
         self.assertFalse(index["claims"]["tool_enforcement_gate_eligible"])
         self.assertEqual(index["claims"]["tool_advice_v1_5_status"], "shadow_observed")
         self.assertEqual(index["claims"]["tool_advice_v1_5_advice_applied"], 0)
+        self.assertTrue(index["claims"]["runtime_conformance_passed"])
+        self.assertTrue(index["claims"]["runtime_evolution_zero_model_passed"])
+        self.assertEqual(index["claims"]["runtime_evolution_model_calls"], 0)
+        self.assertEqual(
+            index["claims"]["runtime_evolution_role_counts"],
+            {"development": 8, "heldout": 4, "transfer": 4},
+        )
+        self.assertTrue(index["claims"]["runtime_evolution_wiring_passed"])
+        self.assertFalse(index["claims"]["runtime_evolution_paid_candidate_allowed"])
+        self.assertTrue(index["claims"]["runtime_evolution_single_canary_default"])
+        self.assertTrue(index["claims"]["runtime_evolution_review_passed"])
         self.assertEqual(index["secret_findings"], [])
 
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections import Counter
 from pathlib import Path
@@ -14,8 +15,10 @@ from adaptive_harness.integrations.realreplica import (
     stable_profile_fingerprint,
 )
 from adaptive_harness.model_routes import PRIMARY_MODEL
+from adaptive_harness.profiles import candidate_policy_profile
 
 DEFAULT_IMAGE = "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d"
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
@@ -26,27 +29,19 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         DEFAULT_IMAGE,
         seed,
     )
+    policy_profile = candidate_policy_profile(
+        context_config={
+            "max_input_tokens": 4096,
+            "recent_history_fraction": 0.20,
+        }
+    )
     candidate = VariantSpec(
-        "adaptive_harness_context_v1_5",
+        "adaptive_harness_runtime_evolution_v2",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
-                "policies": [
-                    "task_contract",
-                    "tool_reliability",
-                    "evidence_completion",
-                    "durable_recovery",
-                    "semantic_progress",
-                    "task_aware_context",
-                    "tool_action_ledger",
-                ],
+                "executable_policy_profile": policy_profile.fingerprint(),
                 "tool_reliability": {"max_attempts": 2},
-                "task_aware_context": {
-                    "policy": "task-aware-v1.5",
-                    "max_input_tokens": 4096,
-                    "history_fraction": 0.20,
-                    "authority_separated": True,
-                },
                 "verification_budget": {
                     "policy": "tool-action-ledger-v1",
                     "mode": "advise",
@@ -206,9 +201,13 @@ def _bridge_evidence_valid(
         return False
     required_checks = {
         "adaptive_package_imported",
+        "action_scope_block_enforced",
+        "context_profile_session_bound",
         "embedded_client_stream_exercised",
+        "executable_policy_profile_assembled",
         "ledger_persisted",
         "policy_bridge_enabled",
+        "policy_profile_fingerprint_matches",
     }
     return bool(
         isinstance(value, dict)
@@ -216,11 +215,27 @@ def _bridge_evidence_valid(
         and value.get("runtime_image") == DEFAULT_IMAGE
         and value.get("dataset_fingerprint") == dataset_fingerprint
         and value.get("candidate_profile_fingerprint") == candidate_profile_fingerprint
+        and value.get("adaptive_source_sha256") == _adaptive_source_sha256()
         and value.get("model_calls") == 0
         and value.get("realreplica_candidate_runner_wired") is True
         and required_checks
         <= {key for key, passed in (value.get("checks") or {}).items() if passed is True}
     )
+
+
+def _adaptive_source_sha256() -> str:
+    root = ROOT / "src/adaptive_harness"
+    digest = hashlib.sha256()
+    for path in sorted(
+        candidate
+        for candidate in root.rglob("*.py")
+        if candidate.is_file() and "__pycache__" not in candidate.parts
+    ):
+        digest.update(path.relative_to(root).as_posix().encode())
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 if __name__ == "__main__":

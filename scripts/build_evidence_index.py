@@ -34,7 +34,12 @@ REQUIRED = tuple(
         (17, "task-aware-context"),
         (18, "tool-action-ledger"),
         (19, "tool-advice"),
+        (20, "runtime-evolution"),
     )
+)
+OPTIONAL = (
+    "a20-runtime-evolution/container-wiring.json",
+    "a20-runtime-evolution/review.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -58,7 +63,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     documents: dict[str, dict[str, Any]] = {}
     artifacts = []
     secret_findings = []
-    for relative in REQUIRED:
+    for relative in (*REQUIRED, *OPTIONAL):
         path = evidence_dir / relative
         if not path.is_file():
             continue
@@ -88,6 +93,8 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     context = doc("a17-task-aware-context/summary.json") if not missing else {}
     actions = doc("a18-tool-action-ledger/summary.json") if not missing else {}
     advice = doc("a19-tool-advice/summary.json") if not missing else {}
+    runtime_evolution = doc("a20-runtime-evolution/summary.json") if not missing else {}
+    runtime_review = documents.get("a20-runtime-evolution/review.json", {})
     claims = {
         "zero_model_unit_tests": advice.get("test_count"),
         "core_business_vocabulary_findings": architecture.get(
@@ -182,6 +189,32 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "tool_advice_second_task_started": (advice.get("gates") or {}).get(
             "second_task_started"
         ),
+        "runtime_conformance_passed": (
+            runtime_evolution.get("runtime_conformance") or {}
+        ).get("passed"),
+        "runtime_conformance_test_count": (
+            runtime_evolution.get("runtime_conformance") or {}
+        ).get("test_count"),
+        "runtime_evolution_zero_model_passed": runtime_evolution.get(
+            "zero_model_passed"
+        ),
+        "runtime_evolution_model_calls": runtime_evolution.get("model_calls"),
+        "runtime_evolution_role_counts": (
+            (runtime_evolution.get("dataset") or {}).get("counts") or {}
+        ).get("evaluation_role"),
+        "runtime_evolution_wiring_passed": (
+            runtime_evolution.get("container_wiring") or {}
+        ).get("passed"),
+        "runtime_evolution_baseline_bootstrap_allowed": runtime_evolution.get(
+            "baseline_bootstrap_allowed"
+        ),
+        "runtime_evolution_paid_candidate_allowed": (
+            runtime_evolution.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "runtime_evolution_single_canary_default": runtime_evolution.get(
+            "single_canary_default"
+        ),
+        "runtime_evolution_review_passed": runtime_review.get("passed"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -214,6 +247,24 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "tool_advice_v1_5_stays_shadow": claims["tool_advice_v1_5_status"]
         == "shadow_observed",
         "tool_advice_did_not_expand": claims["tool_advice_second_task_started"] is False,
+        "runtime_conformance_verified": claims["runtime_conformance_passed"] is True,
+        "runtime_evolution_zero_model_only": claims["runtime_evolution_zero_model_passed"]
+        is True
+        and claims["runtime_evolution_model_calls"] == 0,
+        "runtime_evolution_partition_isolated": claims["runtime_evolution_role_counts"]
+        == {"development": 8, "heldout": 4, "transfer": 4},
+        "runtime_evolution_wiring_refreshed": claims["runtime_evolution_wiring_passed"]
+        is True,
+        "runtime_evolution_candidate_stays_disabled": claims[
+            "runtime_evolution_paid_candidate_allowed"
+        ]
+        is False,
+        "runtime_evolution_single_canary_default": claims[
+            "runtime_evolution_single_canary_default"
+        ]
+        is True,
+        "runtime_evolution_review_cleared": claims["runtime_evolution_review_passed"]
+        is True,
     }
     return {
         "schema_version": 1,
@@ -231,7 +282,11 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full "
             "107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only "
             "evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for "
-            "cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow."
+            "cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. "
+            "A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller "
+            "boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does "
+            "not claim task-success uplift: the paid Candidate remains disabled until a fresh primary-model "
+            "Development baseline and Stable-pass Controls exist."
         ),
     }
 

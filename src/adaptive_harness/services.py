@@ -8,6 +8,7 @@ from adaptive_harness.recovery import (
     TaskRecoveryExecutor,
     TaskRecoveryPolicy,
 )
+from adaptive_harness.resource_guardrail import ResourceGuardrail
 from adaptive_harness.task_contract import ContractBuilder
 from adaptive_harness.task_state import TaskCompletionGate
 from adaptive_harness.tool_runtime import ToolRuntime
@@ -25,3 +26,4 @@ PROGRESS_DETECTOR = ServiceKey[ProgressDetector]("progress_detector")
 RECOVERY_OUTCOME_EVALUATOR = ServiceKey[RecoveryOutcomeEvaluator](
     "recovery_outcome_evaluator"
 )
+RESOURCE_GUARDRAIL = ServiceKey[ResourceGuardrail]("resource_guardrail")

@@ -22,6 +22,7 @@ from adaptive_harness.context import (
     TaskAwareContextManager,
 )
 from adaptive_harness.context_audit import emit_context_audit
+from adaptive_harness.policy_session import KernelPolicySession, current_policy_session
 
 _AUTHORITY_MARKER = "HARNESS_CONTEXT_AUTHORITY"
 _DATA_NAME = "harness-working-set-data"
@@ -33,8 +34,10 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
     def __init__(self) -> None:
         super().__init__()
         budget = int(os.environ.get("ADAPTIVE_CONTEXT_MAX_INPUT_TOKENS", "4096"))
-        self._manager = TaskAwareContextManager(
-            budget=ContextBudget(max_input_tokens=budget),
+        self._session = KernelPolicySession(
+            context_manager=TaskAwareContextManager(
+                budget=ContextBudget(max_input_tokens=budget),
+            )
         )
         self._snapshot_path = Path(
             os.environ.get("ADAPTIVE_CONTEXT_SNAPSHOT", "/task/.adaptive/context.json")
@@ -43,7 +46,9 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
     def _prepare(self, request: ModelRequest) -> ModelRequest:
         original = list(request.messages)
         mapped = [_message_to_mapping(message, index) for index, message in enumerate(original)]
-        prepared = self._manager.prepare(
+        bound_session = current_policy_session()
+        session = bound_session or self._session
+        prepared = session.prepare_context(
             mapped,
             environment_state={},
             task_state=self._task_state(request),
@@ -72,6 +77,7 @@ class DeerFlowTaskAwareContextMiddleware(AgentMiddleware):
             {
                 **dict(prepared.audit),
                 "adapter": "deerflow-model-middleware-v1",
+                "profile_session_bound": bound_session is not None,
                 "selected_message_count": len(selected),
             }
         )

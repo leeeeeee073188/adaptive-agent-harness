@@ -48,7 +48,11 @@ class ResourceGuardrail:
     def __init__(self) -> None:
         self._mutation_epoch: int | None = None
         self._streaks: dict[tuple[str, str], int] = {}
+        self._blocked_signatures: set[tuple[str, str]] = set()
         self._verified_after_mutation: set[tuple[int, str]] = set()
+
+    def is_blocked(self, action_scope: str, strategy_fingerprint: str) -> bool:
+        return (action_scope, strategy_fingerprint) in self._blocked_signatures
 
     def observe(self, observation: GuardrailObservation) -> NoProgressDecision:
         if self._mutation_epoch is not None and observation.mutation_epoch < self._mutation_epoch:
@@ -56,6 +60,7 @@ class ResourceGuardrail:
         if self._mutation_epoch != observation.mutation_epoch:
             self._mutation_epoch = observation.mutation_epoch
             self._streaks.clear()
+            self._blocked_signatures.clear()
             self._verified_after_mutation.clear()
             if observation.post_mutation_verification:
                 self._verified_after_mutation.add(
@@ -69,6 +74,7 @@ class ResourceGuardrail:
 
         if observation.semantic_progress:
             self._streaks.clear()
+            self._blocked_signatures.clear()
             return NoProgressDecision(
                 NoProgressDisposition.ALLOW,
                 0,
@@ -99,4 +105,5 @@ class ResourceGuardrail:
         else:
             disposition = NoProgressDisposition.BLOCK_SCOPE
             reason = "Third no-progress strategy blocks this action scope until strategy or state changes."
+            self._blocked_signatures.add(signature)
         return NoProgressDecision(disposition, count, reason)

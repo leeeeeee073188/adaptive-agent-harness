@@ -4,6 +4,12 @@ from adaptive_harness.action_ledger import ToolActionLedger, VerificationBudgetC
 from adaptive_harness.assembly import PluginRegistry, assemble_profile
 from adaptive_harness.config import Bundle, PluginSpec, Profile
 from adaptive_harness.context import ContextBudget, TaskAwareContextManager
+from adaptive_harness.distiller import (
+    ConstrainedModelDistiller,
+    DeterministicFakeDistiller,
+    DistillerConfig,
+    DistillerSchemaError,
+)
 from adaptive_harness.evolution import (
     EvolutionCandidate,
     EvolutionGate,
@@ -27,6 +33,14 @@ from adaptive_harness.experience_store import (
     TransferValidation,
 )
 from adaptive_harness.kernel import Kernel, Plugin, ServiceKey
+from adaptive_harness.ledger_rollout import PublicOutcome, ledger_to_development_rollout
+from adaptive_harness.policy_session import KernelPolicySession, PolicySession
+from adaptive_harness.profiles import (
+    DEFAULT_POLICY_PROFILE,
+    assemble_policy_kernel,
+    candidate_policy_profile,
+    policy_session_from_kernel,
+)
 from adaptive_harness.progress import RuleBasedProgressDetector
 from adaptive_harness.recovery import (
     RuleBasedRecoveryOutcomeEvaluator,
@@ -39,7 +53,8 @@ from adaptive_harness.resource_guardrail import (
     NoProgressDisposition,
     ResourceGuardrail,
 )
-from adaptive_harness.runtime import AgentDriver, RunResult
+from adaptive_harness.runtime import AgentDriver, AgentDriverRuntimeAdapter, RunResult
+from adaptive_harness.runtime_contract import RuntimeAdapter, RuntimeRequest, RuntimeResult
 from adaptive_harness.task_contract import RuleBasedTaskContractBuilder, TaskContract
 from adaptive_harness.task_state import (
     EvidenceCompletionGate,
@@ -51,9 +66,15 @@ from adaptive_harness.tool_reliability import ToolReliabilityConfig
 
 __all__ = [
     "AgentDriver",
+    "AgentDriverRuntimeAdapter",
     "Bundle",
     "ContextBudget",
+    "DEFAULT_POLICY_PROFILE",
+    "ConstrainedModelDistiller",
     "DevelopmentRollout",
+    "DeterministicFakeDistiller",
+    "DistillerConfig",
+    "DistillerSchemaError",
     "EvidenceCompletionGate",
     "EvolutionCandidate",
     "EvolutionGate",
@@ -65,10 +86,12 @@ __all__ = [
     "ExperienceStore",
     "GuardrailObservation",
     "Kernel",
+    "KernelPolicySession",
     "Plugin",
     "PluginRegistry",
     "PluginSpec",
     "Profile",
+    "PublicOutcome",
     "NoProgressDisposition",
     "OfflineExperienceEvolution",
     "RuleBasedTaskRecoveryPolicy",
@@ -83,6 +106,10 @@ __all__ = [
     "RuleBasedProgressDetector",
     "RuleBasedRecoveryOutcomeEvaluator",
     "RunResult",
+    "RuntimeAdapter",
+    "RuntimeRequest",
+    "RuntimeResult",
+    "PolicySession",
     "ServiceKey",
     "ShadowEvaluation",
     "TaskContract",
@@ -95,4 +122,8 @@ __all__ = [
     "TransferValidation",
     "VerificationBudgetConfig",
     "assemble_profile",
+    "assemble_policy_kernel",
+    "candidate_policy_profile",
+    "ledger_to_development_rollout",
+    "policy_session_from_kernel",
 ]

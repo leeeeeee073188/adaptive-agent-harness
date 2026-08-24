@@ -28,6 +28,11 @@ from adaptive_harness.integrations.realreplica_observations import (
 )
 from adaptive_harness.ledger import SessionLedger
 from adaptive_harness.model_routes import PRIMARY_MODEL
+from adaptive_harness.profiles import (
+    assemble_policy_kernel,
+    candidate_policy_profile,
+    policy_session_from_kernel,
+)
 from adaptive_harness.progress import ProgressResult, ProgressStatus, RuleBasedProgressDetector
 from adaptive_harness.recovery import (
     RuleBasedRecoveryOutcomeEvaluator,
@@ -305,6 +310,36 @@ class _TurnClient:
 
 
 class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
+    async def test_policy_bridge_accepts_executable_profile_session(self) -> None:
+        kernel = await assemble_policy_kernel(
+            candidate_policy_profile(),
+            contract_builder=realreplica_contract_builder(),
+        )
+        try:
+            session = policy_session_from_kernel(kernel)
+            with TemporaryDirectory() as tmp:
+                bridge = DeerFlowPolicyBridge(
+                    policy_session=session,
+                    observation_providers=(FileArtifactObservationProvider(Path(tmp)),),
+                )
+                ledger = SessionLedger("profile-bridge")
+
+                contract = bridge.start(
+                    ledger,
+                    task_id="public-task",
+                    task_prompt="Write outputs/report.csv.",
+                    public_schema=None,
+                )
+
+            self.assertIs(bridge.policy_session, session)
+            self.assertTrue(any(criterion.required for criterion in contract.criteria))
+            self.assertEqual(
+                [event.type for event in ledger.events[:2]],
+                ["task/contract-created", "policy/configured"],
+            )
+        finally:
+            await kernel.close()
+
     def test_policy_bridge_records_and_escalates_no_progress_resource_events(self) -> None:
         bridge = DeerFlowPolicyBridge(resource_guardrail=ResourceGuardrail())
         ledger = SessionLedger("resource-guardrail")
@@ -354,7 +389,7 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
 
         result = await adapter.run(request, run_id="run-1")
 
-        header = result.ledger.events[0]
+        header = next(event for event in result.ledger.events if event.type == "request/header")
         self.assertTrue(environment.built)
         self.assertTrue(environment.cleaned)
         self.assertEqual(client.received, ("finish task", "thread-1", dict(request.client_options)))
@@ -391,6 +426,21 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
                     "task",
                     "thread-3",
                     client_options={"api_key": "must-not-be-recorded"},
+                )
+            )
+
+        self.assertFalse(environment.built)
+
+    async def test_runtime_rejects_credentials_in_context_before_environment_build(self) -> None:
+        environment = _FakeEnvironment()
+        runtime = DeerFlowRuntimeAdapter(_FakeClient(), environment)
+
+        with self.assertRaisesRegex(ValueError, "credential"):
+            await runtime.run(
+                DeerFlowRunRequest(
+                    "task",
+                    "thread-secret-context",
+                    context={"metadata": "sk-1234567890abcdef"},
                 )
             )
 
@@ -570,12 +620,18 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(evidence.payload["evidence"]["subject"], "listing.submitted")
         self.assertTrue(evidence.payload["evidence"]["value"])
 
-    async def test_unsupported_state_criteria_are_observe_only_in_candidate_mode(self) -> None:
+    async def test_observe_only_without_provider_backed_criteria_fails_closed(self) -> None:
         client = _TurnClient(
-            [[
-                _RawEvent("messages-tuple", {"type": "ai", "id": "a1", "content": "done"}),
-                _RawEvent("end", {"usage": {"total_tokens": 5}}),
-            ]]
+            [
+                [
+                    _RawEvent("messages-tuple", {"type": "ai", "id": "a1", "content": "done"}),
+                    _RawEvent("end", {"usage": {"total_tokens": 5}}),
+                ],
+                [
+                    _RawEvent("messages-tuple", {"type": "ai", "id": "a2", "content": "done"}),
+                    _RawEvent("end", {"usage": {"total_tokens": 5}}),
+                ],
+            ]
         )
         bridge = DeerFlowPolicyBridge(
             contract_builder=realreplica_contract_builder(),
@@ -595,8 +651,8 @@ class DeerFlowRuntimeAdapterTests(unittest.IsolatedAsyncioTestCase):
         )
 
         policy = next(event for event in result.ledger.events if event.type == "policy/configured")
-        self.assertTrue(result.completed)
-        self.assertEqual(result.turns, 1)
+        self.assertFalse(result.completed)
+        self.assertEqual(result.turns, 2)
         self.assertEqual(policy.payload["enforced_criterion_ids"], [])
         self.assertEqual(len(policy.payload["observe_only_criterion_ids"]), 3)
 

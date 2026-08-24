@@ -24,7 +24,7 @@ class ArchitectureBoundaryTests(unittest.TestCase):
         root = Path(__file__).parents[1] / "src/adaptive_harness"
         core_files = (
             root / "task_contract.py",
-            root / "integrations/deerflow_policy.py",
+            root / "policy_session.py",
         )
         forbidden = (
             "listing.submitted",
@@ -41,7 +41,13 @@ class ArchitectureBoundaryTests(unittest.TestCase):
             for token in forbidden:
                 self.assertNotIn(token, source, f"{token!r} leaked into {path.name}")
 
+    def test_core_policy_session_does_not_import_runtime_or_bench_integrations(self) -> None:
+        root = Path(__file__).parents[1] / "src/adaptive_harness"
+        source = (root / "policy_session.py").read_text(encoding="utf-8")
+
+        self.assertNotIn("adaptive_harness.integrations.deerflow", source)
+        self.assertNotIn("adaptive_harness.integrations.realreplica", source)
+
 
 if __name__ == "__main__":
     unittest.main()
-
