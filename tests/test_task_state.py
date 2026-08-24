@@ -28,43 +28,13 @@ from adaptive_harness.task_state import (
     Failure,
     RecoveryExecutionRecord,
     RecoveryRecord,
-    StagedEvidenceCompletionGate,
     TaskEventWriter,
-    TaskState,
     TaskStateProjector,
     evidence_from_tool_result,
 )
 
 
 class TaskContractStateTests(unittest.TestCase):
-    def test_staged_completion_requires_second_positive_artifact_observation(self) -> None:
-        contract = RuleBasedTaskContractBuilder().build(
-            "public-task",
-            "Write outputs/report.csv.",
-        )
-        first = Evidence(
-            "artifact-1",
-            EvidenceKind.ARTIFACT,
-            "outputs/report.csv",
-            {"exists": True, "sha256": "first"},
-            EvidenceSource.ARTIFACT_INSPECTION,
-        )
-        second = Evidence(
-            "artifact-2",
-            EvidenceKind.ARTIFACT,
-            "outputs/report.csv",
-            {"exists": True, "sha256": "second"},
-            EvidenceSource.ARTIFACT_INSPECTION,
-        )
-        gate = StagedEvidenceCompletionGate(min_artifact_observations=2)
-
-        deferred = gate.verify(TaskState(contract=contract, evidence=(first,)))
-        passed = gate.verify(TaskState(contract=contract, evidence=(first, second)))
-
-        self.assertFalse(deferred.passed)
-        self.assertIn("post-write validation", deferred.missing[0])
-        self.assertTrue(passed.passed)
-
     def test_missing_artifact_and_exact_count_require_runtime_evidence(self) -> None:
         contract = RuleBasedTaskContractBuilder().build(
             "task-1",

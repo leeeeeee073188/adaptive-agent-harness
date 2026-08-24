@@ -151,7 +151,7 @@ def main() -> int:
             "adaptive_package_imported": True,
             "container_network_disabled": network_mode == "none",
             "deerflow_source_pinned": source_sha == EXPECTED_DEERFLOW_SHA,
-            "embedded_client_stream_exercised": int(adaptive.get("turns") or 0) >= 2,
+            "embedded_client_stream_exercised": adaptive.get("turns") == 2,
             "ledger_persisted": ledger_path.is_file() and ledger_path.stat().st_size > 0,
             "policy_bridge_enabled": adaptive.get("completed") is True,
             "executable_policy_profile_assembled": adaptive.get(
@@ -161,7 +161,7 @@ def main() -> int:
                 "context",
                 "response_completion",
                 "task_contract_builder",
-                "staged_evidence_completion",
+                "evidence_completion",
                 "semantic_progress",
                 "durable_recovery",
                 "resource_guardrail",

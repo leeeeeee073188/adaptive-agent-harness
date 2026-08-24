@@ -476,66 +476,6 @@ class EvidenceCompletionGate:
         return f"Completion rejected by task evidence: {missing}{suffix}"
 
 
-class StagedEvidenceCompletionGate(EvidenceCompletionGate):
-    """Require a post-write observation before accepting artifact completion."""
-
-    def __init__(
-        self,
-        *,
-        min_artifact_observations: int = 2,
-        checker: RuleBasedContractChecker | None = None,
-    ) -> None:
-        super().__init__(checker)
-        if min_artifact_observations < 1:
-            raise ValueError("min_artifact_observations must be positive")
-        self.min_artifact_observations = min_artifact_observations
-
-    def verify(self, state: TaskState) -> ContractCompletionResult:
-        base = super().verify(state)
-        if not base.passed or state.contract is None:
-            return base
-        deferred: dict[str, str] = {}
-        for criterion in state.contract.criteria:
-            if not criterion.required or criterion.kind is not CriterionKind.ARTIFACT_EXISTS:
-                continue
-            subject = _normalize_subject(str(criterion.parameters["path"]))
-            observations = [
-                evidence
-                for evidence in state.evidence
-                if evidence.kind is EvidenceKind.ARTIFACT
-                and _normalize_subject(evidence.subject) == subject
-                and (
-                    evidence.value.get("exists") is True
-                    if isinstance(evidence.value, Mapping)
-                    else evidence.value is True
-                )
-            ]
-            if len(observations) < self.min_artifact_observations:
-                deferred[criterion.id] = (
-                    f"Artifact requires post-write validation: {subject} "
-                    f"({len(observations)}/{self.min_artifact_observations} observations)"
-                )
-        if not deferred:
-            return base
-        assessments = tuple(
-            CriterionAssessment(
-                assessment.criterion_id,
-                CriterionStatus.PENDING,
-                deferred[assessment.criterion_id],
-                assessment.evidence_ids,
-            )
-            if assessment.criterion_id in deferred
-            else assessment
-            for assessment in base.assessments
-        )
-        return ContractCompletionResult(
-            False,
-            assessments,
-            tuple(deferred.values()),
-            "Required artifacts need a post-write validation turn.",
-        )
-
-
 class TaskEventWriter:
     """Typed append-only commands; every state change remains replayable."""
 

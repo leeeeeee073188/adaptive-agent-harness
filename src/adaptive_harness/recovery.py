@@ -42,9 +42,9 @@ class TaskRecoveryBudget:
             TaskRecoveryAction.REFRESH_STATE: 1,
             TaskRecoveryAction.REPAIR_ARGUMENT: 1,
             TaskRecoveryAction.SWITCH_TOOL: 1,
-            TaskRecoveryAction.VALIDATE_CONTRACT: 2,
+            TaskRecoveryAction.VALIDATE_CONTRACT: 1,
             TaskRecoveryAction.REPLAN: 1,
-            TaskRecoveryAction.WRITE_PARTIAL: 2,
+            TaskRecoveryAction.WRITE_PARTIAL: 1,
             TaskRecoveryAction.STOP_REPEATED_ACTION: 1,
         }
     )

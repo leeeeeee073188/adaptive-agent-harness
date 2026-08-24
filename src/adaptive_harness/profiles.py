@@ -41,13 +41,13 @@ from adaptive_harness.services import (
     TASK_RECOVERY_POLICY,
 )
 from adaptive_harness.task_contract import ContractBuilder, RuleBasedTaskContractBuilder
-from adaptive_harness.task_state import StagedEvidenceCompletionGate
+from adaptive_harness.task_state import EvidenceCompletionGate
 
 _POLICY_PLUGIN_ORDER = (
     "context",
     "response_completion",
     "task_contract_builder",
-    "staged_evidence_completion",
+    "evidence_completion",
     "semantic_progress",
     "durable_recovery",
     "resource_guardrail",
@@ -56,7 +56,7 @@ _ALLOWED_CONTEXT_CONFIG = {"max_input_tokens", "recent_history_fraction"}
 _ALLOWED_EMPTY_CONFIGS = {
     "response_completion",
     "task_contract_builder",
-    "staged_evidence_completion",
+    "evidence_completion",
     "semantic_progress",
     "durable_recovery",
     "resource_guardrail",
@@ -111,13 +111,13 @@ class _ResponseCompletionPlugin:
         context.provide(COMPLETION_POLICY, AcceptFinalCompletion())
 
 
-class _StagedEvidenceCompletionPlugin:
-    name = "staged_evidence_completion"
+class _EvidenceCompletionPlugin:
+    name = "evidence_completion"
     requires = ()
 
     async def mount(self, context: PluginContext) -> None:
         _validate_empty_config(self.name, context.config)
-        context.provide(TASK_COMPLETION_GATE, StagedEvidenceCompletionGate())
+        context.provide(TASK_COMPLETION_GATE, EvidenceCompletionGate())
 
 
 class _SemanticProgressPlugin:
@@ -195,11 +195,7 @@ async def assemble_policy_kernel(
     return await assemble_profile(profile or DEFAULT_POLICY_PROFILE, registry, kernel=kernel)
 
 
-def policy_session_from_kernel(
-    kernel: Kernel,
-    *,
-    max_completion_turns: int = 3,
-) -> PolicySession:
+def policy_session_from_kernel(kernel: Kernel) -> PolicySession:
     """Create a new PolicySession from already assembled Kernel services."""
 
     return PolicySession(
@@ -212,7 +208,6 @@ def policy_session_from_kernel(
         recovery_executor=kernel.services.get(TASK_RECOVERY_EXECUTOR),
         recovery_outcome_evaluator=kernel.services.get(RECOVERY_OUTCOME_EVALUATOR),
         resource_guardrail=kernel.services.get(RESOURCE_GUARDRAIL),
-        max_completion_turns=max_completion_turns,
         unsupported_criteria="observe_only",
     )
 
@@ -230,10 +225,7 @@ def _policy_plugin_registry(
                 "task_contract_builder",
                 lambda spec: _TaskContractBuilderPlugin(contract_builder),
             ),
-            (
-                "staged_evidence_completion",
-                lambda spec: _StagedEvidenceCompletionPlugin(),
-            ),
+            ("evidence_completion", lambda spec: _EvidenceCompletionPlugin()),
             ("semantic_progress", lambda spec: _SemanticProgressPlugin()),
             ("durable_recovery", lambda spec: _DurableRecoveryPlugin()),
             ("resource_guardrail", lambda spec: _ResourceGuardrailPlugin()),

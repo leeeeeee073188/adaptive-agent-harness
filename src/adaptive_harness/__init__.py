@@ -60,7 +60,6 @@ from adaptive_harness.task_contract import RuleBasedTaskContractBuilder, TaskCon
 from adaptive_harness.task_state import (
     EvidenceCompletionGate,
     RuleBasedContractChecker,
-    StagedEvidenceCompletionGate,
     TaskState,
     TaskStateProjector,
 )
@@ -121,7 +120,6 @@ __all__ = [
     "TaskState",
     "TaskStateExperienceRetriever",
     "TaskStateProjector",
-    "StagedEvidenceCompletionGate",
     "ToolReliabilityConfig",
     "TransferValidation",
     "VerificationBudgetConfig",

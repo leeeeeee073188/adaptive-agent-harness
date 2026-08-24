@@ -36,12 +36,11 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_runtime_evolution_v2_7",
+        "adaptive_harness_runtime_evolution_v2_6",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
                 "executable_policy_profile": policy_profile.fingerprint(),
-                "max_completion_turns": 3,
                 "tool_reliability": {"max_attempts": 2},
                 "verification_budget": {
                     "policy": "tool-action-ledger-v1",

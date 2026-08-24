@@ -7,7 +7,6 @@ import os
 import re
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Mapping
-from pathlib import Path
 from threading import Lock
 from typing import Any, override
 
@@ -149,11 +148,7 @@ class DeerFlowToolActionLedgerMiddleware(AgentMiddleware):
         ledger = self._ledger(request)
         with self._delivery_lock:
             delivery_satisfied = _run_key(request) in self._delivery_satisfied
-        delivery_paths = _delivery_paths(request.state)
-        delivery_artifact_exists = any(_safe_task_output_exists(path) for path in delivery_paths)
-        delivery_required = bool(delivery_paths) and not (
-            delivery_satisfied or delivery_artifact_exists
-        )
+        delivery_required = _delivery_required(request.state) and not delivery_satisfied
         if delivery_required and not semantics.mutating:
             return ToolMessage(
                 content=(
@@ -237,31 +232,16 @@ def _content_text(content: Any) -> str:
     return json.dumps(content, ensure_ascii=False, default=str)
 
 
-def _delivery_paths(state: Any) -> tuple[str, ...]:
+def _delivery_required(state: Any) -> bool:
     if not isinstance(state, Mapping):
-        return ()
+        return False
     messages = state.get("messages")
     if not isinstance(messages, list):
-        return ()
-    paths = []
-    for message in messages:
-        content = _content_text(getattr(message, "content", ""))
-        if "[HARNESS DELIVERY REQUIRED]" not in content:
-            continue
-        paths.extend(
-            match.removeprefix("/task/")
-            for match in re.findall(
-                r"(?:/task/)?outputs/[A-Za-z0-9_./-]*[A-Za-z0-9_/-]",
-                content,
-            )
-        )
-    return tuple(dict.fromkeys(paths))
-
-
-def _safe_task_output_exists(relative: str) -> bool:
-    path = (Path("/task") / relative).resolve()
-    output_root = Path("/task/outputs").resolve()
-    return path.is_relative_to(output_root) and path.is_file()
+        return False
+    return any(
+        "[HARNESS DELIVERY REQUIRED]" in _content_text(getattr(message, "content", ""))
+        for message in messages
+    )
 
 
 def _is_delivery_write(call: ToolCall) -> bool:
