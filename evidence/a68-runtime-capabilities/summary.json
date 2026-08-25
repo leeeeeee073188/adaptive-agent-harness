@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "scope": "zero-model Runtime capability negotiation",
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "profiles": [
+    {
+      "runtime_id": "deerflow",
+      "implementation_version": "0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
+      "attestations": [
+        {
+          "capability": "artifact_directory",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "artifact_file",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "before_run_evidence",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "browser",
+          "assurance": "claimed",
+          "evidence_ref": "evidence://a67-v4-2-minibench16-live",
+          "limitations": [
+            "Current v4.2 Browser tasks passed 0/5."
+          ]
+        },
+        {
+          "capability": "durable_ledger",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "file_read",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "file_write",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "final_response",
+          "assurance": "claimed",
+          "evidence_ref": "evidence://a66-deerflow-runtime-attribution-live",
+          "limitations": [
+            "Fresh File control returned no final response after retry."
+          ]
+        },
+        {
+          "capability": "multi_turn",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "sandbox",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "shell",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "structured_observation",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "tool_calling",
+          "assurance": "verified",
+          "evidence_ref": "evidence://a64-v4-2-transform-evidence-container",
+          "limitations": []
+        },
+        {
+          "capability": "vision_input",
+          "assurance": "claimed",
+          "evidence_ref": "runtime://deerflow-config-v4-2",
+          "limitations": [
+            "Configured support is not a successful task attestation."
+          ]
+        }
+      ],
+      "known_gaps": [
+        "browser_success_unverified",
+        "final_response_reliability_unverified",
+        "sandbox_path_false_positives"
+      ],
+      "limits": {
+        "max_completion_turns": 3,
+        "max_tool_calls_per_turn": 20
+      },
+      "priority": 100
+    },
+    {
+      "runtime_id": "deterministic-reference",
+      "implementation_version": "1",
+      "attestations": [
+        {
+          "capability": "before_run_evidence",
+          "assurance": "verified",
+          "evidence_ref": "test://runtime-conformance",
+          "limitations": []
+        },
+        {
+          "capability": "durable_ledger",
+          "assurance": "verified",
+          "evidence_ref": "test://runtime-conformance",
+          "limitations": []
+        },
+        {
+          "capability": "final_response",
+          "assurance": "verified",
+          "evidence_ref": "test://runtime-conformance",
+          "limitations": []
+        },
+        {
+          "capability": "multi_turn",
+          "assurance": "verified",
+          "evidence_ref": "test://runtime-conformance",
+          "limitations": []
+        },
+        {
+          "capability": "structured_observation",
+          "assurance": "verified",
+          "evidence_ref": "test://runtime-conformance",
+          "limitations": []
+        }
+      ],
+      "known_gaps": [
+        "no_real_environment_tools"
+      ],
+      "limits": {},
+      "priority": 10
+    }
+  ],
+  "profile_fingerprints": {
+    "deerflow": "4acc106a25acc3b2911cbafa650a027e2175163871c2f540b59caf7dcd78e3db",
+    "deterministic-reference": "4031ac64666f6db7db4992aa18e52c1de668048f7936ab5bc0ae41806887a5c9"
+  },
+  "decisions": {
+    "strict_file": {
+      "request_fingerprint": "000c89eabc89537ae1ab520076579fa05db063c4411fb5e67f9505a1c190633a",
+      "selected_runtime_id": null,
+      "selected_profile_fingerprint": null,
+      "eligible_runtime_ids": [],
+      "rejected": [
+        {
+          "runtime_id": "deerflow",
+          "unmet": [
+            {
+              "capability": "final_response",
+              "minimum_assurance": "verified"
+            }
+          ]
+        },
+        {
+          "runtime_id": "deterministic-reference",
+          "unmet": [
+            {
+              "capability": "artifact_file",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "file_read",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "file_write",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "sandbox",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "shell",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "tool_calling",
+              "minimum_assurance": "verified"
+            }
+          ]
+        }
+      ],
+      "rationale": "No Runtime satisfies every required capability at the requested assurance."
+    },
+    "claimed_file": {
+      "request_fingerprint": "f892d0adbe91a6095615d49cb48a2da6b8239522f81839dc8cb0363e5b3e96e2",
+      "selected_runtime_id": "deerflow",
+      "selected_profile_fingerprint": "4acc106a25acc3b2911cbafa650a027e2175163871c2f540b59caf7dcd78e3db",
+      "eligible_runtime_ids": [
+        "deerflow"
+      ],
+      "rejected": [
+        {
+          "runtime_id": "deterministic-reference",
+          "unmet": [
+            {
+              "capability": "artifact_file",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "file_read",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "file_write",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "sandbox",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "shell",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "tool_calling",
+              "minimum_assurance": "verified"
+            }
+          ]
+        }
+      ],
+      "rationale": "Selected the highest-assurance deterministic eligible Runtime."
+    },
+    "strict_browser": {
+      "request_fingerprint": "d6015bf343041f2d9f61f9c73c2b2e78208665319333198228c859356454df6d",
+      "selected_runtime_id": null,
+      "selected_profile_fingerprint": null,
+      "eligible_runtime_ids": [],
+      "rejected": [
+        {
+          "runtime_id": "deerflow",
+          "unmet": [
+            {
+              "capability": "browser",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "final_response",
+              "minimum_assurance": "verified"
+            }
+          ]
+        },
+        {
+          "runtime_id": "deterministic-reference",
+          "unmet": [
+            {
+              "capability": "artifact_file",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "browser",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "file_read",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "file_write",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "sandbox",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "shell",
+              "minimum_assurance": "verified"
+            },
+            {
+              "capability": "tool_calling",
+              "minimum_assurance": "verified"
+            }
+          ]
+        }
+      ],
+      "rationale": "No Runtime satisfies every required capability at the requested assurance."
+    },
+    "control_plane": {
+      "request_fingerprint": "7e89aff206955c48914deabbb1407b9e4483817a207bea90d843e26b19986e2b",
+      "selected_runtime_id": "deterministic-reference",
+      "selected_profile_fingerprint": "4031ac64666f6db7db4992aa18e52c1de668048f7936ab5bc0ae41806887a5c9",
+      "eligible_runtime_ids": [
+        "deterministic-reference"
+      ],
+      "rejected": [
+        {
+          "runtime_id": "deerflow",
+          "unmet": [
+            {
+              "capability": "final_response",
+              "minimum_assurance": "verified"
+            }
+          ]
+        }
+      ],
+      "rationale": "Selected the highest-assurance deterministic eligible Runtime."
+    }
+  },
+  "invariants": {
+    "strict_file_has_no_qualified_runtime": true,
+    "claimed_file_selects_deerflow_only_when_explicit": true,
+    "strict_browser_has_no_qualified_runtime": true,
+    "control_plane_selects_reference": true
+  },
+  "runtime_execution_performed": false,
+  "paid_expansion_allowed": false,
+  "claim_boundary": "Capability negotiation is evidence-backed architecture only. There is no second real Runtime benchmark and no Runtime quality ranking."
+}

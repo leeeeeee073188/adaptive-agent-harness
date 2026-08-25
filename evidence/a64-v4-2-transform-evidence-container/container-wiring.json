@@ -1,5 +1,5 @@
 {
-  "adaptive_source_sha256": "bf9821ea56138969ffb2d916ba142d5cc0c99aae5d43fa5cd7636582c39d938c",
+  "adaptive_source_sha256": "77993bd9ad36fe22718cb3d8e4d46a636afcfa54783519cbd8c6e2318d06259a",
   "batch_runner_source_sha256": "b4bd43fac6b5d8f472c161b328b071e4e7901980eda46226ca1c022cc1da69ac",
   "candidate_profile_fingerprint": "e1690502c3535fc47a9108bfefa8d414f83d2db3c1d2eacfbb6868d64b16d5ed",
   "checks": {
@@ -58,7 +58,7 @@
   "deerflow_source_sha": "0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
   "executable_policy_profile_fingerprint": "1d6ecca4685b3a93fb93297b14b1cb55db0f8687e7687f78c595c97057bed946",
   "ledger_event_count": 36,
-  "ledger_sha256": "cd2b56ad74dc67a37953ccd0031067ad5cf8b22f559374cd655b4206e8122692",
+  "ledger_sha256": "4697d7b461e72b1e14896da4fa35c91d460cbe6176188ef0128bd1e636b887b7",
   "model_calls": 0,
   "new_model_tokens": 0,
   "passed": true,

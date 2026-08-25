@@ -1,5 +1,5 @@
 {
-  "adaptive_source_sha256": "bf9821ea56138969ffb2d916ba142d5cc0c99aae5d43fa5cd7636582c39d938c",
+  "adaptive_source_sha256": "77993bd9ad36fe22718cb3d8e4d46a636afcfa54783519cbd8c6e2318d06259a",
   "blockers": [],
   "candidate_single_development_canary_allowed": true,
   "context_replay": {
@@ -41,7 +41,7 @@
     ],
     "passed": true,
     "returncode": 0,
-    "stderr_tail": "............................\n----------------------------------------------------------------------\nRan 28 tests in 0.010s\n\nOK\n",
+    "stderr_tail": "............................\n----------------------------------------------------------------------\nRan 28 tests in 0.009s\n\nOK\n",
     "stdout_tail": "",
     "test_count": 28,
     "test_modules": [
@@ -71,7 +71,7 @@
     "findings": [],
     "passed": true,
     "policy": "Public task/run identifiers are allowed in analysis documentation and aggregate evidence; credentials and evaluator-private file paths are forbidden.",
-    "public_task_reference_count": 330
+    "public_task_reference_count": 493
   },
   "runtime_conformance": {
     "command": [
@@ -92,7 +92,7 @@
     ],
     "passed": true,
     "returncode": 0,
-    "stderr_tail": ".................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 177 tests in 0.266s\n\nOK\n",
+    "stderr_tail": ".................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 177 tests in 0.236s\n\nOK\n",
     "stdout_tail": "",
     "test_count": 177,
     "test_modules": [

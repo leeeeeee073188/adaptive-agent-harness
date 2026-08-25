@@ -1,0 +1,16 @@
+{
+  "scope": "independent Runtime Capability P0 verification",
+  "verdict": "pass_zero_model_control_plane_only",
+  "adaptive_tests_passed": 360,
+  "realreplica_tests_passed": 79,
+  "ruff_passed": true,
+  "compile_passed": true,
+  "evidence_index_verified": true,
+  "strict_file_selected_runtime": null,
+  "strict_browser_selected_runtime": null,
+  "claimed_file_selected_runtime": "deerflow",
+  "control_plane_selected_runtime": "deterministic-reference",
+  "model_calls": 0,
+  "runtime_execution_performed": false,
+  "paid_expansion_allowed": false
+}

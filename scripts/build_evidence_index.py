@@ -84,6 +84,7 @@ REQUIRED = tuple(
         (65, "deerflow-runtime-attribution-gate"),
         (66, "deerflow-runtime-attribution-live"),
         (67, "v4-2-minibench16-live"),
+        (68, "runtime-capabilities"),
     )
 )
 OPTIONAL = (
@@ -174,6 +175,8 @@ OPTIONAL = (
     "a67-v4-2-minibench16-live/failure-synthesis.json",
     "a67-v4-2-minibench16-live/review.json",
     "a67-v4-2-minibench16-live/verification.json",
+    "a68-runtime-capabilities/review.json",
+    "a68-runtime-capabilities/verification.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -325,6 +328,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "a66-deerflow-runtime-attribution-live/summary.json"
     ) if not missing else {}
     v4_2_minibench_live = doc("a67-v4-2-minibench16-live/summary.json") if not missing else {}
+    runtime_capabilities = doc("a68-runtime-capabilities/summary.json") if not missing else {}
     selected_live_row = next(
         (
             row
@@ -1106,6 +1110,18 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "v4_2_minibench_paid_expansion_allowed": v4_2_minibench_live.get(
             "paid_expansion_allowed"
         ),
+        "runtime_capability_profiles": runtime_capabilities.get("profiles"),
+        "runtime_capability_profile_fingerprints": runtime_capabilities.get(
+            "profile_fingerprints"
+        ),
+        "runtime_capability_decisions": runtime_capabilities.get("decisions"),
+        "runtime_capability_invariants": runtime_capabilities.get("invariants"),
+        "runtime_capability_execution_performed": runtime_capabilities.get(
+            "runtime_execution_performed"
+        ),
+        "runtime_capability_paid_expansion_allowed": runtime_capabilities.get(
+            "paid_expansion_allowed"
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -1563,6 +1579,28 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             == "reject_v4_2_and_stop_all_paid_expansion"
             and claims["v4_2_minibench_paid_expansion_allowed"] is False
         ),
+        "runtime_selection_fails_closed_without_qualified_backend": (
+            len(claims["runtime_capability_profiles"] or ()) == 2
+            and len(claims["runtime_capability_profile_fingerprints"] or {}) == 2
+            and all((claims["runtime_capability_invariants"] or {}).values())
+            and (
+                (claims["runtime_capability_decisions"] or {}).get("strict_file")
+                or {}
+            ).get("selected_runtime_id")
+            is None
+            and (
+                (claims["runtime_capability_decisions"] or {}).get("strict_browser")
+                or {}
+            ).get("selected_runtime_id")
+            is None
+            and (
+                (claims["runtime_capability_decisions"] or {}).get("control_plane")
+                or {}
+            ).get("selected_runtime_id")
+            == "deterministic-reference"
+            and claims["runtime_capability_execution_performed"] is False
+            and claims["runtime_capability_paid_expansion_allowed"] is False
+        ),
     }
     return {
         "schema_version": 1,
@@ -1647,6 +1685,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "Transfer 0/4, Held-out 0/4, 5,152,350 Tokens, 510 Tool calls, six output files, and "
             "all 16 integrity checks passed. Five tasks had partial public capacity but none passed; "
             "v4.2 is rejected and all further paid expansion is stopped. "
+            "A68 adds Runtime Capability attestations and deterministic selection: neither current "
+            "backend qualifies for a strict real File or Browser request, DeerFlow is selectable "
+            "only when claimed final-response assurance is explicitly accepted, and the deterministic "
+            "reference is selected only for control-plane Conformance. No Runtime ranking is claimed. "
             "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),

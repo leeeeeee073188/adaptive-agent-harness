@@ -404,6 +404,25 @@ class EvidenceIndexTests(unittest.TestCase):
             ],
         )
         self.assertFalse(index["claims"]["v4_2_minibench_paid_expansion_allowed"])
+        self.assertEqual(len(index["claims"]["runtime_capability_profiles"]), 2)
+        self.assertEqual(
+            len(index["claims"]["runtime_capability_profile_fingerprints"]),
+            2,
+        )
+        self.assertTrue(all(index["claims"]["runtime_capability_invariants"].values()))
+        self.assertIsNone(
+            index["claims"]["runtime_capability_decisions"]["strict_file"][
+                "selected_runtime_id"
+            ]
+        )
+        self.assertEqual(
+            index["claims"]["runtime_capability_decisions"]["control_plane"][
+                "selected_runtime_id"
+            ],
+            "deterministic-reference",
+        )
+        self.assertFalse(index["claims"]["runtime_capability_execution_performed"])
+        self.assertFalse(index["claims"]["runtime_capability_paid_expansion_allowed"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

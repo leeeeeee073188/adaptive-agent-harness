@@ -182,6 +182,8 @@ A65/A66 对 DeerFlow 基座做 fresh attribution：旧 Vanilla 16 题通过 6 �
 
 A67 按用户明确要求完成一次当前 v4.2 MiniBench16 全量隔离评测：Development 0/8、Transfer 0/4、Held-out 0/4，总计 0/16；Token 5,152,350、Tool 510、输出文件 6、integrity 16/16。5 个任务有部分 Capacity，但无 task-level pass；10 个任务缺失 Required Artifact，14 个任务出现 Tool/No-progress 信号。该结果否定 v4.2 Candidate，后续 paid expansion 全部停止；下一阶段必须先完成 Runtime Capability/替代基座，而不是继续在 DeerFlow 上追加 Middleware。
 
+A68 完成 Runtime Capability P0：Core 新增 evidence-backed attestation、minimum assurance requirement 和 deterministic selector。DeerFlow 的 File/Shell/Sandbox 等为 verified，但 Final Response、Browser、Vision 仅 claimed；Deterministic Reference 只验证控制平面能力。严格 File/Browser 请求均 fail closed 为“无合格 Runtime”，显式放宽 Final Response 到 claimed 才可选择 DeerFlow。该阶段 0 Runtime execution、0 模型 Token，下一步实现真实 Reference Runtime Conformance。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

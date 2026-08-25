@@ -141,4 +141,6 @@ v4.2 只完成 P1 Evidence 集成：`TransformManifestObservationProvider` 仅�
 
 按用户要求，A67 使用当前 v4.2、`deepseek-v4-flash-vision-exp`、thinking=enabled/high 完整执行隔离的 MiniBench16：Development 0/8、Transfer 0/4、Held-out 0/4；总 Token 5,152,350、Tool 510、累计任务耗时 2,185 秒、输出文件 6，16/16 integrity 通过且 LLM Judge 未触发。公开 Capacity 均值 0.1103，5 个任务有部分检查得分（最高 API Google Docs 7/9），但没有完整通过。10/16 缺失 Required Artifact，14/16 出现 Tool error 或 No-progress。v4.2 被明确 Reject，停止所有后续付费扩跑。
 
+A68 开始落实 Runtime 解耦：新增 `RuntimeCapabilityProfile / CapabilityAttestation / RuntimeRequirement / RuntimeCapabilitySelector`。Capability 必须区分 `verified / claimed / unavailable`，Verified 必须绑定公共 evidence ref；Profile、Request 和 Selection 都有稳定 fingerprint，凭据字段 fail closed。当前严格 File/Browser 请求没有任何合格 Runtime；只有显式接受 claimed final-response 时才能选择 DeerFlow，而 Deterministic Reference 只用于控制平面 Conformance。该结果不执行 Runtime，也不声称其他基座质量更高。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

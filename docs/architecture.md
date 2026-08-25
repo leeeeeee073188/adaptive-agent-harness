@@ -435,6 +435,19 @@ runtime-neutral. The next seam is a `RuntimeCapabilityProfile` plus deterministi
 selection/conformance so DeerFlow, a native reference Runtime, and eventually a
 second sandboxed Runtime can be compared under identical model/task controls.
 
+`RuntimeCapabilityProfile` now stores evidence-backed attestations with three
+assurance levels: unavailable, claimed, and verified. A verified capability
+requires a public evidence reference. Task requests declare minimum assurance;
+the selector rejects every backend with an unmet requirement and returns the
+exact gaps. Selection is deterministic across input ordering and binds both the
+request and selected profile fingerprints into the decision.
+
+The current strict File and Browser requirements intentionally select no real
+backend: DeerFlow final-response/browser capabilities are only claimed after
+A66/A67, while the deterministic reference lacks environment tools. This
+fail-closed result is the correct architecture state until another Runtime is
+implemented and verified.
+
 Execution remains deliberately split: `RecoveryExecutor` applies auditable
 Harness control-state deltas and next-turn directives, while external browser,
 API, and file mutations remain ordinary tools. This prevents a control policy
