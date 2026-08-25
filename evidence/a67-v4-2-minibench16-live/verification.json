@@ -1,0 +1,18 @@
+{
+  "scope": "independent v4.2 MiniBench16 result verification",
+  "verdict": "pass_result_evidence_reject_candidate",
+  "task_count": 16,
+  "passed": 0,
+  "total_tokens": 5152350,
+  "tool_calls": 510,
+  "elapsed_sec": 2184.959,
+  "output_file_count": 6,
+  "capacity_score_mean": 0.11027323930549737,
+  "integrity_passed_tasks": 16,
+  "llm_judge_called_tasks": 0,
+  "missing_required_artifact_runs": 10,
+  "tool_error_count": 61,
+  "no_progress_failure_count": 57,
+  "loop_failure_count": 48,
+  "paid_expansion_allowed": false
+}

@@ -377,6 +377,33 @@ class EvidenceIndexTests(unittest.TestCase):
             ]
         )
         self.assertFalse(index["claims"]["deerflow_attribution_paid_expansion_allowed"])
+        self.assertEqual(index["claims"]["v4_2_minibench_task_count"], 16)
+        self.assertEqual(index["claims"]["v4_2_minibench_passed"], 0)
+        self.assertEqual(index["claims"]["v4_2_minibench_total_tokens"], 5152350)
+        self.assertEqual(index["claims"]["v4_2_minibench_tool_calls"], 510)
+        self.assertEqual(index["claims"]["v4_2_minibench_output_file_count"], 6)
+        self.assertEqual(index["claims"]["v4_2_minibench_integrity_passed_tasks"], 16)
+        self.assertEqual(
+            [item["task_count"] for item in index["claims"]["v4_2_minibench_partitions"]],
+            [8, 4, 4],
+        )
+        self.assertEqual(len(index["claims"]["v4_2_minibench_partial_quality_tasks"]), 5)
+        self.assertTrue(
+            index["claims"]["v4_2_minibench_failure_synthesis"][
+                "all_integrity_passed"
+            ]
+        )
+        self.assertEqual(
+            index["claims"]["v4_2_minibench_failure_synthesis"]["scope"],
+            "v4.2 full MiniBench16 public failure synthesis",
+        )
+        self.assertIn(
+            "full isolated MiniBench16 8/4/4 run",
+            index["claims"]["v4_2_minibench_failure_synthesis"][
+                "claim_boundary"
+            ],
+        )
+        self.assertFalse(index["claims"]["v4_2_minibench_paid_expansion_allowed"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

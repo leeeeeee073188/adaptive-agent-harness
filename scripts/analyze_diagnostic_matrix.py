@@ -97,6 +97,9 @@ def analyze_run(run_dir: Path) -> dict[str, Any]:
     if not task_run.is_relative_to(run_dir.resolve()):
         raise ValueError(f"task run escapes diagnostic run: {task_run}")
     ledger = _ledger_rows(task_run / "agent/adaptive-ledger.jsonl")
+    integrity_passed = result.get("integrity_passed")
+    if integrity_passed is None and (task_run / "integrity.json").is_file():
+        integrity_passed = _read_json(task_run / "integrity.json").get("passed")
     required = _required_artifacts(ledger)
     outputs = _output_inventory(task_run)
     output_paths = [item["path"] for item in outputs]
@@ -182,7 +185,7 @@ def analyze_run(run_dir: Path) -> dict[str, Any]:
         "usage": usage,
         "tool_calls": result.get("tool_call_count"),
         "agent_exec_returncode": result.get("agent_exec_returncode"),
-        "integrity_passed": result.get("integrity_passed"),
+        "integrity_passed": integrity_passed,
         "llm_judge_score": result.get("llm_judge_score"),
         "ledger_event_count": len(ledger),
         "model_call_audits": event_types["context/selected"],
@@ -207,7 +210,15 @@ def analyze_run(run_dir: Path) -> dict[str, Any]:
     }
 
 
-def build_report(run_dirs: list[Path]) -> dict[str, Any]:
+def build_report(
+    run_dirs: list[Path],
+    *,
+    scope: str = "Diagnostic4 public cross-type failure synthesis",
+    claim_boundary: str = (
+        "Four first-sample Development diagnostics only. These results identify cross-type "
+        "failure surfaces; they do not estimate MiniBench or full-benchmark success rate."
+    ),
+) -> dict[str, Any]:
     rows = [analyze_run(path.resolve()) for path in run_dirs]
     categories = Counter(str(row["category"]) for row in rows)
     total_tokens = sum(int((row.get("usage") or {}).get("total_tokens") or 0) for row in rows)
@@ -225,9 +236,64 @@ def build_report(run_dirs: list[Path]) -> dict[str, Any]:
         for row in rows
         if row["required_directory_exists_but_unsatisfied"]
     ]
+    architecture_gaps = []
+    if missing_runs:
+        architecture_gaps.append(
+            {
+                "dimension": "artifact_synthesis",
+                "evidence": "required artifacts remained missing across task types",
+                "affected_runs": missing_runs,
+            }
+        )
+    if wrong_target_runs:
+        architecture_gaps.append(
+            {
+                "dimension": "artifact_targeting",
+                "evidence": "outputs were written outside the required artifact targets",
+                "affected_runs": wrong_target_runs,
+            }
+        )
+    if directory_semantic_runs:
+        architecture_gaps.append(
+            {
+                "dimension": "artifact_contract",
+                "evidence": "a required output directory existed with files but remained unsatisfied",
+                "affected_runs": directory_semantic_runs,
+            }
+        )
+    if runtime_error_runs:
+        architecture_gaps.append(
+            {
+                "dimension": "environment_observation",
+                "evidence": (
+                    "a turn observation error escaped the provider boundary before completion"
+                ),
+                "affected_runs": runtime_error_runs,
+            }
+        )
+    loop_runs = [
+        row["run_id"]
+        for row in rows
+        if row["tool_errors"] or row["failure_types"].get("NO_PROGRESS")
+    ]
+    if loop_runs:
+        architecture_gaps.append(
+            {
+                "dimension": "tool_and_loop_control",
+                "evidence": (
+                    "tool failures and no-progress events consumed model calls without "
+                    "completing required artifacts"
+                ),
+                "affected_runs": loop_runs,
+            }
+        )
+    ranked_gaps = [
+        {"rank": rank, **item}
+        for rank, item in enumerate(architecture_gaps, start=1)
+    ]
     return {
         "schema_version": 1,
-        "scope": "Diagnostic4 public cross-type failure synthesis",
+        "scope": scope,
         "analysis_model_calls": 0,
         "analysis_new_tokens": 0,
         "run_count": len(rows),
@@ -262,49 +328,8 @@ def build_report(run_dirs: list[Path]) -> dict[str, Any]:
                 int(row["failure_types"].get("LOOP", 0)) for row in rows
             ),
         },
-        "ranked_architecture_gaps": [
-            {
-                "rank": 1,
-                "dimension": "artifact_synthesis",
-                "evidence": (
-                    "required artifacts remained missing in multiple task types despite "
-                    "unrelated output writes"
-                ),
-                "affected_runs": wrong_target_runs,
-            },
-            {
-                "rank": 2,
-                "dimension": "artifact_contract",
-                "evidence": "a required output directory existed with files but remained unsatisfied",
-                "affected_runs": directory_semantic_runs,
-            },
-            {
-                "rank": 3,
-                "dimension": "environment_observation",
-                "evidence": (
-                    "a turn observation HTTP error escaped the provider boundary before completion; "
-                    "the vision capability therefore remains unmeasured"
-                ),
-                "affected_runs": runtime_error_runs,
-            },
-            {
-                "rank": 4,
-                "dimension": "tool_and_loop_control",
-                "evidence": (
-                    "tool failures and no-progress events consumed model calls without "
-                    "completing required artifacts"
-                ),
-                "affected_runs": [
-                    row["run_id"]
-                    for row in rows
-                    if row["tool_errors"] or row["failure_types"].get("NO_PROGRESS")
-                ],
-            },
-        ],
-        "claim_boundary": (
-            "Four first-sample Development diagnostics only. These results identify cross-type "
-            "failure surfaces; they do not estimate MiniBench or full-benchmark success rate."
-        ),
+        "ranked_architecture_gaps": ranked_gaps,
+        "claim_boundary": claim_boundary,
         "paid_expansion_allowed": False,
         "runs": rows,
     }
@@ -314,8 +339,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_dirs", nargs="+", type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument(
+        "--scope",
+        default="Diagnostic4 public cross-type failure synthesis",
+    )
+    parser.add_argument(
+        "--claim-boundary",
+        default=(
+            "Four first-sample Development diagnostics only. These results identify cross-type "
+            "failure surfaces; they do not estimate MiniBench or full-benchmark success rate."
+        ),
+    )
     args = parser.parse_args()
-    report = build_report(args.run_dirs)
+    report = build_report(
+        args.run_dirs,
+        scope=args.scope,
+        claim_boundary=args.claim_boundary,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     args.output.write_text(rendered, encoding="utf-8")

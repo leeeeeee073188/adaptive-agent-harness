@@ -1,0 +1,15 @@
+{
+  "scope": "v4.2 full isolated MiniBench16 review",
+  "verdict": "reject_candidate_and_stop_paid_expansion",
+  "task_count": 16,
+  "passed": 0,
+  "integrity_passed_tasks": 16,
+  "partitions": {
+    "development": "0/8",
+    "transfer": "0/4",
+    "heldout": "0/4"
+  },
+  "claim_is_current_v4_2_only": true,
+  "historical_vanilla_is_not_causal_control": true,
+  "paid_expansion_allowed": false
+}

@@ -83,6 +83,7 @@ REQUIRED = tuple(
         (64, "v4-2-transform-evidence-container"),
         (65, "deerflow-runtime-attribution-gate"),
         (66, "deerflow-runtime-attribution-live"),
+        (67, "v4-2-minibench16-live"),
     )
 )
 OPTIONAL = (
@@ -170,6 +171,9 @@ OPTIONAL = (
     "a65-deerflow-runtime-attribution-gate/review.json",
     "a66-deerflow-runtime-attribution-live/pair.json",
     "a66-deerflow-runtime-attribution-live/verification.json",
+    "a67-v4-2-minibench16-live/failure-synthesis.json",
+    "a67-v4-2-minibench16-live/review.json",
+    "a67-v4-2-minibench16-live/verification.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -320,6 +324,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     deerflow_attribution_live = doc(
         "a66-deerflow-runtime-attribution-live/summary.json"
     ) if not missing else {}
+    v4_2_minibench_live = doc("a67-v4-2-minibench16-live/summary.json") if not missing else {}
     selected_live_row = next(
         (
             row
@@ -1076,6 +1081,31 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "deerflow_attribution_paid_expansion_allowed": deerflow_attribution_live.get(
             "paid_expansion_allowed"
         ),
+        "v4_2_minibench_task_count": v4_2_minibench_live.get("task_count"),
+        "v4_2_minibench_passed": v4_2_minibench_live.get("passed"),
+        "v4_2_minibench_capacity_score_mean": v4_2_minibench_live.get(
+            "capacity_score_mean"
+        ),
+        "v4_2_minibench_total_tokens": v4_2_minibench_live.get("total_tokens"),
+        "v4_2_minibench_tool_calls": v4_2_minibench_live.get("tool_calls"),
+        "v4_2_minibench_elapsed_sec": v4_2_minibench_live.get("elapsed_sec"),
+        "v4_2_minibench_output_file_count": v4_2_minibench_live.get(
+            "output_file_count"
+        ),
+        "v4_2_minibench_integrity_passed_tasks": v4_2_minibench_live.get(
+            "integrity_passed_tasks"
+        ),
+        "v4_2_minibench_partitions": v4_2_minibench_live.get("partitions"),
+        "v4_2_minibench_partial_quality_tasks": v4_2_minibench_live.get(
+            "partial_quality_tasks"
+        ),
+        "v4_2_minibench_failure_synthesis": v4_2_minibench_live.get(
+            "failure_synthesis"
+        ),
+        "v4_2_minibench_decision": v4_2_minibench_live.get("decision"),
+        "v4_2_minibench_paid_expansion_allowed": v4_2_minibench_live.get(
+            "paid_expansion_allowed"
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -1494,6 +1524,45 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             == "keep_deerflow_as_one_runtime_backend_not_the_project_base"
             and claims["deerflow_attribution_paid_expansion_allowed"] is False
         ),
+        "v4_2_full_minibench_failure_is_frozen_and_rejected": (
+            claims["v4_2_minibench_task_count"] == 16
+            and claims["v4_2_minibench_passed"] == 0
+            and claims["v4_2_minibench_total_tokens"] == 5152350
+            and claims["v4_2_minibench_tool_calls"] == 510
+            and claims["v4_2_minibench_output_file_count"] == 6
+            and claims["v4_2_minibench_integrity_passed_tasks"] == 16
+            and [item.get("task_count") for item in claims["v4_2_minibench_partitions"] or ()]
+            == [8, 4, 4]
+            and [item.get("passed") for item in claims["v4_2_minibench_partitions"] or ()]
+            == [0, 0, 0]
+            and len(claims["v4_2_minibench_partial_quality_tasks"] or ()) == 5
+            and (claims["v4_2_minibench_failure_synthesis"] or {}).get(
+                "all_integrity_passed"
+            )
+            is True
+            and (claims["v4_2_minibench_failure_synthesis"] or {}).get("scope")
+            == "v4.2 full MiniBench16 public failure synthesis"
+            and "full isolated MiniBench16 8/4/4 run"
+            in str(
+                (claims["v4_2_minibench_failure_synthesis"] or {}).get(
+                    "claim_boundary"
+                )
+                or ""
+            )
+            and len(
+                (
+                    (claims["v4_2_minibench_failure_synthesis"] or {}).get(
+                        "cross_type_signals"
+                    )
+                    or {}
+                ).get("missing_required_artifact_runs")
+                or ()
+            )
+            == 10
+            and claims["v4_2_minibench_decision"]
+            == "reject_v4_2_and_stop_all_paid_expansion"
+            and claims["v4_2_minibench_paid_expansion_allowed"] is False
+        ),
     }
     return {
         "schema_version": 1,
@@ -1574,6 +1643,10 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "response and hit two Sandbox path false positives. The Harness used fewer Tokens and "
             "latency but more Tool calls, so DeerFlow is retained as one backend rather than the "
             "project base, without claiming a universal runtime ranking. "
+            "A67 records the user-requested full isolated v4.2 MiniBench16 run: Development 0/8, "
+            "Transfer 0/4, Held-out 0/4, 5,152,350 Tokens, 510 Tool calls, six output files, and "
+            "all 16 integrity checks passed. Five tasks had partial public capacity but none passed; "
+            "v4.2 is rejected and all further paid expansion is stopped. "
             "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),

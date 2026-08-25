@@ -139,4 +139,6 @@ v4.2 只完成 P1 Evidence 集成：`TransformManifestObservationProvider` 仅�
 
 针对 DeerFlow 基座假设，A65/A66 增加 current-model fresh Vanilla control。历史 Vanilla MiniBench16 为 6/16（File 3/3、API 2/3、CLI 1/5、Browser 0/5），但使用旧模型、关闭思考和 Mimo 视觉，不能直接归因。当前同模型/high-thinking File/easy 中 Vanilla 与 Adaptive 均为 0/5、无产物；Vanilla 321,950 Token/15 Tool/250.4s，Adaptive 220,496 Token/31 Tool/116.6s。Vanilla 已完成大量分析却没有 final response，并出现 2 次 Sandbox path false positive。结论：DeerFlow 是重要能力上限之一，Harness 改善了 Token/耗时但尚未改善质量；项目将 DeerFlow 降为可替换 Runtime Backend。完整分析见 [`docs/research/deerflow-base-capability-attribution-2026-08-25.md`](docs/research/deerflow-base-capability-attribution-2026-08-25.md)。
 
+按用户要求，A67 使用当前 v4.2、`deepseek-v4-flash-vision-exp`、thinking=enabled/high 完整执行隔离的 MiniBench16：Development 0/8、Transfer 0/4、Held-out 0/4；总 Token 5,152,350、Tool 510、累计任务耗时 2,185 秒、输出文件 6，16/16 integrity 通过且 LLM Judge 未触发。公开 Capacity 均值 0.1103，5 个任务有部分检查得分（最高 API Google Docs 7/9），但没有完整通过。10/16 缺失 Required Artifact，14/16 出现 Tool error 或 No-progress。v4.2 被明确 Reject，停止所有后续付费扩跑。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

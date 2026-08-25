@@ -180,6 +180,8 @@ v4.2 完成 P1 bounded Evidence Provider：只选 Prompt 点名或直接生产 R
 
 A65/A66 对 DeerFlow 基座做 fresh attribution：旧 Vanilla 16 题通过 6 题，但配置不可与当前比较；当前同模型/high-thinking File/easy 中 Vanilla 与 Adaptive 都是 0/5、无产物。Vanilla 仍完成了大量数据读取和 helper 计算，却没有 final response，并触发两次 Sandbox path false positive；Adaptive Token/耗时更低但 Tool 更多，质量无提升。架构决策是把 DeerFlow 降为一个 Runtime Backend，下一阶段做 Runtime Capability Profile/Conformance，不再继续 DeerFlow-only paid tuning。
 
+A67 按用户明确要求完成一次当前 v4.2 MiniBench16 全量隔离评测：Development 0/8、Transfer 0/4、Held-out 0/4，总计 0/16；Token 5,152,350、Tool 510、输出文件 6、integrity 16/16。5 个任务有部分 Capacity，但无 task-level pass；10 个任务缺失 Required Artifact，14 个任务出现 Tool/No-progress 信号。该结果否定 v4.2 Candidate，后续 paid expansion 全部停止；下一阶段必须先完成 Runtime Capability/替代基座，而不是继续在 DeerFlow 上追加 Middleware。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

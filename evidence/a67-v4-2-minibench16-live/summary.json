@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "scope": "v4.2 full MiniBench16 isolated 8/4/4 evaluation",
+  "model": "deepseek-v4-flash-vision-exp",
+  "thinking_enabled": "enabled",
+  "thinking_effort": "high",
+  "runtime_image": "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
+  "variant": "adaptive_harness_workspace_affordance_v4_2",
+  "task_count": 16,
+  "passed": 0,
+  "capacity_score_mean": 0.11027323930549737,
+  "total_tokens": 5152350,
+  "tool_calls": 510,
+  "elapsed_sec": 2184.959,
+  "output_file_count": 6,
+  "agent_exec_nonzero": 0,
+  "llm_judge_called_tasks": 0,
+  "integrity_passed_tasks": 16,
+  "partitions": [
+    {
+      "run_id": "adaptive-harness-source-grounding-v4-2-development",
+      "phase": "minibench16-development",
+      "task_count": 8,
+      "passed": 0,
+      "capacity_score_mean": 0.17676767676767677,
+      "total_tokens": 2349146,
+      "tool_calls": 238,
+      "elapsed_sec": 1061.589,
+      "output_files": 4
+    },
+    {
+      "run_id": "adaptive-harness-source-grounding-v4-2-transfer",
+      "phase": "minibench16-transfer",
+      "task_count": 4,
+      "passed": 0,
+      "capacity_score_mean": 0.08755760368663594,
+      "total_tokens": 1843914,
+      "tool_calls": 154,
+      "elapsed_sec": 741.076,
+      "output_files": 1
+    },
+    {
+      "run_id": "adaptive-harness-source-grounding-v4-2-heldout",
+      "phase": "minibench16-heldout",
+      "task_count": 4,
+      "passed": 0,
+      "capacity_score_mean": 0.0,
+      "total_tokens": 959290,
+      "tool_calls": 118,
+      "elapsed_sec": 382.294,
+      "output_files": 1
+    }
+  ],
+  "partial_quality_tasks": [
+    {
+      "task_id": "api-google-docs-price-list-update-mcp",
+      "checks_passed": 7,
+      "checks_total": 9,
+      "capacity_score": 0.7777777777777778,
+      "tokens": 309090,
+      "tool_calls": 30
+    },
+    {
+      "task_id": "cli-commerce-camping-stove-listing-config",
+      "checks_passed": 4,
+      "checks_total": 11,
+      "capacity_score": 0.36363636363636365,
+      "tokens": 284864,
+      "tool_calls": 30
+    },
+    {
+      "task_id": "api-gmail-vendor-brief-mcp",
+      "checks_passed": 2,
+      "checks_total": 7,
+      "capacity_score": 0.2857142857142857,
+      "tokens": 637596,
+      "tool_calls": 42
+    },
+    {
+      "task_id": "browser-alibaba-yushengxm-shop-diagnosis",
+      "checks_passed": 3,
+      "checks_total": 11,
+      "capacity_score": 0.2727272727272727,
+      "tokens": 318990,
+      "tool_calls": 24
+    },
+    {
+      "task_id": "browser-freightos-booking",
+      "checks_passed": 2,
+      "checks_total": 31,
+      "capacity_score": 0.06451612903225806,
+      "tokens": 478148,
+      "tool_calls": 37
+    }
+  ],
+  "failure_synthesis": {
+    "scope": "v4.2 full MiniBench16 public failure synthesis",
+    "claim_boundary": "One full isolated MiniBench16 8/4/4 run. This artifact explains public failure surfaces and does not make historical Vanilla or cross-runtime causal claims.",
+    "all_integrity_passed": true,
+    "cost": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0,
+      "input_fraction": null,
+      "tool_calls": 0,
+      "elapsed_sec": 0.0
+    },
+    "cross_type_signals": {
+      "missing_required_artifact_runs": [
+        "01-cli-google-trends-data-quality-audit",
+        "02-file-commerce-ops-multilang-rfq-contradiction-extract",
+        "03-browser-mail-calendar-supplier-meeting-workbench-ui",
+        "05-cli-commerce-skincare-order-reconciliation",
+        "08-browser-alibaba-yushengxm-shop-diagnosis",
+        "02-cli-google-trends-counterfactual-rebalance",
+        "03-api-travel-asia-supplier-tour-handoff",
+        "04-file-commerce-ops-returns-dispute-evidence-pack",
+        "01-file-google-trends-csv-flatten",
+        "02-browser-freightos-booking"
+      ],
+      "wrong_target_output_runs": [],
+      "required_directory_semantics_runs": [],
+      "runtime_error_runs": [],
+      "tool_error_count": 61,
+      "no_progress_failure_count": 57,
+      "loop_failure_count": 48
+    },
+    "ranked_architecture_gaps": [
+      {
+        "rank": 1,
+        "dimension": "artifact_synthesis",
+        "evidence": "required artifacts remained missing across task types",
+        "affected_runs": [
+          "01-cli-google-trends-data-quality-audit",
+          "02-file-commerce-ops-multilang-rfq-contradiction-extract",
+          "03-browser-mail-calendar-supplier-meeting-workbench-ui",
+          "05-cli-commerce-skincare-order-reconciliation",
+          "08-browser-alibaba-yushengxm-shop-diagnosis",
+          "02-cli-google-trends-counterfactual-rebalance",
+          "03-api-travel-asia-supplier-tour-handoff",
+          "04-file-commerce-ops-returns-dispute-evidence-pack",
+          "01-file-google-trends-csv-flatten",
+          "02-browser-freightos-booking"
+        ]
+      },
+      {
+        "rank": 2,
+        "dimension": "tool_and_loop_control",
+        "evidence": "tool failures and no-progress events consumed model calls without completing required artifacts",
+        "affected_runs": [
+          "01-cli-google-trends-data-quality-audit",
+          "02-file-commerce-ops-multilang-rfq-contradiction-extract",
+          "04-cli-commerce-camping-stove-listing-config",
+          "05-cli-commerce-skincare-order-reconciliation",
+          "07-browser-alibaba-custom-yoga-mat-publish",
+          "08-browser-alibaba-yushengxm-shop-diagnosis",
+          "01-browser-alibaba-led-bulb-simple-publish",
+          "02-cli-google-trends-counterfactual-rebalance",
+          "03-api-travel-asia-supplier-tour-handoff",
+          "04-file-commerce-ops-returns-dispute-evidence-pack",
+          "01-file-google-trends-csv-flatten",
+          "02-browser-freightos-booking",
+          "03-api-gmail-vendor-brief-mcp",
+          "04-cli-alibaba-pneumatic-valve-publish"
+        ]
+      }
+    ]
+  },
+  "historical_vanilla_reference": {
+    "passed": 6,
+    "task_count": 16,
+    "comparable": false,
+    "reason": "different model, thinking disabled, Mimo vision"
+  },
+  "decision": "reject_v4_2_and_stop_all_paid_expansion",
+  "paid_expansion_allowed": false,
+  "claim_boundary": "One full isolated MiniBench16 run. It proves v4.2 failed this evaluation; historical Vanilla is contextual only, not a causal pair."
+}

@@ -1,0 +1,1338 @@
+{
+  "schema_version": 1,
+  "scope": "v4.2 full MiniBench16 public failure synthesis",
+  "analysis_model_calls": 0,
+  "analysis_new_tokens": 0,
+  "run_count": 16,
+  "category_counts": {
+    "api": 3,
+    "browser": 5,
+    "cli": 5,
+    "file": 3
+  },
+  "all_integrity_passed": true,
+  "passed_runs": 0,
+  "capacity_score_mean": 0.11027323930549737,
+  "cost": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0,
+    "input_fraction": null,
+    "tool_calls": 0,
+    "elapsed_sec": 0.0
+  },
+  "cross_type_signals": {
+    "missing_required_artifact_runs": [
+      "01-cli-google-trends-data-quality-audit",
+      "02-file-commerce-ops-multilang-rfq-contradiction-extract",
+      "03-browser-mail-calendar-supplier-meeting-workbench-ui",
+      "05-cli-commerce-skincare-order-reconciliation",
+      "08-browser-alibaba-yushengxm-shop-diagnosis",
+      "02-cli-google-trends-counterfactual-rebalance",
+      "03-api-travel-asia-supplier-tour-handoff",
+      "04-file-commerce-ops-returns-dispute-evidence-pack",
+      "01-file-google-trends-csv-flatten",
+      "02-browser-freightos-booking"
+    ],
+    "wrong_target_output_runs": [],
+    "required_directory_semantics_runs": [],
+    "runtime_error_runs": [],
+    "tool_error_count": 61,
+    "no_progress_failure_count": 57,
+    "loop_failure_count": 48
+  },
+  "ranked_architecture_gaps": [
+    {
+      "rank": 1,
+      "dimension": "artifact_synthesis",
+      "evidence": "required artifacts remained missing across task types",
+      "affected_runs": [
+        "01-cli-google-trends-data-quality-audit",
+        "02-file-commerce-ops-multilang-rfq-contradiction-extract",
+        "03-browser-mail-calendar-supplier-meeting-workbench-ui",
+        "05-cli-commerce-skincare-order-reconciliation",
+        "08-browser-alibaba-yushengxm-shop-diagnosis",
+        "02-cli-google-trends-counterfactual-rebalance",
+        "03-api-travel-asia-supplier-tour-handoff",
+        "04-file-commerce-ops-returns-dispute-evidence-pack",
+        "01-file-google-trends-csv-flatten",
+        "02-browser-freightos-booking"
+      ]
+    },
+    {
+      "rank": 2,
+      "dimension": "tool_and_loop_control",
+      "evidence": "tool failures and no-progress events consumed model calls without completing required artifacts",
+      "affected_runs": [
+        "01-cli-google-trends-data-quality-audit",
+        "02-file-commerce-ops-multilang-rfq-contradiction-extract",
+        "04-cli-commerce-camping-stove-listing-config",
+        "05-cli-commerce-skincare-order-reconciliation",
+        "07-browser-alibaba-custom-yoga-mat-publish",
+        "08-browser-alibaba-yushengxm-shop-diagnosis",
+        "01-browser-alibaba-led-bulb-simple-publish",
+        "02-cli-google-trends-counterfactual-rebalance",
+        "03-api-travel-asia-supplier-tour-handoff",
+        "04-file-commerce-ops-returns-dispute-evidence-pack",
+        "01-file-google-trends-csv-flatten",
+        "02-browser-freightos-booking",
+        "03-api-gmail-vendor-brief-mcp",
+        "04-cli-alibaba-pneumatic-valve-publish"
+      ]
+    }
+  ],
+  "claim_boundary": "One full isolated MiniBench16 8/4/4 run. This artifact explains public failure surfaces and does not make historical Vanilla or cross-runtime causal claims.",
+  "paid_expansion_allowed": false,
+  "runs": [
+    {
+      "run_id": "01-cli-google-trends-data-quality-audit",
+      "task_id": "cli-google-trends-data-quality-audit",
+      "category": "cli",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 271,
+      "model_call_audits": 8,
+      "turns": 2,
+      "action_intents": {
+        "discover": 2,
+        "read": 17
+      },
+      "tool_errors": {},
+      "dispositions": {
+        "allow": 19
+      },
+      "failure_types": {
+        "LOOP": 3,
+        "NO_PROGRESS": 6
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 23,
+      "max_context_tokens": 3973,
+      "required_artifacts": [
+        "outputs/quality_audit.json"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/quality_audit.json"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/quality_audit.json",
+        "Blocked by unsatisfied dependencies: artifact:outputs-quality-audit-json",
+        "Blocked by unsatisfied dependencies: artifact:outputs-quality-audit-json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-quality-audit-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:artifact-json-shape-outputs-quality-audit-json",
+          "status": "blocked"
+        },
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-4500-api-help",
+          "status": "satisfied"
+        },
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-4500-api-datasets",
+          "status": "satisfied"
+        },
+        {
+          "criterion_id": "observation:artifact-grounding-outputs-quality-audit-json",
+          "status": "blocked"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "02-file-commerce-ops-multilang-rfq-contradiction-extract",
+      "task_id": "file-commerce-ops-multilang-rfq-contradiction-extract",
+      "category": "file",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 9,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 344,
+      "model_call_audits": 9,
+      "turns": 2,
+      "action_intents": {
+        "discover": 1,
+        "read": 19
+      },
+      "tool_errors": {},
+      "dispositions": {
+        "allow": 20
+      },
+      "failure_types": {
+        "LOOP": 4,
+        "NO_PROGRESS": 6
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 23,
+      "max_context_tokens": 4087,
+      "required_artifacts": [
+        "outputs/rfq_analysis.json"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/rfq_analysis.json"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/rfq_analysis.json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-rfq-analysis-json",
+          "status": "unsatisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "03-browser-mail-calendar-supplier-meeting-workbench-ui",
+      "task_id": "browser-mail-calendar-supplier-meeting-workbench-ui",
+      "category": "browser",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 12,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 607,
+      "model_call_audits": 19,
+      "turns": 2,
+      "action_intents": {
+        "discover": 1,
+        "interact": 4,
+        "navigate": 6,
+        "observe": 7,
+        "read": 3
+      },
+      "tool_errors": {},
+      "dispositions": {
+        "allow": 21
+      },
+      "failure_types": {
+        "OBSERVATION_SNAPSHOT_FAILED": 1
+      },
+      "recovery_primaries": {
+        "EVIDENCE_GAP": 2
+      },
+      "recovery_actions": {
+        "replan": 1,
+        "stop": 1,
+        "validate_contract": 1
+      },
+      "max_history_dropped": 30,
+      "max_context_tokens": 4089,
+      "required_artifacts": [
+        "outputs/meeting_workbench_summary.md"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/meeting_workbench_summary.md"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/meeting_workbench_summary.md",
+        "Missing public source access: http://127.0.0.1:9200/api/*",
+        "Expected calendar.event_created=True, observed False"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-meeting-workbench-summary-md",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-9200-api",
+          "status": "pending"
+        },
+        {
+          "criterion_id": "observation_equals:calendar-event-created",
+          "status": "unsatisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "04-cli-commerce-camping-stove-listing-config",
+      "task_id": "cli-commerce-camping-stove-listing-config",
+      "category": "cli",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.36363636363636365,
+      "checks_passed": 4,
+      "checks_total": 11,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 1012,
+      "model_call_audits": 19,
+      "turns": 2,
+      "action_intents": {
+        "discover": 4,
+        "read": 18,
+        "verify": 1,
+        "write": 5
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 9
+      },
+      "dispositions": {
+        "allow": 28
+      },
+      "failure_types": {
+        "LOOP": 8,
+        "NO_PROGRESS": 4
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 1
+      },
+      "recovery_actions": {
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 35,
+      "max_context_tokens": 4096,
+      "required_artifacts": [
+        "outputs/shopify_product.json",
+        "outputs/amazon_jp_listing.yaml",
+        "outputs/douyin_product.json"
+      ],
+      "matched_required_artifacts": [
+        "outputs/shopify_product.json",
+        "outputs/amazon_jp_listing.yaml",
+        "outputs/douyin_product.json"
+      ],
+      "missing_required_artifacts": [],
+      "output_inventory": [
+        {
+          "path": "outputs/amazon_jp_listing.yaml",
+          "bytes": 2543,
+          "sha256": "628ce9326b69afd2f5936f4203bd1540f96597726782dea387626939d7bffae6"
+        },
+        {
+          "path": "outputs/douyin_product.json",
+          "bytes": 1863,
+          "sha256": "306af735d4395cc95180be2fa8580106130a6e14f0738e9d4f387892fbb3285d"
+        },
+        {
+          "path": "outputs/shopify_product.json",
+          "bytes": 3023,
+          "sha256": "614fccd973485f21d8c7da7599e242b1b4ed59b483e6a6a3d45487e148b33ae3"
+        }
+      ],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-shopify-product-json",
+          "status": "satisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-amazon-jp-listing-yaml",
+          "status": "satisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-douyin-product-json",
+          "status": "satisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "05-cli-commerce-skincare-order-reconciliation",
+      "task_id": "cli-commerce-skincare-order-reconciliation",
+      "category": "cli",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 8,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 883,
+      "model_call_audits": 23,
+      "turns": 2,
+      "action_intents": {
+        "discover": 5,
+        "read": 18,
+        "verify": 3,
+        "write": 4
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 14
+      },
+      "dispositions": {
+        "allow": 30
+      },
+      "failure_types": {
+        "LOOP": 6,
+        "NO_PROGRESS": 5
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 49,
+      "max_context_tokens": 4094,
+      "required_artifacts": [
+        "outputs/unified_orders.csv",
+        "outputs/exceptions.json",
+        "outputs/sku_performance.csv",
+        "outputs/monthly_summary.json"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/unified_orders.csv",
+        "outputs/exceptions.json",
+        "outputs/sku_performance.csv",
+        "outputs/monthly_summary.json"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/unified_orders.csv",
+        "Artifact does not exist: outputs/exceptions.json",
+        "Artifact does not exist: outputs/sku_performance.csv",
+        "Artifact does not exist: outputs/monthly_summary.json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-unified-orders-csv",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-exceptions-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-sku-performance-csv",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-monthly-summary-json",
+          "status": "unsatisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "06-api-google-docs-price-list-update-mcp",
+      "task_id": "api-google-docs-price-list-update-mcp",
+      "category": "api",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.7777777777777778,
+      "checks_passed": 7,
+      "checks_total": 9,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 1241,
+      "model_call_audits": 19,
+      "turns": 2,
+      "action_intents": {
+        "discover": 2,
+        "interact": 13,
+        "read": 13
+      },
+      "tool_errors": {},
+      "dispositions": {
+        "allow": 28
+      },
+      "failure_types": {
+        "OBSERVATION_SNAPSHOT_FAILED": 1
+      },
+      "recovery_primaries": {
+        "STATE_INCONSISTENCY": 2
+      },
+      "recovery_actions": {
+        "refresh_state": 1,
+        "replan": 1,
+        "stop": 1
+      },
+      "max_history_dropped": 43,
+      "max_context_tokens": 3738,
+      "required_artifacts": [],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Expected document.updated=True, observed False"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-3081-mcp",
+          "status": "satisfied"
+        },
+        {
+          "criterion_id": "observation_equals:document-updated",
+          "status": "unsatisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "07-browser-alibaba-custom-yoga-mat-publish",
+      "task_id": "browser-alibaba-custom-yoga-mat-publish",
+      "category": "browser",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 8,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 669,
+      "model_call_audits": 20,
+      "turns": 2,
+      "action_intents": {
+        "discover": 6,
+        "navigate": 6,
+        "read": 22
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 4
+      },
+      "dispositions": {
+        "allow": 34
+      },
+      "failure_types": {
+        "LOOP": 6,
+        "NO_PROGRESS": 4,
+        "OBSERVATION_SNAPSHOT_FAILED": 2
+      },
+      "recovery_primaries": {
+        "EVIDENCE_GAP": 2
+      },
+      "recovery_actions": {
+        "replan": 1,
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1
+      },
+      "max_history_dropped": 48,
+      "max_context_tokens": 4083,
+      "required_artifacts": [],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [],
+      "output_inventory": [
+        {
+          "path": "outputs/mock_alibaba_publish_final_state.json",
+          "bytes": 74,
+          "sha256": "6373e7e9e150b40e8c8b13d7e276e880cfac29489a1f9816730dfbde70d41cb9"
+        }
+      ],
+      "unrelated_output_paths": [
+        "outputs/mock_alibaba_publish_final_state.json"
+      ],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Missing public source access: http://127.0.0.1:3000，连的是真实的发品网页，浏览器打开直接进发品表单填就行",
+        "Missing runtime observation: listing.submitted"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-3000",
+          "status": "pending"
+        },
+        {
+          "criterion_id": "observation_equals:listing-submitted",
+          "status": "pending"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "08-browser-alibaba-yushengxm-shop-diagnosis",
+      "task_id": "browser-alibaba-yushengxm-shop-diagnosis",
+      "category": "browser",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.2727272727272727,
+      "checks_passed": 3,
+      "checks_total": 11,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 403,
+      "model_call_audits": 15,
+      "turns": 2,
+      "action_intents": {
+        "discover": 1,
+        "navigate": 1,
+        "observe": 7,
+        "read": 7,
+        "verify": 4
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 1
+      },
+      "dispositions": {
+        "allow": 17,
+        "warn": 3
+      },
+      "failure_types": {
+        "LOOP": 2,
+        "NO_PROGRESS": 3
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 34,
+      "max_context_tokens": 4078,
+      "required_artifacts": [
+        "outputs/shop_diagnosis_report.md",
+        "outputs/evidence_manifest.json",
+        "outputs/evidence/target_home.png",
+        "outputs/evidence/target_products.png",
+        "outputs/evidence/target_company_profile.png",
+        "outputs/evidence/alibaba_peer_01.png",
+        "outputs/alibaba_peer_10.png",
+        "outputs/evidence/independent_peer_01.png",
+        "outputs/independent_peer_05.png"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/shop_diagnosis_report.md",
+        "outputs/evidence_manifest.json",
+        "outputs/evidence/target_home.png",
+        "outputs/evidence/target_products.png",
+        "outputs/evidence/target_company_profile.png",
+        "outputs/evidence/alibaba_peer_01.png",
+        "outputs/alibaba_peer_10.png",
+        "outputs/evidence/independent_peer_01.png",
+        "outputs/independent_peer_05.png"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/shop_diagnosis_report.md",
+        "Artifact does not exist: outputs/evidence_manifest.json",
+        "Artifact does not exist: outputs/evidence/target_home.png",
+        "Artifact does not exist: outputs/evidence/target_products.png",
+        "Artifact does not exist: outputs/evidence/target_company_profile.png",
+        "Artifact does not exist: outputs/evidence/alibaba_peer_01.png",
+        "Artifact does not exist: outputs/alibaba_peer_10.png",
+        "Artifact does not exist: outputs/evidence/independent_peer_01.png",
+        "Artifact does not exist: outputs/independent_peer_05.png",
+        "Blocked by unsatisfied dependencies: artifact:outputs-evidence-manifest-json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-shop-diagnosis-report-md",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-evidence-manifest-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-evidence-target-home-png",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-evidence-target-products-png",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-evidence-target-company-profile-png",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-evidence-alibaba-peer-01-png",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-alibaba-peer-10-png",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-evidence-independent-peer-01-png",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-independent-peer-05-png",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:artifact-json-shape-outputs-evidence-manifest-js",
+          "status": "blocked"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "01-browser-alibaba-led-bulb-simple-publish",
+      "task_id": "browser-alibaba-led-bulb-simple-publish",
+      "category": "browser",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 8,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 617,
+      "model_call_audits": 22,
+      "turns": 2,
+      "action_intents": {
+        "discover": 2,
+        "navigate": 9,
+        "observe": 6,
+        "read": 5
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 1
+      },
+      "dispositions": {
+        "allow": 19,
+        "warn": 3
+      },
+      "failure_types": {
+        "LOOP": 2,
+        "NO_PROGRESS": 2,
+        "OBSERVATION_SNAPSHOT_FAILED": 2
+      },
+      "recovery_primaries": {
+        "EVIDENCE_GAP": 2
+      },
+      "recovery_actions": {
+        "replan": 1,
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1
+      },
+      "max_history_dropped": 38,
+      "max_context_tokens": 4091,
+      "required_artifacts": [],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [],
+      "output_inventory": [
+        {
+          "path": "outputs/mock_alibaba_publish_final_state.json",
+          "bytes": 74,
+          "sha256": "f83a9d1f6d1b5dd90425cd272ff1cd06ace92c63d1b2423e6f264e2950d8cefe"
+        }
+      ],
+      "unrelated_output_paths": [
+        "outputs/mock_alibaba_publish_final_state.json"
+      ],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Missing public source access: http://127.0.0.1:3000，连的是真实的发品网页，浏览器打开直接进发品表单填就行",
+        "Missing runtime observation: listing.submitted"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-3000",
+          "status": "pending"
+        },
+        {
+          "criterion_id": "observation_equals:listing-submitted",
+          "status": "pending"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "02-cli-google-trends-counterfactual-rebalance",
+      "task_id": "cli-google-trends-counterfactual-rebalance",
+      "category": "cli",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 6,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 444,
+      "model_call_audits": 12,
+      "turns": 2,
+      "action_intents": {
+        "discover": 1,
+        "read": 17,
+        "write": 2
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 4
+      },
+      "dispositions": {
+        "allow": 20
+      },
+      "failure_types": {
+        "LOOP": 2,
+        "NO_PROGRESS": 4,
+        "OBSERVATION_SNAPSHOT_FAILED": 1
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 29,
+      "max_context_tokens": 4076,
+      "required_artifacts": [
+        "outputs/rebalance.json"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/rebalance.json"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/rebalance.json",
+        "Blocked by unsatisfied dependencies: artifact:outputs-rebalance-json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-rebalance-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:artifact-json-shape-outputs-rebalance-json",
+          "status": "blocked"
+        },
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-4500-api",
+          "status": "satisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "03-api-travel-asia-supplier-tour-handoff",
+      "task_id": "api-travel-asia-supplier-tour-handoff",
+      "category": "api",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 12,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 358,
+      "model_call_audits": 12,
+      "turns": 2,
+      "action_intents": {
+        "discover": 6,
+        "read": 9,
+        "verify": 4
+      },
+      "tool_errors": {},
+      "dispositions": {
+        "allow": 19
+      },
+      "failure_types": {
+        "LOOP": 4,
+        "NO_PROGRESS": 2
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 32,
+      "max_context_tokens": 4096,
+      "required_artifacts": [
+        "outputs/audit_findings.json"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/audit_findings.json"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/audit_findings.json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-audit-findings-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation_equals:document-updated",
+          "status": "pending"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "04-file-commerce-ops-returns-dispute-evidence-pack",
+      "task_id": "file-commerce-ops-returns-dispute-evidence-pack",
+      "category": "file",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 8,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 550,
+      "model_call_audits": 13,
+      "turns": 2,
+      "action_intents": {
+        "discover": 3,
+        "read": 18,
+        "write": 2
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 6
+      },
+      "dispositions": {
+        "allow": 23
+      },
+      "failure_types": {
+        "NO_PROGRESS": 7
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 33,
+      "max_context_tokens": 4084,
+      "required_artifacts": [
+        "outputs/return_decision.json",
+        "outputs/evidence_pack.md",
+        "outputs/customer_safe_response.md"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/return_decision.json",
+        "outputs/evidence_pack.md",
+        "outputs/customer_safe_response.md"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/return_decision.json",
+        "Artifact does not exist: outputs/evidence_pack.md",
+        "Artifact does not exist: outputs/customer_safe_response.md",
+        "Expected exactly 3 files, observed 0",
+        "Blocked by unsatisfied dependencies: artifact:outputs-return-decision-json"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-return-decision-json",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-evidence-pack-md",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "artifact:outputs-customer-safe-response-md",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "count:files",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:artifact-json-shape-outputs-return-decision-json",
+          "status": "blocked"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "01-file-google-trends-csv-flatten",
+      "task_id": "file-google-trends-csv-flatten",
+      "category": "file",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 5,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 663,
+      "model_call_audits": 20,
+      "turns": 2,
+      "action_intents": {
+        "discover": 4,
+        "read": 15,
+        "verify": 2,
+        "write": 6
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 10
+      },
+      "dispositions": {
+        "allow": 27
+      },
+      "failure_types": {
+        "LOOP": 4,
+        "NO_PROGRESS": 4
+      },
+      "recovery_primaries": {
+        "ARTIFACT_ERROR": 2
+      },
+      "recovery_actions": {
+        "stop": 1,
+        "stop_repeated_action": 1,
+        "validate_contract": 1,
+        "write_partial": 1
+      },
+      "max_history_dropped": 34,
+      "max_context_tokens": 4094,
+      "required_artifacts": [
+        "outputs/trends_flat.csv"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/trends_flat.csv"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/trends_flat.csv"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-trends-flat-csv",
+          "status": "unsatisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "02-browser-freightos-booking",
+      "task_id": "browser-freightos-booking",
+      "category": "browser",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.06451612903225806,
+      "checks_passed": 2,
+      "checks_total": 31,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 1161,
+      "model_call_audits": 28,
+      "turns": 2,
+      "action_intents": {
+        "discover": 3,
+        "interact": 11,
+        "navigate": 2,
+        "observe": 8,
+        "read": 8,
+        "search": 1,
+        "verify": 2
+      },
+      "tool_errors": {},
+      "dispositions": {
+        "allow": 35
+      },
+      "failure_types": {
+        "NO_PROGRESS": 4,
+        "OBSERVATION_SNAPSHOT_FAILED": 1
+      },
+      "recovery_primaries": {
+        "EVIDENCE_GAP": 2
+      },
+      "recovery_actions": {
+        "replan": 1,
+        "stop": 1,
+        "validate_contract": 1
+      },
+      "max_history_dropped": 51,
+      "max_context_tokens": 4095,
+      "required_artifacts": [
+        "outputs/booking_confirmation.md"
+      ],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [
+        "outputs/booking_confirmation.md"
+      ],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "Artifact does not exist: outputs/booking_confirmation.md",
+        "Missing public source access: http://127.0.0.1:3003/login，浏览器打开登录进去操作，账号密码在"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "artifact:outputs-booking-confirmation-md",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-3003-login",
+          "status": "pending"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "03-api-gmail-vendor-brief-mcp",
+      "task_id": "api-gmail-vendor-brief-mcp",
+      "category": "api",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.2857142857142857,
+      "checks_passed": 2,
+      "checks_total": 7,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 1123,
+      "model_call_audits": 39,
+      "turns": 2,
+      "action_intents": {
+        "discover": 1,
+        "interact": 22,
+        "read": 7,
+        "verify": 2,
+        "write": 8
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 2
+      },
+      "dispositions": {
+        "allow": 40
+      },
+      "failure_types": {
+        "OBSERVATION_SNAPSHOT_FAILED": 1
+      },
+      "recovery_primaries": {
+        "EVIDENCE_GAP": 2
+      },
+      "recovery_actions": {
+        "replan": 1,
+        "stop": 1,
+        "validate_contract": 1
+      },
+      "max_history_dropped": 73,
+      "max_context_tokens": 4096,
+      "required_artifacts": [],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [],
+      "output_inventory": [],
+      "unrelated_output_paths": [],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "acceptable final response",
+        "Missing public source access: http://127.0.0.1:3071/mcp",
+        "Expected mail.label_created=True, observed False",
+        "Expected calendar.event_created=True, observed False"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "observation:source-access-http-127-0-0-1-3071-mcp",
+          "status": "pending"
+        },
+        {
+          "criterion_id": "observation_equals:mail-label-created",
+          "status": "unsatisfied"
+        },
+        {
+          "criterion_id": "observation_equals:mail-draft-saved",
+          "status": "pending"
+        },
+        {
+          "criterion_id": "observation_equals:calendar-event-created",
+          "status": "unsatisfied"
+        }
+      ],
+      "runtime_errors": []
+    },
+    {
+      "run_id": "04-cli-alibaba-pneumatic-valve-publish",
+      "task_id": "cli-alibaba-pneumatic-valve-publish",
+      "category": "cli",
+      "modality": null,
+      "passed": false,
+      "capacity_score": 0.0,
+      "checks_passed": 0,
+      "checks_total": 7,
+      "elapsed_sec": null,
+      "usage": {},
+      "tool_calls": null,
+      "agent_exec_returncode": 0,
+      "integrity_passed": true,
+      "llm_judge_score": null,
+      "ledger_event_count": 877,
+      "model_call_audits": 25,
+      "turns": 2,
+      "action_intents": {
+        "discover": 5,
+        "read": 27,
+        "search": 4,
+        "verify": 3
+      },
+      "tool_errors": {
+        "TOOL_ERROR": 10
+      },
+      "dispositions": {
+        "allow": 38,
+        "warn": 1
+      },
+      "failure_types": {
+        "LOOP": 7,
+        "NO_PROGRESS": 6,
+        "OBSERVATION_SNAPSHOT_FAILED": 2
+      },
+      "recovery_primaries": {
+        "STATE_INCONSISTENCY": 2
+      },
+      "recovery_actions": {
+        "refresh_state": 1,
+        "replan": 1,
+        "stop": 1,
+        "stop_repeated_action": 1
+      },
+      "max_history_dropped": 60,
+      "max_context_tokens": 4096,
+      "required_artifacts": [],
+      "matched_required_artifacts": [],
+      "missing_required_artifacts": [],
+      "output_inventory": [
+        {
+          "path": "outputs/mock_alibaba_publish_final_state.json",
+          "bytes": 40,
+          "sha256": "6da1ccb52fc1db64045dd86589cf01924f6943e051dec1120f33f74cea9a6112"
+        }
+      ],
+      "unrelated_output_paths": [
+        "outputs/mock_alibaba_publish_final_state.json"
+      ],
+      "required_directory_exists_but_unsatisfied": [],
+      "completion_missing": [
+        "acceptable final response",
+        "Missing runtime observation: listing.submitted"
+      ],
+      "completion_assessments": [
+        {
+          "criterion_id": "observation_equals:listing-submitted",
+          "status": "pending"
+        }
+      ],
+      "runtime_errors": []
+    }
+  ]
+}
