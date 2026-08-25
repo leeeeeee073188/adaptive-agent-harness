@@ -127,6 +127,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | v4 File live / v4.1 gate | A58：正确 path 写入因 description 缺失失败；A59/A60 验证兼容修复与 batch early-stop |
 | v4.1 File live | A61：仍 0/5，但 Token -34.8%、Tool -14、耗时 -65.1%；停止扩跑并转向 Transform/Workspace seam |
 | Static Transform Manifest | A62：零执行 AST 扫描提前识别 A61 missing dependency；0 模型 Token |
+| Transform Evidence P1 | A63/A64：相关性+字符预算接入 before-run Evidence；Capsule 关闭 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

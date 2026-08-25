@@ -176,6 +176,8 @@ v4.1 File/easy 复验（A61）仍为 0/5、无产物，因此不晋升也不扩�
 
 A62 完成 P0 Static Transform Manifest：零执行扫描公共 workspace 内最多 32 个、单个 256 KiB 的 Python 脚本，拒绝 hidden/symlink/outside-root，保守解析 `Path(__file__)`、parent、字面量 `/` 和 file read/write。对 A61 的离线回放准确输出一个 missing read `snapshots/manifest.json`、一个已存在 write target `workspace/analysis/results.json` 和一个 dynamic unresolved access；模型调用/新增 Token 为 0。P1 才考虑把 bounded manifest 接入 Evidence layer，P2 Capsule 默认关闭。
 
+v4.2 完成 P1 bounded Evidence Provider：只选 Prompt 点名或直接生产 Required Artifact 的 Transform，最多 8 条、每类 4 个 access、总 payload 4,000 字符；unsafe target 仅暴露计数，动态表达式保持 unresolved。Provider 只在 before-run 扫描一次，A63/A64 已通过单测和 pinned-container wiring，模型调用/新增 Token 为 0。P2 Capsule 仍 disabled，本阶段不执行付费任务。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

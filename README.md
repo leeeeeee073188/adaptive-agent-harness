@@ -135,4 +135,6 @@ A61 的 v4.1 File/easy 复验仍未通过且没有产物，因此不晋升；但
 
 A62 已实现第一阶段零模型 `PythonTransformManifestScanner`：在不执行脚本、不读取私有目录、不跟随 symlink 的前提下，有界扫描公共 Python transform，并从 AST 解析 `Path(__file__)`、`.parent`、字面量路径拼接和 read/write 调用。它在 A61 公共 workspace 上提前识别到 `workspace/analysis/audit.py` 会读取不存在的 `snapshots/manifest.json`，同时记录其输出 `workspace/analysis/results.json`；模型调用与新增 Token 均为 0。研究与后续 Capsule 设计见 [`docs/research/transform-workspace-aci-2026-08-25.md`](docs/research/transform-workspace-aci-2026-08-25.md)。
 
+v4.2 只完成 P1 Evidence 集成：`TransformManifestObservationProvider` 仅选择任务 Prompt 明确提及或直接生产 Required Artifact 的 transform，最多 8 条 Evidence、每类最多 4 个 access、总 JSON 字符不超过 4,000；restricted target 只计数不暴露路径。Provider 在 `before_run` 阶段加入 Evidence Workspace，`observe` 不重复扫描，且 execution/Capsule 继续关闭。A63/A64 已在固定容器中验证同一缺失依赖摘要进入 Evidence，模型调用与新增 Token 为 0。
+
 详细架构见 [`docs/architecture.md`](docs/architecture.md)，当前实施顺序见 [`docs/harness-core-evolution-plan.zh-CN.md`](docs/harness-core-evolution-plan.zh-CN.md)，简历案例见 [`docs/resume-case-study.zh-CN.md`](docs/resume-case-study.zh-CN.md)。

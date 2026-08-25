@@ -268,6 +268,14 @@ def main() -> int:
                 "write_description_repair_enforced"
             )
             is True,
+            "transform_manifest_evidence_wired": adaptive.get(
+                "transform_manifest_evidence_wired"
+            )
+            is True,
+            "production_transform_manifest_bridge_wired": adaptive.get(
+                "production_transform_manifest_bridge_wired"
+            )
+            is True,
             "textual_tool_errors_fail_closed": adaptive.get(
                 "textual_tool_errors_fail_closed"
             )

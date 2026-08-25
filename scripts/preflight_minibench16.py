@@ -37,7 +37,7 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
         }
     )
     candidate = VariantSpec(
-        "adaptive_harness_cross_type_artifact_v4_1",
+        "adaptive_harness_workspace_affordance_v4_2",
         stable_profile_fingerprint(
             {
                 "runtime": "deerflow",
@@ -109,6 +109,16 @@ def _variant_specs(seed: int) -> tuple[VariantSpec, VariantSpec]:
                 },
                 "observation_boundary": {
                     "turn_oserror_fails_closed_without_runtime_crash": True,
+                },
+                "workspace_affordance": {
+                    "static_transform_manifest": True,
+                    "public_workspace_only": True,
+                    "max_scripts": 32,
+                    "max_script_bytes": 262144,
+                    "max_visited_paths": 4096,
+                    "max_evidence": 8,
+                    "max_payload_chars": 4000,
+                    "execution_enabled": False,
                 },
                 "advice_gate": {
                     "classified_fraction": 1.0,
@@ -278,6 +288,8 @@ def _bridge_evidence_valid(
         "delivery_violation_budget_enforced",
         "delivery_batch_guard_enforced",
         "write_description_repair_enforced",
+        "transform_manifest_evidence_wired",
+        "production_transform_manifest_bridge_wired",
         "embedded_client_stream_exercised",
         "executable_policy_profile_assembled",
         "max_completion_turns_frozen",

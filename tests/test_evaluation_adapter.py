@@ -149,6 +149,8 @@ class EvaluationAdapterTests(unittest.TestCase):
                 "delivery_violation_budget_enforced": True,
                 "delivery_batch_guard_enforced": True,
                 "write_description_repair_enforced": True,
+                "transform_manifest_evidence_wired": True,
+                "production_transform_manifest_bridge_wired": True,
                 "embedded_client_stream_exercised": True,
                 "executable_policy_profile_assembled": True,
                 "max_completion_turns_frozen": True,

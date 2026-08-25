@@ -1,0 +1,20 @@
+{
+  "scope": "v4.2 bounded Transform Manifest Evidence review",
+  "verdict": "approve_zero_model_runtime_integration_only",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "verified": {
+    "relevance_filter_bounded": true,
+    "payload_and_evidence_caps": true,
+    "unsafe_paths_not_exposed": true,
+    "before_run_only": true,
+    "contract_support_unchanged": true,
+    "production_bridge_path_verified": true,
+    "transform_execution_disabled": true,
+    "capsule_disabled": true
+  },
+  "paid_run_approved": false,
+  "paid_expansion_allowed": false
+}

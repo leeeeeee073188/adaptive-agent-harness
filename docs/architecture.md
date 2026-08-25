@@ -415,6 +415,13 @@ model use. This is the P0 input to a future Workspace Affordance Graph and
 ephemeral Transform Capsule; it does not auto-patch scripts, create symlinks,
 or claim execution success.
 
+P1 exposes only relevant gaps through `TransformManifestObservationProvider`.
+A transform is relevant when the public task request names it or its static
+write target is a Required Artifact. Evidence is emitted once before the first
+model turn, capped by item/access/character budgets, and includes no source
+body or restricted path. Unsafe accesses are counts only. Runtime execution,
+patching, and Capsule registration remain separate disabled capabilities.
+
 Execution remains deliberately split: `RecoveryExecutor` applies auditable
 Harness control-state deltas and next-turn directives, while external browser,
 API, and file mutations remain ordinary tools. This prevents a control policy

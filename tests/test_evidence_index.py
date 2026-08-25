@@ -328,6 +328,23 @@ class EvidenceIndexTests(unittest.TestCase):
             "workspace/analysis/audit.py",
         )
         self.assertFalse(index["claims"]["transform_manifest_paid_expansion_allowed"])
+        self.assertTrue(index["claims"]["v4_2_gate_passed"])
+        self.assertTrue(index["claims"]["v4_2_single_canary_allowed"])
+        self.assertFalse(index["claims"]["v4_2_paid_expansion_allowed"])
+        self.assertEqual(
+            index["claims"]["v4_2_candidate_variant"],
+            "adaptive_harness_workspace_affordance_v4_2",
+        )
+        self.assertTrue(index["claims"]["v4_2_paid_canary_allowed"])
+        self.assertTrue(index["claims"]["v4_2_source_hash_matches"])
+        self.assertEqual(len(index["claims"]["current_adaptive_source_sha256"]), 64)
+        self.assertTrue(index["claims"]["v4_2_profile_fingerprint_matches"])
+        self.assertTrue(index["claims"]["v4_2_transform_manifest_evidence_wired"])
+        self.assertTrue(
+            index["claims"]["v4_2_production_transform_manifest_bridge_wired"]
+        )
+        self.assertEqual(index["claims"]["v4_2_new_full_repo_lint_findings"], 0)
+        self.assertTrue(index["claims"]["v4_2_readiness"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:
@@ -353,8 +370,8 @@ class EvidenceIndexTests(unittest.TestCase):
             shutil.copytree(root / "evidence", copied)
             stale = "0" * 64
             for relative in (
-                "a59-v4-1-tool-compat-gate/summary.json",
-                "a60-v4-1-tool-compat-container/container-wiring.json",
+                "a63-v4-2-transform-evidence-gate/summary.json",
+                "a64-v4-2-transform-evidence-container/container-wiring.json",
             ):
                 path = copied / relative
                 payload = json.loads(path.read_text(encoding="utf-8"))
@@ -363,8 +380,8 @@ class EvidenceIndexTests(unittest.TestCase):
 
             index = build_index(copied)
 
-        self.assertFalse(index["claims"]["v4_1_source_hash_matches"])
-        self.assertFalse(index["invariants"]["v4_1_container_gate_cleared"])
+        self.assertFalse(index["claims"]["v4_2_source_hash_matches"])
+        self.assertFalse(index["invariants"]["v4_2_transform_evidence_container_cleared"])
         self.assertFalse(index["verified"])
 
 

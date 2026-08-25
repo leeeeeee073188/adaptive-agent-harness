@@ -1,0 +1,120 @@
+{
+  "baseline_bootstrap_allowed": true,
+  "candidate_zero_model_gate": {
+    "evidence": "evidence/a63-v4-2-transform-evidence-gate/summary.json",
+    "passed": true
+  },
+  "container_wiring": {
+    "evidence": "evidence/a64-v4-2-transform-evidence-container/container-wiring.json",
+    "passed": true
+  },
+  "dataset": {
+    "counts": {
+      "capability": {
+        "browser-text": 3,
+        "text-only": 8,
+        "vision": 5
+      },
+      "category": {
+        "api": 3,
+        "browser": 5,
+        "cli": 5,
+        "file": 3
+      },
+      "difficulty_band": {
+        "easy": 3,
+        "hard": 8,
+        "medium": 4,
+        "unknown": 1
+      },
+      "evaluation_role": {
+        "development": 8,
+        "heldout": 4,
+        "transfer": 4
+      },
+      "smoke_reused": 5,
+      "total": 16
+    },
+    "fingerprint": "a9bb9a7e80ed1c41122839395eccdd88c7b269e2c90b690ccc123eabe738b15a",
+    "id": "adaptive_deerflow_minibench16_v1",
+    "partition_integrity": {
+      "passed": true,
+      "reasons": [],
+      "role_counts": {
+        "development": 8,
+        "heldout": 4,
+        "transfer": 4
+      }
+    }
+  },
+  "gate_mode": "paid-canary",
+  "historical_baseline": {
+    "complete": false,
+    "development_available": 1,
+    "development_required": 8,
+    "single_canary_available": true
+  },
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "next_action": "Paid candidate canary is eligible.",
+  "paid_candidate_canary": {
+    "allowed": true,
+    "blockers": []
+  },
+  "profiles": {
+    "baseline": {
+      "model": "deepseek-v4-flash-vision-exp",
+      "name": "vanilla_deerflow",
+      "profile_fingerprint": "2d95053fcb674676eb67c8d0344d0985caa8d7ea94c188176f79531e7e218fbc",
+      "runtime_image": "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
+      "seed": 20260818
+    },
+    "candidate": {
+      "model": "deepseek-v4-flash-vision-exp",
+      "name": "adaptive_harness_workspace_affordance_v4_2",
+      "profile_fingerprint": "e1690502c3535fc47a9108bfefa8d414f83d2db3c1d2eacfbb6868d64b16d5ed",
+      "runtime_image": "realreplicabench/deerflow:0debff98c1caf4a7d3047e8ef162d85a841b5c6d",
+      "seed": 20260818
+    },
+    "candidate_reproducible": true
+  },
+  "runtime_conformance": {
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "tests.test_runtime_conformance",
+      "tests.test_policy_session",
+      "tests.test_policy_profile",
+      "tests.test_ledger_rollout",
+      "tests.test_distiller_adapter",
+      "tests.test_offline_evolution_e2e",
+      "tests.test_minibench_gate",
+      "tests.test_evaluation_adapter",
+      "tests.test_architecture_boundaries"
+    ],
+    "passed": true,
+    "returncode": 0,
+    "stderr_tail": ".......................................................................\n----------------------------------------------------------------------\nRan 71 tests in 0.146s\n\nOK\n",
+    "stdout_tail": "",
+    "test_count": 71,
+    "test_modules": [
+      "tests.test_runtime_conformance",
+      "tests.test_policy_session",
+      "tests.test_policy_profile",
+      "tests.test_ledger_rollout",
+      "tests.test_distiller_adapter",
+      "tests.test_offline_evolution_e2e",
+      "tests.test_minibench_gate",
+      "tests.test_evaluation_adapter",
+      "tests.test_architecture_boundaries"
+    ]
+  },
+  "scope": "next-stage Runtime Conformance and Offline Evolution zero-model gate",
+  "single_canary_default": true,
+  "stable_regression_controls": {
+    "passed": true,
+    "reason": "Next-generation zero-model replay and regression controls passed."
+  },
+  "zero_model_passed": true
+}

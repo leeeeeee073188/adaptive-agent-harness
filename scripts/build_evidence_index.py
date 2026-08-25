@@ -79,6 +79,8 @@ REQUIRED = tuple(
         (60, "v4-1-tool-compat-container"),
         (61, "v4-1-file-live"),
         (62, "transform-manifest"),
+        (63, "v4-2-transform-evidence-gate"),
+        (64, "v4-2-transform-evidence-container"),
     )
 )
 OPTIONAL = (
@@ -157,6 +159,11 @@ OPTIONAL = (
     "a61-v4-1-file-live/diagnosis.json",
     "a62-transform-manifest/review.json",
     "a62-transform-manifest/verification.json",
+    "a64-v4-2-transform-evidence-container/container-wiring.json",
+    "a64-v4-2-transform-evidence-container/lint-delta.json",
+    "a64-v4-2-transform-evidence-container/review.json",
+    "a64-v4-2-transform-evidence-container/verification.json",
+    "a64-v4-2-transform-evidence-container/readiness.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -287,6 +294,17 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     )
     v4_1_live = doc("a61-v4-1-file-live/summary.json") if not missing else {}
     transform_manifest = doc("a62-transform-manifest/summary.json") if not missing else {}
+    v4_2_gate = doc("a63-v4-2-transform-evidence-gate/summary.json") if not missing else {}
+    v4_2_conformance = doc("a64-v4-2-transform-evidence-container/summary.json") if not missing else {}
+    v4_2_wiring = documents.get(
+        "a64-v4-2-transform-evidence-container/container-wiring.json", {}
+    )
+    v4_2_lint_delta = documents.get(
+        "a64-v4-2-transform-evidence-container/lint-delta.json", {}
+    )
+    v4_2_readiness = documents.get(
+        "a64-v4-2-transform-evidence-container/readiness.json", {}
+    )
     selected_live_row = next(
         (
             row
@@ -931,9 +949,7 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         ).get("allowed"),
         "v4_1_source_hash_matches": bool(v4_1_gate.get("adaptive_source_sha256"))
         and v4_1_gate.get("adaptive_source_sha256")
-        == v4_1_wiring.get("adaptive_source_sha256")
-        == current_adaptive_source_sha256,
-        "current_adaptive_source_sha256": current_adaptive_source_sha256,
+        == v4_1_wiring.get("adaptive_source_sha256"),
         "v4_1_profile_fingerprint_matches": bool(
             v4_1_gate.get("executable_policy_profile_fingerprint")
         )
@@ -984,6 +1000,37 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         "transform_manifest_paid_expansion_allowed": transform_manifest.get(
             "paid_expansion_allowed"
         ),
+        "v4_2_gate_passed": v4_2_gate.get("passed"),
+        "v4_2_single_canary_allowed": v4_2_gate.get(
+            "candidate_single_development_canary_allowed"
+        ),
+        "v4_2_paid_expansion_allowed": v4_2_gate.get("paid_expansion_allowed"),
+        "v4_2_candidate_variant": (
+            ((v4_2_conformance.get("profiles") or {}).get("candidate") or {}).get("name")
+        ),
+        "v4_2_paid_canary_allowed": (
+            v4_2_conformance.get("paid_candidate_canary") or {}
+        ).get("allowed"),
+        "v4_2_source_hash_matches": bool(v4_2_gate.get("adaptive_source_sha256"))
+        and v4_2_gate.get("adaptive_source_sha256")
+        == v4_2_wiring.get("adaptive_source_sha256")
+        == current_adaptive_source_sha256,
+        "current_adaptive_source_sha256": current_adaptive_source_sha256,
+        "v4_2_profile_fingerprint_matches": bool(
+            v4_2_gate.get("executable_policy_profile_fingerprint")
+        )
+        and v4_2_gate.get("executable_policy_profile_fingerprint")
+        == v4_2_wiring.get("executable_policy_profile_fingerprint"),
+        "v4_2_transform_manifest_evidence_wired": (
+            v4_2_wiring.get("checks") or {}
+        ).get("transform_manifest_evidence_wired"),
+        "v4_2_production_transform_manifest_bridge_wired": (
+            v4_2_wiring.get("checks") or {}
+        ).get("production_transform_manifest_bridge_wired"),
+        "v4_2_new_full_repo_lint_findings": v4_2_lint_delta.get(
+            "new_finding_count"
+        ),
+        "v4_2_readiness": v4_2_readiness.get("ready"),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -1357,6 +1404,18 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             )
             and claims["transform_manifest_paid_expansion_allowed"] is False
         ),
+        "v4_2_gate_is_single_canary_only": claims["v4_2_gate_passed"] is True
+        and claims["v4_2_single_canary_allowed"] is True
+        and claims["v4_2_paid_expansion_allowed"] is False,
+        "v4_2_transform_evidence_container_cleared": claims["v4_2_candidate_variant"]
+        == "adaptive_harness_workspace_affordance_v4_2"
+        and claims["v4_2_paid_canary_allowed"] is True
+        and claims["v4_2_source_hash_matches"] is True
+        and claims["v4_2_profile_fingerprint_matches"] is True
+        and claims["v4_2_transform_manifest_evidence_wired"] is True
+        and claims["v4_2_production_transform_manifest_bridge_wired"] is True
+        and claims["v4_2_new_full_repo_lint_findings"] == 0
+        and claims["v4_2_readiness"] is True,
     }
     return {
         "schema_version": 1,
@@ -1428,6 +1487,9 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "unsafe path workarounds. v4.1 remains Shadow and paid expansion stays disabled. "
             "A62 adds a zero-execution Python Transform Manifest and detects the same missing "
             "`snapshots/manifest.json` dependency from public AST/path semantics before model use. "
+            "A63/A64 integrate only a relevant, 4,000-character-bounded Manifest summary into the "
+            "before-run Evidence layer and prove pinned-container wiring with zero model calls; "
+            "Transform execution and Capsule remain disabled. "
             "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),

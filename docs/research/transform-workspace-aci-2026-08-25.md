@@ -79,7 +79,7 @@ Required Artifact
 ## 实施顺序
 
 1. **P0 Static Manifest**：纯函数 AST 分析、路径归一化、安全边界、A61 反事实；
-2. **P1 Context Provider**：把有缺口的 Transform 摘要加入 Evidence layer；
+2. **P1 Context Provider（已完成 A63/A64）**：把相关且有缺口的 Transform 摘要按 4,000 字符总预算加入 before-run Evidence layer；
 3. **P2 Capsule Prototype**：Deterministic Fake patch + sandboxed execution，不接真实模型；
 4. **P3 Targeted Development**：只在 File/easy 上运行一次；
 5. 质量仍无提升则停止，不扩到 API/Browser/MiniBench。
