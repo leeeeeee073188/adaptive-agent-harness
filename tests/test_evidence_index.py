@@ -345,6 +345,38 @@ class EvidenceIndexTests(unittest.TestCase):
         )
         self.assertEqual(index["claims"]["v4_2_new_full_repo_lint_findings"], 0)
         self.assertTrue(index["claims"]["v4_2_readiness"])
+        self.assertTrue(index["claims"]["deerflow_attribution_gate_passed"])
+        self.assertTrue(all(index["claims"]["deerflow_attribution_control_fields"].values()))
+        self.assertEqual(index["claims"]["deerflow_attribution_allowed_runs"], 1)
+        self.assertEqual(index["claims"]["deerflow_historical_vanilla"]["task_count"], 16)
+        self.assertEqual(index["claims"]["deerflow_historical_vanilla"]["passed"], 6)
+        self.assertFalse(
+            index["claims"]["deerflow_historical_vanilla"]["comparable_to_current"]
+        )
+        self.assertTrue(index["claims"]["deerflow_attribution_readiness"])
+        self.assertTrue(index["claims"]["deerflow_attribution_both_failed"])
+        self.assertFalse(index["claims"]["deerflow_attribution_pair_valid"])
+        self.assertFalse(
+            index["claims"]["deerflow_attribution_model_visible_surface"]["equal"]
+        )
+        self.assertEqual(index["claims"]["deerflow_attribution_vanilla"]["total_tokens"], 321950)
+        self.assertEqual(index["claims"]["deerflow_attribution_adaptive"]["total_tokens"], 220496)
+        self.assertTrue(index["claims"]["deerflow_attribution_vanilla_no_final_response"])
+        self.assertEqual(
+            index["claims"]["deerflow_attribution_vanilla_sandbox_false_positive_count"],
+            2,
+        )
+        self.assertTrue(
+            index["claims"]["deerflow_attribution_result"][
+                "deerflow_base_ceiling_supported"
+            ]
+        )
+        self.assertFalse(
+            index["claims"]["deerflow_attribution_result"][
+                "harness_quality_uplift_supported"
+            ]
+        )
+        self.assertFalse(index["claims"]["deerflow_attribution_paid_expansion_allowed"])
         self.assertEqual(index["secret_findings"], [])
 
     def test_rejects_live_evidence_without_a_token_improvement(self) -> None:

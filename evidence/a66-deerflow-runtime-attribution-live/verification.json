@@ -1,0 +1,21 @@
+{
+  "scope": "independent DeerFlow base-attribution verification",
+  "verdict": "pass_bounded_file_task_attribution",
+  "historical_rows": 16,
+  "historical_passed": 6,
+  "historical_comparable_to_current": false,
+  "fresh_vanilla_passed": false,
+  "fresh_adaptive_passed": false,
+  "fresh_vanilla_tokens": 321950,
+  "fresh_adaptive_tokens": 220496,
+  "fresh_vanilla_tools": 15,
+  "fresh_adaptive_tools": 31,
+  "pair_valid": false,
+  "model_visible_surface_equal": false,
+  "vanilla_no_final_response": true,
+  "vanilla_sandbox_false_positive_count": 2,
+  "adaptive_tests_passed": 351,
+  "realreplica_tests_passed": 79,
+  "claim_is_single_task_only": true,
+  "paid_expansion_allowed": false
+}

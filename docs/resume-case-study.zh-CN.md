@@ -128,6 +128,7 @@ v1.4的Advice只在最终第三次验证触发，单题虽然1.0但189,696 Token
 | v4.1 File live | A61：仍 0/5，但 Token -34.8%、Tool -14、耗时 -65.1%；停止扩跑并转向 Transform/Workspace seam |
 | Static Transform Manifest | A62：零执行 AST 扫描提前识别 A61 missing dependency；0 模型 Token |
 | Transform Evidence P1 | A63/A64：相关性+字符预算接入 before-run Evidence；Capsule 关闭 |
+| DeerFlow Runtime attribution | A65/A66：历史 6/16；fresh Vanilla/Adaptive 均 0/5，确认基座上限但非唯一根因 |
 | 历史DeerFlow exact replay | 4/4 |
 | MiniBench Contract coverage | 16/16 |
 | Provider-enforced task coverage | 16/16 |

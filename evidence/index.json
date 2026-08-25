@@ -326,6 +326,16 @@
       "sha256": "340f94b05641a802892c44080d95d7e1ab823d2212d366706cd2efad764e7039"
     },
     {
+      "bytes": 2781,
+      "path": "a65-deerflow-runtime-attribution-gate/summary.json",
+      "sha256": "6bc6fa394ecfc7edea6bb0af85f37e42e41728671cdbb0046e3fe7be665908fd"
+    },
+    {
+      "bytes": 2747,
+      "path": "a66-deerflow-runtime-attribution-live/summary.json",
+      "sha256": "80fe45a824f2229a638797a1081f456bc57fff9065d07c6f039be3aed8bb18cf"
+    },
+    {
       "bytes": 2236,
       "path": "a20-runtime-evolution/container-wiring.json",
       "sha256": "8d02498ecf0c47547b8fea221d73edf6f6c94690e16e4a8a42cdac98259e2171"
@@ -724,9 +734,29 @@
       "bytes": 1594,
       "path": "a64-v4-2-transform-evidence-container/readiness.json",
       "sha256": "949e069032467388c5f8265c1a816b4bb45fe423b62d8cf5efb17fccaa7b5aa7"
+    },
+    {
+      "bytes": 1602,
+      "path": "a65-deerflow-runtime-attribution-gate/readiness.json",
+      "sha256": "11f451263477a241f45ab653e8727bc06543c27469394f4b26abcdd248d00f26"
+    },
+    {
+      "bytes": 419,
+      "path": "a65-deerflow-runtime-attribution-gate/review.json",
+      "sha256": "9803609a9d044ddebea873314bbbc67a1be638c0259d0e6078a7795ea10b1877"
+    },
+    {
+      "bytes": 2941,
+      "path": "a66-deerflow-runtime-attribution-live/pair.json",
+      "sha256": "c4e96195eb846a665f7a9a90f4b23c14c1dd6634a465a1c41aa18e48f15bc0db"
+    },
+    {
+      "bytes": 693,
+      "path": "a66-deerflow-runtime-attribution-live/verification.json",
+      "sha256": "0eda4ac2c2a06873b8c35368ed7840fecf8b4fe42e397b389febab0c1ceed4d0"
     }
   ],
-  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and latency but still produced no artifact. A30/A31 bind the loopback public-source materializer and early cache-block turn termination to one v3.2 canary. A32 records that source access and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error completion rejection, direct synthesis transforms, and fail-closed textual tool errors to one replacement Development canary. A35 records that v3.3 correctly rejected the empty completion but lost Evidence assessments behind the Response gate and produced no artifact. A36/A37 preserve those assessments and bind DeepSeek thinking=enabled with reasoning_effort=max through the actual pinned-container model factory for v3.4. A38 records that max thinking still reached only 1/5 while consuming 719,574 Tokens and ending on a mutation-epoch regression, so v2.6 remains selected. A39 binds the fix to a durable PolicySession run identity and proves object-shaped DeerFlow contexts keep epoch [1,1]. A40/A41 then freeze v3.5 at thinking=enabled, reasoning_effort=high for one same-task canary only. A42 records that the lifecycle error disappeared and quality returned to 2/5, but the artifact copied a known public draft result, Token use reached 765,768, and v2.6 remained the selected Shadow. A43/A44 add a hash-only claim/source lineage core and prove that the A42 public intermediate copy is rejected in replay and in the pinned container. A45 records a v3.6 recovery-order regression: blocked grounding masked the missing artifact, so no output was produced. A46/A47 verify that only an explicitly unsatisfied grounding criterion becomes a lineage failure and artifact delivery recovery remains available. A48 records that v3.7 requested delivery but the model spent the turn writing non-output helper scripts and still produced no artifact. A49/A50 make delivery recovery reject non-output writes while preserving task transforms and environment interactions. A51 records that v3.8 then wrote an empty placeholder, treated the failed public shape as state inconsistency, and exhausted 858,909 Tokens without passing. A52/A53 separate missing Artifact delivery from invalid Artifact repair, bound each to one attempt, and re-arm delivery by user directive generation in the pinned container. No paid v3.9 run has been performed. A54 freezes a MiniBench16-disjoint Diagnostic4 with one low-cost Development task per file/CLI/browser/API type and high thinking as the breadth-first feedback stage. A55 records all four first samples: 0/4 passed, 1,206,127 total Tokens, 129 Tool calls, and cross-type required-artifact, directory-observation, environment-observation, and no-progress failures. A56/A57 bind v4 required-target delivery, directory artifacts, OSError containment, and a two-violation early turn stop with zero model calls. A58 records that the first v4 File replay still scored 0/5 at 337,994 Tokens: it targeted the correct artifact but DeerFlow rejected the write because the model omitted the non-semantic description field, and one model batch produced 15 rejected delivery results. A59/A60 bind v4.1 compatibility argument repair and delivery-batch early stop. A61 records the v4.1 File replay: quality remained 0/5 and no artifact was delivered, but observed Tokens fell 34.8%, Tool calls fell from 45 to 31, and latency fell 65.1%; the next public failure is the task transform resolving `/task/snapshots` plus blocked unsafe path workarounds. v4.1 remains Shadow and paid expansion stays disabled. A62 adds a zero-execution Python Transform Manifest and detects the same missing `snapshots/manifest.json` dependency from public AST/path semantics before model use. A63/A64 integrate only a relevant, 4,000-character-bounded Manifest summary into the before-run Evidence layer and prove pinned-container wiring with zero model calls; Transform execution and Capsule remain disabled. This is a copy guard, not full factual verification. Transfer, Held-out, and further task expansion remain disabled.",
+  "claim_boundary": "No measured MiniBench-wide success-rate uplift. Context v1/v1.1 each ran one Development task as exploratory Shadows; v1.1 recovered quality but was rejected for cost. v1.2 recovered the exact output at +9.23% directional Token cost, but remains Shadow because tool/latency cost is high and the sample is neither fresh-paired nor sufficient. No full 107-task run was performed. Tool Action Ledger v1.3 has only zero-model observe-only evidence and is not claimed to reduce calls. Non-blocking Advice v1.4 was rejected for cost; v1.5 had near-baseline directional Tokens but no Advice trigger and remains Shadow. A20 proves Runtime Conformance, trusted Ledger-to-Rollout conversion, offline Distiller boundaries, 8/4/4 partition integrity, and refreshed zero-model container wiring. It does not claim MiniBench-wide task-success uplift. A21/A22 record paid single-task iterations: v2.6 improved public capacity from 0.0 to 0.4 with lower observed Tokens, but still failed and remains Shadow. A23 derives the context-starvation, repeated-resource, artifact-copy, and cross-turn lifecycle failure signals with zero model calls. A24/A25 verify the v3 Visible Evidence Workspace, public contract, source obligations, soft phase/recovery, and container wiring. A26 records that v3 nevertheless regressed to 0/5 and was not promoted. A27/A28 bind the source-first phase, local-resource governor, and three-turn v3.1 profile to one replacement Development canary only. A29 records that v3.1 cut observed Tokens and latency but still produced no artifact. A30/A31 bind the loopback public-source materializer and early cache-block turn termination to one v3.2 canary. A32 records that source access and artifact creation recovered, but an all-empty JSON plus a runtime-limit terminal only reached 1/5 and was not promoted. A33/A34 bind v3.3 public non-vacuity review, runtime-error completion rejection, direct synthesis transforms, and fail-closed textual tool errors to one replacement Development canary. A35 records that v3.3 correctly rejected the empty completion but lost Evidence assessments behind the Response gate and produced no artifact. A36/A37 preserve those assessments and bind DeepSeek thinking=enabled with reasoning_effort=max through the actual pinned-container model factory for v3.4. A38 records that max thinking still reached only 1/5 while consuming 719,574 Tokens and ending on a mutation-epoch regression, so v2.6 remains selected. A39 binds the fix to a durable PolicySession run identity and proves object-shaped DeerFlow contexts keep epoch [1,1]. A40/A41 then freeze v3.5 at thinking=enabled, reasoning_effort=high for one same-task canary only. A42 records that the lifecycle error disappeared and quality returned to 2/5, but the artifact copied a known public draft result, Token use reached 765,768, and v2.6 remained the selected Shadow. A43/A44 add a hash-only claim/source lineage core and prove that the A42 public intermediate copy is rejected in replay and in the pinned container. A45 records a v3.6 recovery-order regression: blocked grounding masked the missing artifact, so no output was produced. A46/A47 verify that only an explicitly unsatisfied grounding criterion becomes a lineage failure and artifact delivery recovery remains available. A48 records that v3.7 requested delivery but the model spent the turn writing non-output helper scripts and still produced no artifact. A49/A50 make delivery recovery reject non-output writes while preserving task transforms and environment interactions. A51 records that v3.8 then wrote an empty placeholder, treated the failed public shape as state inconsistency, and exhausted 858,909 Tokens without passing. A52/A53 separate missing Artifact delivery from invalid Artifact repair, bound each to one attempt, and re-arm delivery by user directive generation in the pinned container. No paid v3.9 run has been performed. A54 freezes a MiniBench16-disjoint Diagnostic4 with one low-cost Development task per file/CLI/browser/API type and high thinking as the breadth-first feedback stage. A55 records all four first samples: 0/4 passed, 1,206,127 total Tokens, 129 Tool calls, and cross-type required-artifact, directory-observation, environment-observation, and no-progress failures. A56/A57 bind v4 required-target delivery, directory artifacts, OSError containment, and a two-violation early turn stop with zero model calls. A58 records that the first v4 File replay still scored 0/5 at 337,994 Tokens: it targeted the correct artifact but DeerFlow rejected the write because the model omitted the non-semantic description field, and one model batch produced 15 rejected delivery results. A59/A60 bind v4.1 compatibility argument repair and delivery-batch early stop. A61 records the v4.1 File replay: quality remained 0/5 and no artifact was delivered, but observed Tokens fell 34.8%, Tool calls fell from 45 to 31, and latency fell 65.1%; the next public failure is the task transform resolving `/task/snapshots` plus blocked unsafe path workarounds. v4.1 remains Shadow and paid expansion stays disabled. A62 adds a zero-execution Python Transform Manifest and detects the same missing `snapshots/manifest.json` dependency from public AST/path semantics before model use. A63/A64 integrate only a relevant, 4,000-character-bounded Manifest summary into the before-run Evidence layer and prove pinned-container wiring with zero model calls; Transform execution and Capsule remain disabled. A65 freezes a fresh current-model/high-thinking Vanilla control because the historical Vanilla 6/16 used a different model, disabled thinking, and Mimo vision. A66 shows both fresh Vanilla and Adaptive scored 0/5 with no artifact; Vanilla also returned no final response and hit two Sandbox path false positives. The Harness used fewer Tokens and latency but more Tool calls, so DeerFlow is retained as one backend rather than the project base, without claiming a universal runtime ranking. This is a copy guard, not full factual verification. Transfer, Held-out, and further task expansion remain disabled.",
   "claims": {
     "action_ledger_classified_fraction": 0.8049999999999999,
     "action_ledger_enforcement_ready": false,
@@ -754,6 +784,134 @@
     "core_business_vocabulary_findings": 0,
     "current_adaptive_source_sha256": "bf9821ea56138969ffb2d916ba142d5cc0c99aae5d43fa5cd7636582c39d938c",
     "current_realreplica_unit_tests": 67,
+    "deerflow_attribution_adaptive": {
+      "capacity_score": 0.0,
+      "elapsed_sec": 116.555,
+      "ledger_event_count": 506,
+      "passed": false,
+      "run_id": "adaptive-harness-diagnostic4-v4-1-file-development",
+      "tool_calls": 31,
+      "total_tokens": 220496,
+      "turns": 2,
+      "variant": "adaptive_harness_cross_type_artifact_v4_1"
+    },
+    "deerflow_attribution_allowed_runs": 1,
+    "deerflow_attribution_both_failed": true,
+    "deerflow_attribution_control_fields": {
+      "collection": true,
+      "deerflow.base_url": true,
+      "deerflow.model": true,
+      "deerflow.provider": true,
+      "deerflow.recursion_limit": true,
+      "deerflow.thinking_effort": true,
+      "deerflow.thinking_enabled": true,
+      "deerflow.token_budget": true,
+      "experiment.phase": true,
+      "experiment.seed": true,
+      "experiment.split": true,
+      "judge.base_url": true,
+      "judge.model": true,
+      "judge.provider": true,
+      "limit": true,
+      "parallelism": true,
+      "runtime.image": true,
+      "runtime.platform": true,
+      "start_index": true
+    },
+    "deerflow_attribution_cost": {
+      "architecture_increase_over_diagnostic_threshold": false,
+      "attributable_architecture_increase_fraction": -0.3151234663767666,
+      "attributable_architecture_token_delta": -101454,
+      "attribution": "candidate_policy_may_have_changed_model_work",
+      "attribution_confident": true,
+      "elapsed_delta_sec": -133.892,
+      "token_delta": -101454,
+      "token_diagnostic_threshold_fraction": 0.25,
+      "token_increase_fraction": -0.3151234663767666,
+      "token_increase_over_diagnostic_threshold": false,
+      "tool_call_delta": 16
+    },
+    "deerflow_attribution_decision": "keep_deerflow_as_one_runtime_backend_not_the_project_base",
+    "deerflow_attribution_gate_passed": true,
+    "deerflow_attribution_model_visible_surface": {
+      "baseline_fingerprint": "c0699db164028bd7f19d83ad0a74cefbf8efecc3758fa0e1a33c7b6407d3ec47",
+      "candidate_fingerprint": null,
+      "checks": {
+        "config_sha256": false,
+        "model": true,
+        "prompt_sha256": true,
+        "runtime_image": true
+      },
+      "equal": false
+    },
+    "deerflow_attribution_paid_expansion_allowed": false,
+    "deerflow_attribution_pair_valid": false,
+    "deerflow_attribution_readiness": true,
+    "deerflow_attribution_result": {
+      "deerflow_base_ceiling_supported": true,
+      "harness_quality_uplift_supported": false,
+      "harness_token_latency_efficiency_supported": true,
+      "harness_tool_efficiency_supported": false
+    },
+    "deerflow_attribution_vanilla": {
+      "capacity_score": 0.0,
+      "elapsed_sec": 250.447,
+      "passed": false,
+      "run_id": "vanilla-deerflow-diagnostic4-current-file-development",
+      "tool_calls": 15,
+      "total_tokens": 321950,
+      "variant": "vanilla_deerflow"
+    },
+    "deerflow_attribution_vanilla_no_final_response": true,
+    "deerflow_attribution_vanilla_sandbox_false_positive_count": 2,
+    "deerflow_historical_vanilla": {
+      "category_count": {
+        "api": 3,
+        "browser": 5,
+        "cli": 5,
+        "file": 3
+      },
+      "category_passed": {
+        "api": 2,
+        "cli": 1,
+        "file": 3
+      },
+      "comparable_to_current": false,
+      "configurations": [
+        {
+          "model": "deepseek-v4-flash",
+          "run_id": "adaptive-deerflow-m0-smoke5-final-20260819",
+          "thinking_enabled": "disabled",
+          "vision_model": "mimo-v2.5"
+        },
+        {
+          "model": "deepseek-v4-flash",
+          "run_id": "adaptive-deerflow-m0-minibench-block1-novel3-20260819",
+          "thinking_enabled": "disabled",
+          "vision_model": "mimo-v2.5"
+        },
+        {
+          "model": "deepseek-v4-flash",
+          "run_id": "adaptive-deerflow-m0-minibench-block2-novel3-20260819",
+          "thinking_enabled": "disabled",
+          "vision_model": "mimo-v2.5"
+        },
+        {
+          "model": "deepseek-v4-flash",
+          "run_id": "adaptive-deerflow-m0-minibench-block3-novel2-20260819",
+          "thinking_enabled": "disabled",
+          "vision_model": "mimo-v2.5"
+        },
+        {
+          "model": "deepseek-v4-flash",
+          "run_id": "adaptive-deerflow-m0-minibench-block4-novel3-20260819",
+          "thinking_enabled": "disabled",
+          "vision_model": "mimo-v2.5"
+        }
+      ],
+      "passed": 6,
+      "task_count": 16
+    },
     "diagnostic4_counts": {
       "capability": {
         "browser-text": 1,
@@ -1922,7 +2080,7 @@
     "v4_turn_observation_oserror_fails_closed": true,
     "zero_model_unit_tests": 179
   },
-  "git_head": "a284b320b14bdca240a9f9564aa15b2566850c1e",
+  "git_head": "1f9d1c443edc94e7569c5822e49fc335eccaf8af",
   "invariants": {
     "action_ledger_observe_only": true,
     "action_ledger_stable_controls_unwarned": true,
@@ -1932,6 +2090,7 @@
     "context_next_candidate_stays_shadow": true,
     "context_stage_not_full_benchmark": true,
     "core_business_semantics_decoupled": true,
+    "deerflow_base_limitation_is_fresh_controlled_not_universal": true,
     "diagnostic4_is_breadth_first_and_isolated": true,
     "diagnostic4_live_is_cross_type_failure_evidence_only": true,
     "evolution_is_offline_governed": true,

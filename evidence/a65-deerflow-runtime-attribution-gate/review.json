@@ -1,0 +1,16 @@
+{
+  "scope": "current-model DeerFlow Runtime attribution review",
+  "verdict": "approve_one_fresh_vanilla_control_only",
+  "critical": 0,
+  "high": 0,
+  "medium": 0,
+  "low": 0,
+  "verified": {
+    "current_control_fields_equal": true,
+    "historical_configuration_caveat": true,
+    "single_file_control_only": true,
+    "thinking_request_effort": "high"
+  },
+  "allowed_runs": 1,
+  "paid_expansion_allowed": false
+}

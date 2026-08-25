@@ -178,6 +178,8 @@ A62 完成 P0 Static Transform Manifest：零执行扫描公共 workspace 内最
 
 v4.2 完成 P1 bounded Evidence Provider：只选 Prompt 点名或直接生产 Required Artifact 的 Transform，最多 8 条、每类 4 个 access、总 payload 4,000 字符；unsafe target 仅暴露计数，动态表达式保持 unresolved。Provider 只在 before-run 扫描一次，A63/A64 已通过单测和 pinned-container wiring，模型调用/新增 Token 为 0。P2 Capsule 仍 disabled，本阶段不执行付费任务。
 
+A65/A66 对 DeerFlow 基座做 fresh attribution：旧 Vanilla 16 题通过 6 题，但配置不可与当前比较；当前同模型/high-thinking File/easy 中 Vanilla 与 Adaptive 都是 0/5、无产物。Vanilla 仍完成了大量数据读取和 helper 计算，却没有 final response，并触发两次 Sandbox path false positive；Adaptive Token/耗时更低但 Tool 更多，质量无提升。架构决策是把 DeerFlow 降为一个 Runtime Backend，下一阶段做 Runtime Capability Profile/Conformance，不再继续 DeerFlow-only paid tuning。
+
 ## 测试规格摘要
 
 | 层级 | 必须证明 |

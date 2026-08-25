@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "scope": "current-model DeerFlow Runtime attribution preflight",
+  "model_calls": 0,
+  "new_model_tokens": 0,
+  "passed": true,
+  "checks": {
+    "all_control_fields_equal": true,
+    "vanilla_variant": true,
+    "vanilla_adaptive_policy_disabled": true,
+    "adaptive_policy_enabled": true,
+    "current_model_high_thinking": true,
+    "single_file_control_only": true,
+    "historical_minibench_rows_complete": true,
+    "historical_configuration_not_current_control": true
+  },
+  "controlled_fields": {
+    "collection": true,
+    "runtime.image": true,
+    "runtime.platform": true,
+    "experiment.split": true,
+    "experiment.phase": true,
+    "experiment.seed": true,
+    "deerflow.model": true,
+    "deerflow.provider": true,
+    "deerflow.thinking_enabled": true,
+    "deerflow.thinking_effort": true,
+    "deerflow.recursion_limit": true,
+    "deerflow.token_budget": true,
+    "deerflow.base_url": true,
+    "judge.provider": true,
+    "judge.model": true,
+    "judge.base_url": true,
+    "start_index": true,
+    "limit": true,
+    "parallelism": true
+  },
+  "allowed_task_id": "file-google-trends-data-quality-audit",
+  "allowed_runs": 1,
+  "historical_vanilla": {
+    "task_count": 16,
+    "passed": 6,
+    "category_count": {
+      "api": 3,
+      "browser": 5,
+      "cli": 5,
+      "file": 3
+    },
+    "category_passed": {
+      "api": 2,
+      "cli": 1,
+      "file": 3
+    },
+    "configurations": [
+      {
+        "run_id": "adaptive-deerflow-m0-smoke5-final-20260819",
+        "model": "deepseek-v4-flash",
+        "thinking_enabled": "disabled",
+        "vision_model": "mimo-v2.5"
+      },
+      {
+        "run_id": "adaptive-deerflow-m0-minibench-block1-novel3-20260819",
+        "model": "deepseek-v4-flash",
+        "thinking_enabled": "disabled",
+        "vision_model": "mimo-v2.5"
+      },
+      {
+        "run_id": "adaptive-deerflow-m0-minibench-block2-novel3-20260819",
+        "model": "deepseek-v4-flash",
+        "thinking_enabled": "disabled",
+        "vision_model": "mimo-v2.5"
+      },
+      {
+        "run_id": "adaptive-deerflow-m0-minibench-block3-novel2-20260819",
+        "model": "deepseek-v4-flash",
+        "thinking_enabled": "disabled",
+        "vision_model": "mimo-v2.5"
+      },
+      {
+        "run_id": "adaptive-deerflow-m0-minibench-block4-novel3-20260819",
+        "model": "deepseek-v4-flash",
+        "thinking_enabled": "disabled",
+        "vision_model": "mimo-v2.5"
+      }
+    ],
+    "comparable_to_current": false
+  },
+  "claim_boundary": "Historical Vanilla establishes DeerFlow can pass some task types, but model, thinking, and vision routing differ. Only the fresh File/easy control supports current attribution.",
+  "paid_control_allowed": true,
+  "paid_expansion_allowed": false
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "scope": "fresh current-model DeerFlow base attribution",
+  "analysis_model_calls": 0,
+  "analysis_new_tokens": 0,
+  "task_id": "file-google-trends-data-quality-audit",
+  "vanilla": {
+    "capacity_score": 0.0,
+    "elapsed_sec": 250.447,
+    "passed": false,
+    "run_id": "vanilla-deerflow-diagnostic4-current-file-development",
+    "tool_calls": 15,
+    "total_tokens": 321950,
+    "variant": "vanilla_deerflow"
+  },
+  "adaptive": {
+    "capacity_score": 0.0,
+    "elapsed_sec": 116.555,
+    "ledger_event_count": 506,
+    "passed": false,
+    "run_id": "adaptive-harness-diagnostic4-v4-1-file-development",
+    "tool_calls": 31,
+    "total_tokens": 220496,
+    "turns": 2,
+    "variant": "adaptive_harness_cross_type_artifact_v4_1"
+  },
+  "controls": {
+    "model": true,
+    "runtime_image": true,
+    "seed": true,
+    "split": true,
+    "task_id": true
+  },
+  "model_visible_surface": {
+    "baseline_fingerprint": "c0699db164028bd7f19d83ad0a74cefbf8efecc3758fa0e1a33c7b6407d3ec47",
+    "candidate_fingerprint": null,
+    "checks": {
+      "config_sha256": false,
+      "model": true,
+      "prompt_sha256": true,
+      "runtime_image": true
+    },
+    "equal": false
+  },
+  "cost": {
+    "architecture_increase_over_diagnostic_threshold": false,
+    "attributable_architecture_increase_fraction": -0.3151234663767666,
+    "attributable_architecture_token_delta": -101454,
+    "attribution": "candidate_policy_may_have_changed_model_work",
+    "attribution_confident": true,
+    "elapsed_delta_sec": -133.892,
+    "token_delta": -101454,
+    "token_diagnostic_threshold_fraction": 0.25,
+    "token_increase_fraction": -0.3151234663767666,
+    "token_increase_over_diagnostic_threshold": false,
+    "tool_call_delta": 16
+  },
+  "both_failed": true,
+  "both_capacity_zero": true,
+  "vanilla_output_file_count": 0,
+  "adaptive_output_file_count": 0,
+  "vanilla_no_final_response": true,
+  "vanilla_tool_calls": 15,
+  "vanilla_sandbox_false_positive_count": 2,
+  "vanilla_helper_write_succeeded": true,
+  "historical_vanilla": {
+    "task_count": 16,
+    "passed": 6,
+    "category_passed": {
+      "file": 3,
+      "api": 2,
+      "cli": 1,
+      "browser": 0
+    },
+    "comparable_to_current": false
+  },
+  "attribution": {
+    "deerflow_base_ceiling_supported": true,
+    "harness_quality_uplift_supported": false,
+    "harness_token_latency_efficiency_supported": true,
+    "harness_tool_efficiency_supported": false
+  },
+  "decision": "keep_deerflow_as_one_runtime_backend_not_the_project_base",
+  "paid_expansion_allowed": false,
+  "claim_boundary": "One fresh File/easy current-model control. It supports a DeerFlow base limitation on this task, not a universal ranking of runtimes.",
+  "pair_valid": false
+}

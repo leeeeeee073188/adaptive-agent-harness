@@ -81,6 +81,8 @@ REQUIRED = tuple(
         (62, "transform-manifest"),
         (63, "v4-2-transform-evidence-gate"),
         (64, "v4-2-transform-evidence-container"),
+        (65, "deerflow-runtime-attribution-gate"),
+        (66, "deerflow-runtime-attribution-live"),
     )
 )
 OPTIONAL = (
@@ -164,6 +166,10 @@ OPTIONAL = (
     "a64-v4-2-transform-evidence-container/review.json",
     "a64-v4-2-transform-evidence-container/verification.json",
     "a64-v4-2-transform-evidence-container/readiness.json",
+    "a65-deerflow-runtime-attribution-gate/readiness.json",
+    "a65-deerflow-runtime-attribution-gate/review.json",
+    "a66-deerflow-runtime-attribution-live/pair.json",
+    "a66-deerflow-runtime-attribution-live/verification.json",
 )
 SECRET_PATTERN = re.compile(r"(?:sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
@@ -305,6 +311,15 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
     v4_2_readiness = documents.get(
         "a64-v4-2-transform-evidence-container/readiness.json", {}
     )
+    deerflow_attribution_gate = doc(
+        "a65-deerflow-runtime-attribution-gate/summary.json"
+    ) if not missing else {}
+    deerflow_attribution_readiness = documents.get(
+        "a65-deerflow-runtime-attribution-gate/readiness.json", {}
+    )
+    deerflow_attribution_live = doc(
+        "a66-deerflow-runtime-attribution-live/summary.json"
+    ) if not missing else {}
     selected_live_row = next(
         (
             row
@@ -1031,6 +1046,36 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "new_finding_count"
         ),
         "v4_2_readiness": v4_2_readiness.get("ready"),
+        "deerflow_attribution_gate_passed": deerflow_attribution_gate.get("passed"),
+        "deerflow_attribution_control_fields": deerflow_attribution_gate.get(
+            "controlled_fields"
+        ),
+        "deerflow_attribution_allowed_runs": deerflow_attribution_gate.get(
+            "allowed_runs"
+        ),
+        "deerflow_historical_vanilla": deerflow_attribution_gate.get(
+            "historical_vanilla"
+        ),
+        "deerflow_attribution_readiness": deerflow_attribution_readiness.get("ready"),
+        "deerflow_attribution_vanilla": deerflow_attribution_live.get("vanilla"),
+        "deerflow_attribution_adaptive": deerflow_attribution_live.get("adaptive"),
+        "deerflow_attribution_cost": deerflow_attribution_live.get("cost"),
+        "deerflow_attribution_pair_valid": deerflow_attribution_live.get("pair_valid"),
+        "deerflow_attribution_model_visible_surface": deerflow_attribution_live.get(
+            "model_visible_surface"
+        ),
+        "deerflow_attribution_both_failed": deerflow_attribution_live.get("both_failed"),
+        "deerflow_attribution_vanilla_no_final_response": deerflow_attribution_live.get(
+            "vanilla_no_final_response"
+        ),
+        "deerflow_attribution_vanilla_sandbox_false_positive_count": (
+            deerflow_attribution_live.get("vanilla_sandbox_false_positive_count")
+        ),
+        "deerflow_attribution_result": deerflow_attribution_live.get("attribution"),
+        "deerflow_attribution_decision": deerflow_attribution_live.get("decision"),
+        "deerflow_attribution_paid_expansion_allowed": deerflow_attribution_live.get(
+            "paid_expansion_allowed"
+        ),
     }
     invariants = {
         "all_evidence_present": not missing,
@@ -1416,6 +1461,39 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
         and claims["v4_2_production_transform_manifest_bridge_wired"] is True
         and claims["v4_2_new_full_repo_lint_findings"] == 0
         and claims["v4_2_readiness"] is True,
+        "deerflow_base_limitation_is_fresh_controlled_not_universal": (
+            claims["deerflow_attribution_gate_passed"] is True
+            and all((claims["deerflow_attribution_control_fields"] or {}).values())
+            and claims["deerflow_attribution_allowed_runs"] == 1
+            and claims["deerflow_attribution_readiness"] is True
+            and (claims["deerflow_historical_vanilla"] or {}).get("task_count") == 16
+            and (claims["deerflow_historical_vanilla"] or {}).get("passed") == 6
+            and (claims["deerflow_historical_vanilla"] or {}).get(
+                "comparable_to_current"
+            )
+            is False
+            and claims["deerflow_attribution_both_failed"] is True
+            and claims["deerflow_attribution_pair_valid"] is False
+            and (claims["deerflow_attribution_model_visible_surface"] or {}).get("equal")
+            is False
+            and (claims["deerflow_attribution_vanilla"] or {}).get("total_tokens")
+            == 321950
+            and (claims["deerflow_attribution_adaptive"] or {}).get("total_tokens")
+            == 220496
+            and claims["deerflow_attribution_vanilla_no_final_response"] is True
+            and claims["deerflow_attribution_vanilla_sandbox_false_positive_count"] == 2
+            and (claims["deerflow_attribution_result"] or {}).get(
+                "deerflow_base_ceiling_supported"
+            )
+            is True
+            and (claims["deerflow_attribution_result"] or {}).get(
+                "harness_quality_uplift_supported"
+            )
+            is False
+            and claims["deerflow_attribution_decision"]
+            == "keep_deerflow_as_one_runtime_backend_not_the_project_base"
+            and claims["deerflow_attribution_paid_expansion_allowed"] is False
+        ),
     }
     return {
         "schema_version": 1,
@@ -1490,6 +1568,12 @@ def build_index(evidence_dir: Path) -> dict[str, Any]:
             "A63/A64 integrate only a relevant, 4,000-character-bounded Manifest summary into the "
             "before-run Evidence layer and prove pinned-container wiring with zero model calls; "
             "Transform execution and Capsule remain disabled. "
+            "A65 freezes a fresh current-model/high-thinking Vanilla control because the historical "
+            "Vanilla 6/16 used a different model, disabled thinking, and Mimo vision. A66 shows both "
+            "fresh Vanilla and Adaptive scored 0/5 with no artifact; Vanilla also returned no final "
+            "response and hit two Sandbox path false positives. The Harness used fewer Tokens and "
+            "latency but more Tool calls, so DeerFlow is retained as one backend rather than the "
+            "project base, without claiming a universal runtime ranking. "
             "This is a copy guard, not full factual verification. Transfer, "
             "Held-out, and further task expansion remain disabled."
         ),

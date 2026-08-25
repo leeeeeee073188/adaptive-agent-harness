@@ -422,6 +422,19 @@ model turn, capped by item/access/character budgets, and includes no source
 body or restricted path. Unsafe accesses are counts only. Runtime execution,
 patching, and Capsule registration remain separate disabled capabilities.
 
+## Runtime backend independence
+
+The Harness is the control plane; DeerFlow is one Runtime backend. Fresh A66
+evidence shows both current Vanilla DeerFlow and Adaptive failed the same
+File/easy task without an artifact. DeerFlow therefore cannot remain an
+unquestioned project base, but historical 6/16 Vanilla results also reject the
+claim that it is universally incapable.
+
+Contract, Evidence, Recovery, Experience, and policy fingerprints remain
+runtime-neutral. The next seam is a `RuntimeCapabilityProfile` plus deterministic
+selection/conformance so DeerFlow, a native reference Runtime, and eventually a
+second sandboxed Runtime can be compared under identical model/task controls.
+
 Execution remains deliberately split: `RecoveryExecutor` applies auditable
 Harness control-state deltas and next-turn directives, while external browser,
 API, and file mutations remain ordinary tools. This prevents a control policy
